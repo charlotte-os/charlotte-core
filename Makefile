@@ -1,0 +1,137 @@
+ovmf-x86_64:
+	mkdir -p ovmf-x86_64
+	cd ovmf-x86_64 && curl -o OVMF.fd https://retrage.github.io/edk2-nightly/bin/RELEASEX64_OVMF.fd
+
+build-x86_64-debug:
+	cd charlotte_core && cargo build --target x86_64-unknown-none
+charlotte_core-x86_64-debug.iso: build-x86_64-debug
+	rm -rf iso_root
+	mkdir -p iso_root
+	cp -v charlotte_core/target/x86_64-unknown-none/debug/charlotte_core \
+		limine.cfg limine/limine-uefi-cd.bin iso_root/
+	mkdir -p iso_root/EFI/BOOT
+	cp -v limine/BOOTX64.EFI iso_root/EFI/BOOT/
+	xorriso -as mkisofs \
+		-no-emul-boot -boot-load-size 4 -boot-info-table \
+		--efi-boot limine-uefi-cd.bin \
+		-efi-boot-part --efi-boot-image --protective-msdos-label \
+		iso_root -o charlotte_core-x86_64-debug.iso
+	rm -rf iso_root
+
+run-x86_64-debug: ovmf-x86_64 charlotte_core-x86_64-debug.iso
+	qemu-system-x86_64 -M q35 -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d
+
+build-x86_64-release:
+	cd charlotte_core && cargo build --target x86_64-unknown-none --release
+charlotte_core-x86_64-release.iso: build-x86_64-release
+	rm -rf iso_root
+	mkdir -p iso_root
+	cp -v charlotte_core/target/x86_64-unknown-none/release/charlotte_core \
+		limine.cfg limine/limine-uefi-cd.bin iso_root/
+	mkdir -p iso_root/EFI/BOOT
+	cp -v limine/BOOTX64.EFI iso_root/EFI/BOOT/
+	xorriso -as mkisofs \
+		-no-emul-boot -boot-load-size 4 -boot-info-table \
+		--efi-boot limine-uefi-cd.bin \
+		-efi-boot-part --efi-boot-image --protective-msdos-label \
+		iso_root -o charlotte_core-x86_64-release.iso
+	rm -rf iso_root
+
+run-x86_64-release: ovmf-x86_64 charlotte_core-x86_64-release.iso
+	qemu-system-x86_64 -M q35 -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-release.iso -boot d
+
+
+ovmf-aarch64:
+	mkdir -p ovmf-aarch64
+	cd ovmf-aarch64 && curl -o OVMF.fd https://retrage.github.io/edk2-nightly/bin/RELEASEAARCH64_QEMU_EFI.fd
+build-aarch64-debug:
+	cd charlotte_core && cargo build --target aarch64-unknown-none
+charlotte_core-aarch64-debug.iso: build-aarch64-debug
+	rm -rf iso_root
+	mkdir -p iso_root
+	cp -v charlotte_core/target/aarch64-unknown-none/debug/charlotte_core \
+		limine.cfg limine/limine-uefi-cd.bin iso_root/
+	mkdir -p iso_root/EFI/BOOT
+	cp -v limine/BOOTAA64.EFI iso_root/EFI/BOOT/
+	xorriso -as mkisofs \
+		-no-emul-boot -boot-load-size 4 -boot-info-table \
+		--efi-boot limine-uefi-cd.bin \
+		-efi-boot-part --efi-boot-image --protective-msdos-label \
+		iso_root -o charlotte_core-aarch64-debug.iso
+	rm -rf iso_root
+run-aarch64-debug: ovmf-aarch64 charlotte_core-aarch64-debug.iso
+	qemu-system-aarch64 -M virt -cpu cortex-a72 -device ramfb -device qemu-xhci -device usb-kbd -m 2G -bios ovmf-aarch64/OVMF.fd -cdrom charlotte_core-aarch64-debug.iso -boot d
+
+build-aarch64-release:
+	cd charlotte_core && cargo build --target aarch64-unknown-none --release
+charlotte_core-aarch64-release.iso: build-aarch64-release
+	rm -rf iso_root
+	mkdir -p iso_root
+	cp -v charlotte_core/target/aarch64-unknown-none/release/charlotte_core \
+		limine.cfg limine/limine-uefi-cd.bin iso_root/
+	mkdir -p iso_root/EFI/BOOT
+	cp -v limine/BOOTAA64.EFI iso_root/EFI/BOOT/
+	xorriso -as mkisofs \
+		-no-emul-boot -boot-load-size 4 -boot-info-table \
+		--efi-boot limine-uefi-cd.bin \
+		-efi-boot-part --efi-boot-image --protective-msdos-label \
+		iso_root -o charlotte_core-aarch64-release.iso
+	rm -rf iso_root
+run-aarch64-release: ovmf-aarch64 charlotte_core-aarch64-release.iso
+	qemu-system-aarch64 -M virt -cpu cortex-a72 -device ramfb -device qemu-xhci -device usb-kbd -m 2G -bios ovmf-aarch64/OVMF.fd -cdrom charlotte_core-aarch64-release.iso -boot d
+
+
+ovmf-riscv64:
+	mkdir -p ovmf-riscv64
+	cd ovmf-riscv64 && curl -o OVMF.fd https://retrage.github.io/edk2-nightly/bin/RELEASERISCV64_VIRT_CODE.fd && dd if=/dev/zero of=OVMF.fd bs=1 count=0 seek=33554432
+build-riscv64-debug:
+	cd charlotte_core && cargo build --target riscv64gc-unknown-none-elf
+charlotte_core-riscv64-debug.iso: build-riscv64-debug
+	rm -rf iso_root
+	mkdir -p iso_root
+	cp -v charlotte_core/target/riscv64gc-unknown-none-elf/debug/charlotte_core \
+		limine.cfg limine/limine-uefi-cd.bin iso_root/
+	mkdir -p iso_root/EFI/BOOT
+	cp -v limine/BOOTRISCV64.EFI iso_root/EFI/BOOT/
+	xorriso -as mkisofs \
+		-no-emul-boot -boot-load-size 4 -boot-info-table \
+		--efi-boot limine-uefi-cd.bin \
+		-efi-boot-part --efi-boot-image --protective-msdos-label \
+		iso_root -o charlotte_core-riscv64-debug.iso
+	rm -rf iso_root
+run-riscv64-debug: ovmf-riscv64 charlotte_core-riscv64-debug.iso
+	qemu-system-riscv64 -M virt -cpu rv64 \
+		-device ramfb -device qemu-xhci -device usb-kbd -m 2G -drive if=pflash,unit=0,format=raw,file=ovmf-riscv64/OVMF.fd \
+		-device virtio-scsi-pci,id=scsi -device scsi-cd,drive=cd0 -drive id=cd0,format=raw,file=charlotte_core-riscv64-debug.iso
+
+build-riscv64-release:
+	cd charlotte_core && cargo build --target riscv64gc-unknown-none-elf
+charlotte_core-riscv64-release.iso: build-riscv64-release
+	rm -rf iso_root
+	mkdir -p iso_root
+	cp -v charlotte_core/target/riscv64gc-unknown-none-elf/release/charlotte_core \
+		limine.cfg limine/limine-uefi-cd.bin iso_root/
+	mkdir -p iso_root/EFI/BOOT
+	cp -v limine/BOOTRISCV64.EFI iso_root/EFI/BOOT/
+	xorriso -as mkisofs \
+		-no-emul-boot -boot-load-size 4 -boot-info-table \
+		--efi-boot limine-uefi-cd.bin \
+		-efi-boot-part --efi-boot-image --protective-msdos-label \
+		iso_root -o charlotte_core-riscv64-release.iso
+	rm -rf iso_root
+run-riscv64-release: ovmf-riscv64 charlotte_core-riscv64-release.iso
+	qemu-system-riscv64 -M virt -cpu rv64 \
+		-device ramfb -device qemu-xhci -device usb-kbd -m 2G -drive if=pflash,unit=0,format=raw,file=ovmf-riscv64/OVMF.fd \
+		-device virtio-scsi-pci,id=scsi -device scsi-cd,drive=cd0 -drive id=cd0,format=raw,file=charlotte_core-riscv64-release.iso
+
+clean:
+	cd charlotte_core && cargo clean
+	rm -rf ovmf-aarch64
+	rm -rf ovmf-riscv64
+	rm -rf ovmf-x86_64
+	rm -f charlotte_core-aarch64-debug.iso
+	rm -f charlotte_core-riscv64-debug.iso
+	rm -f charlotte_core-x86_64-debug.iso
+	rm -f charlotte_core-aarch64-release.iso
+	rm -f charlotte_core-riscv64-release.iso
+	rm -f charlotte_core-x86_64-release.iso
