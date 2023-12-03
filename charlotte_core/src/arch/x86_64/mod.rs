@@ -1,9 +1,10 @@
+mod gdt_tss;
 mod serial;
 
-use core::arch::{asm, global_asm};
+
+use core::arch::asm;
 use lazy_static::lazy_static;
 use spin::mutex::TicketMutex;
-use x86_64::structures::port::{PortRead, PortWrite};
 
 use self::serial::*;
 
@@ -24,6 +25,9 @@ impl super::Arch for ArchApi {
         }
         fn get_logger() -> Self::Logger {
                 SerialWriter::new(&COM1)
+        }
+        fn init_bsp() {
+                gdt_tss::setup_bsp_gdt_and_tss();
         }
 }
 

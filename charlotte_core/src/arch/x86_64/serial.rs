@@ -1,6 +1,5 @@
-use spin::mutex::{TicketMutex, TicketMutexGuard};
+use spin::mutex::TicketMutex;
 use core::fmt::Write;
-use core::ops::Drop;
 use x86_64::structures::port::{PortRead, PortWrite};
 
 pub static COM1_IO_PORT: u16 = 0x3f8;
@@ -65,20 +64,9 @@ impl Write for SerialWriter {
                 let mut byte = Some(0u8);
                 while byte != None {
                         /*Handle newlines*/
-                        if byte == Some(b'\\') {
-                                byte = bytes.next();
-                                if byte == Some(b'n') {
-                                        port.write_serial(b'\\');
-                                        port.write_serial(b'r');
-                                        port.write_serial(b'\\');
-                                        port.write_serial(b'\n');
-                                } else {
-                                        port.write_serial(b'\\');
-                                        match byte {
-                                                Some(b) => port.write_serial(b),
-                                                None => break
-                                        }
-                                }
+                        if byte == Some(b'\n') {
+                                port.write_serial(b'\r');
+                                port.write_serial(b'\n');
                         } else {
                                 match byte {
                                         Some(b) => port.write_serial(b),

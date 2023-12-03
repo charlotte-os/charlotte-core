@@ -12,6 +12,7 @@ pub trait Arch {
 
         fn halt() -> !;
         fn get_logger() -> Self::Logger;
+        fn init_bsp();
 }
 
 #[cfg(target_arch="x86_64")]

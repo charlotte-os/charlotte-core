@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 lazy_static = {version = "*", features = ["spin_no_std"]}
 limine = "*"
-spin = {verison = "0.9.8", features = ["ticket_mutex"]}
-x86_64 = "*"
+spin = {version = "*", features = ["ticket_mutex"]}
+x86_64 = {version = "*", features = ["instructions"]}

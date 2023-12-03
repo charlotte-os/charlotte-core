@@ -10,7 +10,9 @@ use arch::{Arch, ArchApi};
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
         let mut logger = ArchApi::get_logger();
-        write!(&mut logger, "Testing Logger...");
+        write!(&mut logger, "Initializing BSP\n").unwrap();
+        ArchApi::init_bsp();
+        write!(&mut logger, "BSP Initialized\n").unwrap();
         ArchApi::halt()
 }
 
