@@ -22,14 +22,14 @@ CharlotteCore is written in Rust and Assembly language
 #### Building
 
 ```bash
-make build-debug    # debug
-make build-release  # release
+make build-x86_64-debug    # debug
+make build-x86_64-release  # release
 ```
 #### Testing
 
 ```bash
-make test-debug    # For testing a debug build in qemu
-make test-release  # For testing a release build in qemu
+make run-x86_64-debug    # For testing a debug build in qemu
+make run-x86_64-release  # For testing a release build in qemu
 ```
 ### Documentation
 
@@ -37,7 +37,7 @@ Detailed documentation will eventually be available on the project's wiki.
 
 ### Contributing
 
-Contributions are welcome and highly appreciated. Please create a new branch for your work and submit a merge request on GitHub. Make sure to rebase all your changes on master to maintain a linear commit history, and avoid merge commits.
+Contributions are welcome and highly appreciated. Please create a new branch for your work and submit a merge request on GitHub. Make sure to rebase all your changes on master to maintain a linear commit history avoiding merge commits.
 
 ### Licensing
 This project is licensed under the GNU General Public License Version 3.0 or later as published by the Free Software Foundation. See the LICENSE file for details.
