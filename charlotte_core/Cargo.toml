@@ -10,4 +10,3 @@ ignore-result = "*"
 lazy_static = {version = "*", features = ["spin_no_std"]}
 limine = "*"
 spin = {version = "*", features = ["ticket_mutex"]}
-x86_64 = {version = "*", features = ["instructions"]}
