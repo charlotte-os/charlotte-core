@@ -1,4 +1,5 @@
 .section .bss
+.align 8
 .lcomm bsp_regs, 64 * 16
 
 .section .text
@@ -47,6 +48,22 @@ isr_divide_by_zero:
 .global isr_double_fault
 isr_double_fault:
         /*Registers are not saved since this exception is an abort*/
-        pop rcx //pop the error code (should always be 0)
+        pop rdi //pop the error code (should always be 0)
         call ih_double_fault
-        hlt // halt the core since double faults are an abort
+        hlt //halt the core since double faults are an abort
+
+.global isr_general_protection_fault
+isr_general_protection_fault:
+        call save_regs
+        pop rdi // pop the error code
+        call ih_general_protection_fault
+        call restore_regs
+        iretq
+
+.global isr_page_fault
+isr_page_fault:
+        call save_regs
+        pop rdi // pop the error code
+        call ih_page_fault
+        call restore_regs
+        iretq

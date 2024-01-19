@@ -23,6 +23,10 @@ unsafe extern "C" fn main() -> ! {
         asm!("int 0");
         write!(&mut logger, "Divide by zero test passed\n").unwrap();
 
+        write!(&mut logger, "Testing GP fault\n").unwrap();
+        asm!("int 13");
+        write!(&mut logger, "GP fault test passed\n").unwrap();
+
         write!(&mut logger, "All tests in main passed. Halting.\n").unwrap();
         ArchApi::halt()
 }
