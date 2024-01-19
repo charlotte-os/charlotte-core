@@ -24,11 +24,18 @@ checksum = "327762f6e5a765692301e5bb513e0d9fef63be86bbc14528052b1cd3e6f03e07"
 name = "charlotte_core"
 version = "0.1.0"
 dependencies = [
+ "ignore-result",
  "lazy_static",
  "limine",
  "spin 0.9.8",
  "x86_64",
 ]
+
+[[package]]
+name = "ignore-result"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "665ff4dce8edd10d490641ccb78949832f1ddbff02c584fb1f85ab888fe0e50c"
 
 [[package]]
 name = "lazy_static"

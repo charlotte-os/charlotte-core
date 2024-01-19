@@ -1,33 +1,91 @@
-mod gdt_tss;
+mod exceptions;
+mod gdt;
+mod idt;
 mod serial;
 
+use core::{arch::global_asm, ptr::addr_of, borrow::{BorrowMut, Borrow}};
+use core::fmt::Write;
 
-use core::arch::asm;
+use spin::mutex::spin::SpinMutex;
+
+use ignore_result::Ignore;
+
+use gdt::{Gdt, tss::Tss};
 use lazy_static::lazy_static;
-use spin::mutex::TicketMutex;
 
-use self::serial::*;
+use serial::{SerialPort, ComPort};
+
+
+
+use idt::*;
+
+pub struct Api;
+
+global_asm!(include_str!("x64.asm"));
+
+extern "C" {
+        fn asm_halt() -> !;
+        fn asm_inb(port: u16) -> u8;
+        fn asm_outb(port: u16, val: u8);
+}
+
+// safe wrapper for halt since halting an LP is not actually unsafe
+fn halt() -> ! {
+        unsafe { asm_halt() }
+}
 
 lazy_static! {
-        static ref COM1: TicketMutex<SerialPort> = TicketMutex::from(SerialPort::new(serial::COM1_IO_PORT).unwrap());
+        static ref BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
+        static ref BSP_TSS: Tss = Tss::new(addr_of!(BSP_RING0_INT_STACK) as u64);
+        static ref BSP_GDT: Gdt = Gdt::new(&BSP_TSS);
+        static ref BSP_IDT: SpinMutex<Idt> = SpinMutex::from(Idt::new());
 }
 
-pub struct ArchApi;
+impl crate::arch::Api for Api {
+        type Logger = SerialPort;
 
-impl super::Arch for ArchApi {
-        type Logger = SerialWriter;
-
-        fn halt() -> ! {
-                unsafe {
-                        asm!("cli; hlt");
-                }
-                loop {}
-        }
         fn get_logger() -> Self::Logger {
-                SerialWriter::new(&COM1)
+                SerialPort::try_new(ComPort::COM1).unwrap()
+        }
+        fn halt() -> ! {
+                halt()
+        }
+        fn panic() -> ! {
+                halt()
+        }
+        fn inb(port: u16) -> u8 {
+                unsafe {
+                        asm_inb(port)
+                }
+        }
+        fn outb(port: u16, val: u8) {
+                unsafe {
+                        asm_outb(port, val)
+                }
         }
         fn init_bsp() {
-                gdt_tss::setup_bsp_gdt_and_tss();
+                /*This routine is run by the bootsrap processor to initilize itself priot to bringing up the kernel.*/
+
+                let mut logger = SerialPort::try_new(ComPort::COM1).unwrap();
+
+                writeln!(&mut logger, "Initializing the bootstrap processor...").ignore();
+
+                BSP_GDT.load();
+                writeln!(&mut logger, "Loaded GDT").ignore();
+                Gdt::reload_segment_regs();
+                writeln!(&mut logger, "Reloaded segment registers").ignore();
+                Gdt::load_tss();
+                writeln!(&mut logger, "Loaded TSS").ignore();
+
+                writeln!(&mut logger, "Registering exception ISRs in the IDT").ignore();
+                exceptions::load_exceptions(BSP_IDT.lock().borrow_mut());
+                writeln!(&mut logger, "Exception ISRs registered").ignore();
+
+                writeln!(&mut logger, "Attempting to load IDT").ignore();
+                BSP_IDT.lock().borrow().load();
+                writeln!(&mut logger, "Loaded IDT").ignore();
+        }
+        fn init_ap() {
+                /*This routine run by each application processor to initialize itself prior to  being handed off to the scheduler.*/
         }
 }
-
