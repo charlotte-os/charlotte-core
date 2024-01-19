@@ -1,16 +1,16 @@
-# Paragon - A Transitive Operating System Kernel
+# CharlotteCore - The Kernel of the Charlotte Project
 
-Paragon is an OS kernel designed to present system resources to application software through an interface that is as low level as possible while representing the least common denominator in terms of functionality for each device type. Each interface may also offer queryable extensions that depend on the specific underlying hardware. Operations on these virtual device interfaces are translated into equivalent operations on the underlying hardware through the kernel and its drivers. We refer to this design as the transitive kernel architecture.
+CharlotteCore is an OS kernel designed to present system resources to application software through an interface that is as low level as possible while representing the least common denominator in terms of functionality for each device type. Each interface may also offer queryable extensions that depend on the specific underlying hardware. Operations on these virtual device interfaces are translated into equivalent operations on the underlying hardware through the kernel and its drivers. We refer to this design as the transitive kernel architecture.
 
 Much like with with the exokernel architecture the transitive kernel architecture allows for significantly greater performance optimization and flexibility in userspace software design than is possible on traditional operating systems however unlike exokernels it reaps the benefits of a single set of well maintained drivers for actual hardware and is also more simple, stable, and secure.
 
 ### Status
 
-Paragon is in very early development. Run it at your own risk.
+CharlotteCore is in very early development. Run it at your own risk.
 
 ### Implementation Languages
 
-Paragon is written in Rust and Assembly language
+CharlotteCore is written in Rust and Assembly language
 
 ### Target Platforms
 
