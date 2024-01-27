@@ -1,5 +1,0 @@
-cargo:rustc-link-arg=-Tlinker/x86_64.ld
-cargo:rerun-if-changed=linker/x86_64.ld
-cargo:rustc-link-search=native=/home/mpatel/CharlotteCore/charlotte_core/target/debug/build/charlotte_core-3f4b268a5060c570/out
-cargo:rustc-link-lib=static=asm
-cargo:rerun-if-changed=asm
