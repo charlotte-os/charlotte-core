@@ -1,10 +1,13 @@
+mod cpu;
 mod exceptions;
 mod gdt;
 mod idt;
 mod serial;
 
-use core::{arch::global_asm, ptr::addr_of, borrow::{BorrowMut, Borrow}};
+use core::{ptr::addr_of, borrow::{BorrowMut, Borrow}};
 use core::fmt::Write;
+
+use cpu::*;
 
 use spin::mutex::spin::SpinMutex;
 
@@ -21,18 +24,6 @@ use idt::*;
 
 pub struct Api;
 
-global_asm!(include_str!("x64.asm"));
-
-extern "C" {
-        fn asm_halt() -> !;
-        fn asm_inb(port: u16) -> u8;
-        fn asm_outb(port: u16, val: u8);
-}
-
-// safe wrapper for halt since halting an LP is not actually unsafe
-fn halt() -> ! {
-        unsafe { asm_halt() }
-}
 
 lazy_static! {
         static ref BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
@@ -48,20 +39,16 @@ impl crate::arch::Api for Api {
                 SerialPort::try_new(ComPort::COM1).unwrap()
         }
         fn halt() -> ! {
-                halt()
+                unsafe {asm_halt()}
         }
         fn panic() -> ! {
-                halt()
+                unsafe {asm_halt()}
         }
         fn inb(port: u16) -> u8 {
-                unsafe {
-                        asm_inb(port)
-                }
+                unsafe {asm_inb(port)}
         }
         fn outb(port: u16, val: u8) {
-                unsafe {
-                        asm_outb(port, val)
-                }
+                unsafe {asm_outb(port, val)}
         }
         fn init_bsp() {
                 /*This routine is run by the bootsrap processor to initilize itself priot to bringing up the kernel.*/
