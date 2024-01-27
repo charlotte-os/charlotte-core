@@ -1,3 +1,5 @@
+pub mod cpuid;
+
 extern "C" {
     pub fn asm_halt() -> !;
     pub fn asm_inb(port: u16) -> u8;

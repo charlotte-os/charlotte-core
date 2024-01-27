@@ -9,6 +9,7 @@ use core::{
     borrow::{Borrow, BorrowMut},
     ptr::addr_of,
 };
+use core::str::{from_utf8, from_utf8_unchecked};
 
 use cpu::*;
 
@@ -85,9 +86,132 @@ impl crate::arch::Api for Api {
         writeln!(&mut logger, "Attempting to load IDT").ignore();
         BSP_IDT.lock().borrow().load();
         writeln!(&mut logger, "Loaded IDT").ignore();
+
+        let mut vendor_string = [0u8; 12];
+        unsafe { cpu::cpuid::asm_get_vendor_string(&mut vendor_string) }
+        writeln!(&mut logger, "CPU Vendor ID: {}", from_utf8(&vendor_string).unwrap()).unwrap();
     }
     // Initialize the application processors (APs)
     fn init_ap() {
         // This routine is run by each application processor to initialize itself prior to being handed off to the scheduler.
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
