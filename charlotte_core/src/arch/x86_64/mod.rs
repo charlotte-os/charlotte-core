@@ -2,6 +2,7 @@ mod cpu;
 mod exceptions;
 mod gdt;
 mod idt;
+mod memory;
 mod serial;
 
 use core::fmt::Write;
@@ -48,6 +49,12 @@ impl crate::arch::Api for Api {
     // Get a new logger instance
     fn get_logger() -> Self::Logger {
         SerialPort::try_new(ComPort::COM1).unwrap()
+    }
+    fn get_paddr_width() -> u8 {
+        *memory::PADDR_SIG_BITS
+    }
+    fn get_vaddr_width() -> u8 {
+        *memory::VADDR_SIG_BITS
     }
     // Halt the calling LP
     fn halt() -> ! {

@@ -27,7 +27,13 @@ unsafe extern "C" fn main() -> ! {
     // asm!("int 13");
     // write!(&mut logger, "GP fault test passed\n").unwrap();
 
-    write!(&mut logger, "All tests in main passed. Halting.\n").unwrap();
+    write!(&mut logger, "All tests in main passed.\n").unwrap();
+
+    writeln!(&mut logger, "Number of Significant Physical Address Bits Supported: {}", ArchApi::get_paddr_width())
+        .unwrap();
+    writeln!(&mut logger, "Number of Significant Virtual Address Bits Supported: {}", ArchApi::get_vaddr_width())
+        .unwrap();
+
     ArchApi::halt()
 }
 

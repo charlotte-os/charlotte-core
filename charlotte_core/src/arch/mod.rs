@@ -11,6 +11,8 @@ pub trait Api {
     type Logger: Write;
 
     fn get_logger() -> Self::Logger;
+    fn get_paddr_width() -> u8;
+    fn get_vaddr_width() -> u8;
     fn halt() -> !;
     fn panic() -> !;
     fn inb(port: u16) -> u8;
