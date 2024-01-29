@@ -19,7 +19,7 @@ charlotte_core-x86_64-debug.iso: build-x86_64-debug
 	rm -rf iso_root
 
 run-x86_64-debug: ovmf-x86_64 charlotte_core-x86_64-debug.iso
-	qemu-system-x86_64 -M q35 -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d
+	qemu-system-x86_64 -enable-kvm -M q35 -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d
 
 build-x86_64-release:
 	cd charlotte_core && cargo build --target x86_64-unknown-none --release
@@ -38,7 +38,7 @@ charlotte_core-x86_64-release.iso: build-x86_64-release
 	rm -rf iso_root
 
 run-x86_64-release: ovmf-x86_64 charlotte_core-x86_64-release.iso
-	qemu-system-x86_64 -M q35 -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-release.iso -boot d
+	qemu-system-x86_64 -enable-kvm -M q35 -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-release.iso -boot d
 
 
 ovmf-aarch64:
