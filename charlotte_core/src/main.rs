@@ -10,83 +10,67 @@ use static_alloc::Bump;
 use arch::{Api, ArchApi};
 
 struct FrameAllocator {
-    bitmap: [u8; 256], // Adjust this size if necessary
-    reference_count: [u8; 256],
+    // Using u8 for each frame, where the higher 4 bits represent reference count
+    // and the lower 4 bits represent allocation status
+    frames: [u8; 256],
 }
 
 impl FrameAllocator {
     fn new() -> Self {
         Self {
-            bitmap: [0; 256],
-            reference_count: [0; 256],
+            frames: [0; 256],
         }
     }
 
     fn allocate_frame(&mut self) -> Option<usize> {
-        for (byte_index, byte) in self.bitmap.iter_mut().enumerate() {
-            if *byte != 0xFF {
-                for bit_index in 0..8 {
-                    let mask = 1 << bit_index;
+        for (frame_index, frame) in self.frames.iter_mut().enumerate() {
+            let allocation_status = frame & 0x0F;
 
-                    if (*byte && mask) == 0 {
-                        *byte |= mask;
-                        self.reference_count[byte_index * 8 + bit_index] = 1; // Initialize reference count
-                        return Some(byte_index * 8 + bit_index);
-                    }
-                }
+            if allocation_status == 0 {
+                *frame = 0x11; // Mark frame as allocated with reference count 1
+                return Some(frame_index);
             }
         }
         None
     }
 
     fn deallocate_frame(&mut self, frame: usize) {
-        let byte_index = frame / 8;
-        let bit_index = frame % 8;
-        let mask = !(1 << bit_index);
+        if frame < self.frames.len() {
+            let frame_byte = &mut self.frames[frame];
+            let allocation_status = *frame_byte & 0x0F;
 
-        if self.reference_count[frame] > 0 {
-            self.reference_count[frame] -= 1;
-
-            // If reference count becomes zero, mark the frame as free
-            if self.reference_count[frame] == 0 {
-                self.bitmap[byte_index] &= mask;
+            if allocation_status != 0 {
+                *frame_byte &= 0xF0; // Clear the lower 4 bits
+                *frame_byte += 0x10; // Increase reference count by 1
             }
         }
     }
 
-    // This is... not an ideal amount of conditions and loops. I will probably rewrite a bit of this and shorten it up soon. Keeping it for the PR.
     fn allocate_contiguous_frames(&mut self, count: usize) -> Option<usize> {
         let mut consecutive_free_frames = 0;
         let mut first_frame = None;
 
-        for (byte_index, byte) in self.bitmap.iter_mut().enumerate() {
-            for bit_index in 0..8 {
-                let mask = 1 << bit_index;
+        for (frame_index, frame) in self.frames.iter_mut().enumerate() {
+            let allocation_status = frame & 0x0F;
 
-                if (*byte & mask) == 0 {
-                    // Frame is free
-                    consecutive_free_frames += 1;
+            if allocation_status == 0 {
+                consecutive_free_frames += 1;
 
-                    if consecutive_free_frames == 1 {
-                        // Mark the start of a potential contiguous block
-                        first_frame = Some(byte_index * 8 + bit_index);
-                    }
-
-                    if consecutive_free_frames == count {
-                        // Found a contiguous block
-                        for i in 0..count {
-                            if let Some(frame) = first_frame.map(|f| f + i) {
-                                *self.reference_count.get_mut(frame).unwrap() = 1; // Initialize reference count
-                                *self.bitmap.get_mut(frame / 8).unwrap() |= 1 << (frame % 8); // Mark frame as allocated
-                            }
-                        }
-
-                        return first_frame;
-                    }
-                } else {
-                    // Frame is not free, reset consecutive count
-                    consecutive_free_frames = 0;
+                if consecutive_free_frames == 1 {
+                    first_frame = Some(frame_index);
                 }
+
+                if consecutive_free_frames == count {
+                    for i in 0..count {
+                        let current_frame = first_frame.unwrap() + i;
+                        self.frames[current_frame] = 0x11; // Mark frame as allocated with reference count 1
+                    }
+
+                    return first_frame;
+                }
+            } else {
+                // Frame is not free, reset consecutive count
+                consecutive_free_frames = 0;
             }
         }
 
@@ -96,8 +80,15 @@ impl FrameAllocator {
 
     fn deallocate_contiguous_frames(&mut self, start_frame: usize, count: usize) {
         for i in 0..count {
-            if let Some(frame) = start_frame.checked_add(i) {
-                self.deallocate_frame(frame);
+            let current_frame = start_frame + i;
+            if current_frame < self.frames.len() {
+                let frame_byte = &mut self.frames[current_frame];
+                let allocation_status = *frame_byte & 0x0F;
+
+                if allocation_status != 0 {
+                    *frame_byte &= 0xF0; // Clear the lower 4 bits
+                    *frame_byte += 0x10; // Increase reference count by 1
+                }
             }
         }
     }
