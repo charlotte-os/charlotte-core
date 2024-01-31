@@ -155,6 +155,8 @@ unsafe extern "C" fn main() -> ! {
     // asm!("int 13");
     // write!(&mut logger, "GP fault test passed\n").unwrap();
 
+    write!(&mut logger, "All tests in main passed.\n").unwrap();
+
     // Example usage of allocating and deallocating contiguous frames
     if let Some(start_frame) = allocate_frames(3) {
         write!(&mut logger, "Allocated contiguous frames starting at address: 0x{:X}\n", start_frame).unwrap();
