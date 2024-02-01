@@ -27,6 +27,16 @@ unsafe extern "C" fn main() -> ! {
         // Get the first framebuffer's information
         let framebuffer = &framebuffer_response.framebuffers()[0];
 
+        // Quick and dirty code to test drawing the framebuffer
+        for i in 0..framebuffer.width as usize { 
+            for j in 0..framebuffer.height as usize {
+                let pixel_offset = j * (framebuffer.pitch as usize) + i * (framebuffer.bpp as usize / 8) ;
+                unsafe {
+                    *(framebuffer.address.as_ptr().unwrap().add(pixel_offset) as *mut u32) = (i as u32) << 24 | (j as u32) << 16 | 0xFF;
+                }
+            }
+        }
+
         write!(&mut logger, "Framebuffer located at: {:p}\n", framebuffer.address.as_ptr().unwrap());
     }
 
