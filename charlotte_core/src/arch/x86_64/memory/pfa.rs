@@ -6,23 +6,24 @@
 //! It is capable of allocating and deallocating contiguous blocks of frames, which is useful for things like
 //! DMA and certain optimization techniques.
 
-use spin::Mutex;
+use lazy_static::lazy_static;
 
 use crate::access_control::Capability;
 use crate::limine;
 
-///This constant represents the base virtual address of the direct mapping of physical memory.
-/// It should have the desired physical address added to it and then be cast to a pointer
-/// to access the desired physical address.
-static HHDM_BASE: Mutex<u64> = Mutex::from(limine::HHDM_REQUEST.get_response().unwrap().offset());
 
+lazy_static! {
+    ///This value represents the base virtual address of the direct mapping of physical memory.
+    /// It should have the desired physical address added to it and then be cast to a pointer
+    /// to access the desired physical address.
+    static ref HHDM_BASE: u64 = limine::HHDM_REQUEST.get_response().unwrap().offset();
+}
 ///This function can be used to obtain a reference to an object of type T that is located at the
 /// specified physical address. It is unsafe because it dereferences a raw pointer and assumes
 /// that the specified physical address is valid and that an object of type T is located at that
 /// address.
 pub unsafe fn ref_from_paddr<T>(paddr: u64) -> &'static T {
-    let hhdm_base = HHDM_BASE.lock();
-    let ptr = (paddr + *hhdm_base) as *const T;
+    let ptr = (paddr + *HHDM_BASE) as *const T;
     &*ptr
 }
 ///This function can be used to obtain a mutable reference to an object of type T that is located at the
@@ -30,8 +31,7 @@ pub unsafe fn ref_from_paddr<T>(paddr: u64) -> &'static T {
 /// that the specified physical address is valid and that an object of type T is located at that
 /// address.
 pub unsafe fn mut_ref_from_paddr<T>(paddr: u64) -> &'static mut T {
-    let hhdm_base = HHDM_BASE.lock();
-    let ptr = (paddr + *hhdm_base) as *mut T;
+    let ptr = (paddr + *HHDM_BASE) as *mut T;
     &mut *ptr
 }
 
