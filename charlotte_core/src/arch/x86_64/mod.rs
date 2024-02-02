@@ -97,129 +97,15 @@ impl crate::arch::Api for Api {
 
         let mut vendor_string = [0u8; 12];
         unsafe { cpu::cpuid::asm_get_vendor_string(&mut vendor_string) }
-        writeln!(&mut logger, "CPU Vendor ID: {}", str::from_utf8(&vendor_string).unwrap()).unwrap();
+        writeln!(
+            &mut logger,
+            "CPU Vendor ID: {}",
+            str::from_utf8(&vendor_string).unwrap()
+        )
+        .unwrap();
     }
     // Initialize the application processors (APs)
     fn init_ap() {
         // This routine is run by each application processor to initialize itself prior to being handed off to the scheduler.
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
