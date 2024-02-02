@@ -1,7 +1,9 @@
 #![no_std]
 #![no_main]
 
+mod access_control;
 mod arch;
+mod limine;
 
 use core::arch::asm;
 use core::fmt::Write;
