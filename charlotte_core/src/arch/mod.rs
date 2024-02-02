@@ -1,3 +1,8 @@
+//! # Arch
+//! This module provides a common interface for interacting with code that is specific to each supported
+//! instruction set architecture (ISA). It provides a set of traits and types that can be used to interact
+//! with ISA specific code in a consistent and platform independent manner.
+
 #[cfg(target_arch = "aarch64")]
 pub mod aarch64;
 #[cfg(target_arch = "riscv64")]
