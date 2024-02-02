@@ -12,5 +12,5 @@ walkdir = "*"
 [dependencies]
 ignore-result = "*"
 lazy_static = {version = "*", features = ["spin_no_std"]}
-limine = "*"
+limine = "0.2.0"
 spin = {version = "*", features = ["ticket_mutex"]}
