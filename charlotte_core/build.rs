@@ -1,7 +1,7 @@
 use std::env;
+use std::path::PathBuf;
 use std::process::Command;
 use walkdir::WalkDir;
-use std::path::PathBuf;
 
 fn main() {
     let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
@@ -37,9 +37,16 @@ fn main() {
         let entry = entry.unwrap();
         if entry.path().extension().map_or(false, |ext| ext == "asm") {
             let path = entry.path();
-            let object = PathBuf::from(&out_dir).join(path.file_stem().unwrap()).with_extension("o");
+            let object = PathBuf::from(&out_dir)
+                .join(path.file_stem().unwrap())
+                .with_extension("o");
             Command::new("nasm")
-                .args(&["-felf64", "-o", object.to_str().unwrap(), path.to_str().unwrap()])
+                .args(&[
+                    "-felf64",
+                    "-o",
+                    object.to_str().unwrap(),
+                    path.to_str().unwrap(),
+                ])
                 .status()
                 .expect("Failed to execute NASM");
             objects.push(object);
