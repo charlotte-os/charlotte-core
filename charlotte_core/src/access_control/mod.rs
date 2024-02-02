@@ -1,4 +1,4 @@
-//! # Access Control
+//! # Access Control and Capabilities
 //! This module contains the access control system, which is responsible for managing access to
 //! various resources in the system. It uses capabilities to control access to resources and provides
 //! an interface for creating, deleting, and transferring capabilities. The access control system is
@@ -8,7 +8,7 @@
 pub type CapabilityKey = u64;
 pub type ContextId = i64;
 
-pub trait Capability {
+pub trait Capability: Drop {
     fn get_key(&self) -> CapabilityKey;
     fn get_context_id(&self) -> ContextId;
 }
