@@ -3,7 +3,7 @@
 
 mod access_control;
 mod arch;
-mod limine;
+mod bootinfo;
 
 use core::arch::asm;
 use core::fmt::Write;
