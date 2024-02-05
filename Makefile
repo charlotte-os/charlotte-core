@@ -1,3 +1,5 @@
+#x86_64
+
 ovmf-x86_64:
 	mkdir -p ovmf-x86_64
 	cd ovmf-x86_64 && curl -o OVMF.fd https://retrage.github.io/edk2-nightly/bin/RELEASEX64_OVMF.fd
@@ -21,6 +23,9 @@ charlotte_core-x86_64-debug.iso: build-x86_64-debug
 run-x86_64-debug: ovmf-x86_64 charlotte_core-x86_64-debug.iso
 	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 12G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d
 
+run-x86_64-log: ovmf-x86_64 charlotte_core-x86_64-debug.iso
+	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 12G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d serial file:log_x86_64.txt
+
 build-x86_64-release:
 	cd charlotte_core && cargo build --target x86_64-unknown-none --release
 charlotte_core-x86_64-release.iso: build-x86_64-release
@@ -40,6 +45,7 @@ charlotte_core-x86_64-release.iso: build-x86_64-release
 run-x86_64-release: ovmf-x86_64 charlotte_core-x86_64-release.iso
 	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 12G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-release.iso -boot d
 
+# aarch64
 
 ovmf-aarch64:
 	mkdir -p ovmf-aarch64
@@ -61,6 +67,10 @@ charlotte_core-aarch64-debug.iso: build-aarch64-debug
 	rm -rf iso_root
 run-aarch64-debug: ovmf-aarch64 charlotte_core-aarch64-debug.iso
 	qemu-system-aarch64 -M virt -cpu cortex-a72 -device ramfb -device qemu-xhci -device usb-kbd -m 2G -bios ovmf-aarch64/OVMF.fd -cdrom charlotte_core-aarch64-debug.iso -boot d
+run-aarch64-log: ovmf-aarch64 charlotte_core-aarch64-debug.iso
+	qemu-system-aarch64 -M virt -cpu cortex-a72 -device ramfb -device qemu-xhci -device usb-kbd -m 2G -bios ovmf-aarch64/OVMF.fd -cdrom charlotte_core-aarch64-debug.iso -boot d \
+		-serial file:log_aarch64.txt
+
 
 build-aarch64-release:
 	cd charlotte_core && cargo build --target aarch64-unknown-none --release
@@ -80,6 +90,7 @@ charlotte_core-aarch64-release.iso: build-aarch64-release
 run-aarch64-release: ovmf-aarch64 charlotte_core-aarch64-release.iso
 	qemu-system-aarch64 -M virt -cpu cortex-a72 -device ramfb -device qemu-xhci -device usb-kbd -m 2G -bios ovmf-aarch64/OVMF.fd -cdrom charlotte_core-aarch64-release.iso -boot d
 
+# riscv64
 
 ovmf-riscv64:
 	mkdir -p ovmf-riscv64
@@ -103,6 +114,11 @@ run-riscv64-debug: ovmf-riscv64 charlotte_core-riscv64-debug.iso
 	qemu-system-riscv64 -M virt -cpu rv64 \
 		-device ramfb -device qemu-xhci -device usb-kbd -m 2G -drive if=pflash,unit=0,format=raw,file=ovmf-riscv64/OVMF.fd \
 		-device virtio-scsi-pci,id=scsi -device scsi-cd,drive=cd0 -drive id=cd0,format=raw,file=charlotte_core-riscv64-debug.iso
+run-riscv64-debug: ovmf-riscv64 charlotte_core-riscv64-debug.iso
+	qemu-system-riscv64 -M virt -cpu rv64 \
+		-device ramfb -device qemu-xhci -device usb-kbd -m 2G -drive if=pflash,unit=0,format=raw,file=ovmf-riscv64/OVMF.fd \
+		-device virtio-scsi-pci,id=scsi -device scsi-cd,drive=cd0 -drive id=cd0,format=raw,file=charlotte_core-riscv64-debug.iso \
+		-serial file:log_riscv64.txt
 
 build-riscv64-release:
 	cd charlotte_core && cargo build --target riscv64gc-unknown-none-elf
@@ -124,6 +140,8 @@ run-riscv64-release: ovmf-riscv64 charlotte_core-riscv64-release.iso
 		-device ramfb -device qemu-xhci -device usb-kbd -m 2G -drive if=pflash,unit=0,format=raw,file=ovmf-riscv64/OVMF.fd \
 		-device virtio-scsi-pci,id=scsi -device scsi-cd,drive=cd0 -drive id=cd0,format=raw,file=charlotte_core-riscv64-release.iso
 
+# clean commands
+
 clean:
 	cd charlotte_core && cargo clean
 	rm -rf ovmf-aarch64
@@ -135,3 +153,9 @@ clean:
 	rm -f charlotte_core-aarch64-release.iso
 	rm -f charlotte_core-riscv64-release.iso
 	rm -f charlotte_core-x86_64-release.iso
+	rm -f log_aarch64.txt
+	rm -f log_riscv64.txt
+	rm -f log_x86_64.txt
+
+distclean: clean
+	rm -rf limine

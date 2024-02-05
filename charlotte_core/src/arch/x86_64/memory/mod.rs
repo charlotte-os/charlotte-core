@@ -3,7 +3,7 @@
 //! memory in the kernel's address space, allocating and deallocating physical frames, and managing
 //! all virtual address spaces.
 
-mod pfa;
+mod pmm;
 mod vmm;
 
 use crate::bootinfo;
@@ -32,19 +32,3 @@ lazy_static! {
     pub static ref HHDM_BASE: u64 = bootinfo::HHDM_REQUEST.get_response().unwrap().offset();
 }
 
-///This function can be used to obtain a reference to an object of type T that is located at the
-/// specified physical address. It is unsafe because it dereferences a raw pointer and assumes
-/// that the specified physical address is valid and that an object of type T is located at that
-/// address.
-pub unsafe fn ref_from_paddr<T>(paddr: u64) -> &'static T {
-    let ptr = (paddr + *HHDM_BASE) as *const T;
-    &*ptr
-}
-///This function can be used to obtain a mutable reference to an object of type T that is located at the
-/// specified physical address. It is unsafe because it dereferences a raw pointer and assumes
-/// that the specified physical address is valid and that an object of type T is located at that
-/// address.
-pub unsafe fn ref_mut_from_paddr<T>(paddr: u64) -> &'static mut T {
-    let ptr = (paddr + *HHDM_BASE) as *mut T;
-    &mut *ptr
-}
