@@ -1,4 +1,5 @@
-mod page_frame_allocator;
+mod pfa;
+mod vmm;
 
 use core::arch::x86_64::__cpuid_count;
 use lazy_static::lazy_static;

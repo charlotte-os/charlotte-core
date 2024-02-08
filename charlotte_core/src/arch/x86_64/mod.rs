@@ -1,3 +1,6 @@
+//! # x86_64 Architecture Module
+//! This module implements the Arch interface for the x86_64 instruction set architecture (ISA).
+
 mod cpu;
 mod exceptions;
 mod gdt;
@@ -26,7 +29,7 @@ use serial::{ComPort, SerialPort};
 
 use idt::*;
 
-// Define the Api struct. This struct will be used to...
+/// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api;
 
 // Initialize global data structures for the bootstrap processor (BSP)
@@ -42,41 +45,42 @@ lazy_static! {
 
 }
 
-// Provide the implementation of the Api trait for the Api struct
+/// Provide the implementation of the Api trait for the Api struct
 impl crate::arch::Api for Api {
-    // Define the logger type
+    /// Define the logger type
     type Logger = SerialPort;
 
-    // Get a new logger instance
+    /// Get a new logger instance
     fn get_logger() -> Self::Logger {
         SerialPort::try_new(ComPort::COM1).unwrap()
     }
+    /// Get the number of significant physical address bits supported by the current CPU
     fn get_paddr_width() -> u8 {
         *memory::PADDR_SIG_BITS
     }
+    /// Get the number of significant virtual address bits supported by the current CPU
     fn get_vaddr_width() -> u8 {
         *memory::VADDR_SIG_BITS
     }
-    // Halt the calling LP
+    /// Halt the calling LP
     fn halt() -> ! {
         unsafe { asm_halt() }
     }
-    // Kernel Panic
+    /// Kernel Panic
     fn panic() -> ! {
         unsafe { asm_halt() }
     }
-    // Read a byte from the specified port
+    /// Read a byte from the specified port
     fn inb(port: u16) -> u8 {
         unsafe { asm_inb(port) }
     }
-    // Write a byte to the specified port
+    /// Write a byte to the specified port
     fn outb(port: u16, val: u8) {
         unsafe { asm_outb(port, val) }
     }
-
-    // Initialize the bootstrap processor (BSP)
+    /// Initialize the bootstrap processor (BSP)
     fn init_bsp() {
-        // This routine is run by the bootsrap processor to initilize itself priot to bringing up the kernel.
+        //! This routine is run by the bootsrap processor to initilize itself priot to bringing up the kernel.
 
         let mut logger = SerialPort::try_new(ComPort::COM1).unwrap();
 
@@ -99,129 +103,16 @@ impl crate::arch::Api for Api {
 
         let mut vendor_string = [0u8; 12];
         unsafe { cpu::cpuid::asm_get_vendor_string(&mut vendor_string) }
-        writeln!(&mut logger, "CPU Vendor ID: {}", str::from_utf8(&vendor_string).unwrap()).unwrap();
+        writeln!(
+            &mut logger,
+            "CPU Vendor ID: {}",
+            str::from_utf8(&vendor_string).unwrap()
+        )
+        .unwrap();
     }
-    // Initialize the application processors (APs)
+    ///
+    ///  Initialize the application processors (APs)
     fn init_ap() {
-        // This routine is run by each application processor to initialize itself prior to being handed off to the scheduler.
+        //! This routine is run by each application processor to initialize itself prior to being handed off to the scheduler.
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

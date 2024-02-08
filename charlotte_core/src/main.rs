@@ -1,9 +1,10 @@
 #![no_std]
 #![no_main]
 
+mod access_control;
 mod arch;
 mod framebuffer;
-
+mod bootinfo;
 
 use framebuffer::*;
 use core::arch::asm;
@@ -59,10 +60,18 @@ unsafe extern "C" fn main() -> ! {
 
     write!(&mut logger, "All tests in main passed.\n").unwrap();
 
-    writeln!(&mut logger, "Number of Significant Physical Address Bits Supported: {}", ArchApi::get_paddr_width())
-        .unwrap();
-    writeln!(&mut logger, "Number of Significant Virtual Address Bits Supported: {}", ArchApi::get_vaddr_width())
-        .unwrap();
+    writeln!(
+        &mut logger,
+        "Number of Significant Physical Address Bits Supported: {}",
+        ArchApi::get_paddr_width()
+    )
+    .unwrap();
+    writeln!(
+        &mut logger,
+        "Number of Significant Virtual Address Bits Supported: {}",
+        ArchApi::get_vaddr_width()
+    )
+    .unwrap();
 
     ArchApi::halt()
 }
