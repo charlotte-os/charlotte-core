@@ -6,8 +6,6 @@
 mod pmm;
 mod vmm;
 
-use crate::bootinfo;
-
 use core::arch::x86_64::__cpuid_count;
 use lazy_static::lazy_static;
 
@@ -26,9 +24,5 @@ lazy_static! {
         let vsig_bits = (cpuid.eax >> 8) & 0xFF;
         vsig_bits as u8
     };
-    ///This value represents the base virtual address of the direct mapping of physical memory into
-    /// kernelspace. It should have the desired physical address added to it and then be cast to a 
-    /// pointer to access the desired physical address.
-    pub static ref HHDM_BASE: u64 = bootinfo::HHDM_REQUEST.get_response().unwrap().offset();
 }
 
