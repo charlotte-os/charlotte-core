@@ -39,6 +39,7 @@ lazy_static! {
     static ref BSP_GDT: Gdt = Gdt::new(&BSP_TSS);
     // Interrupt descriptor table (IDT)
     static ref BSP_IDT: SpinMutex<Idt> = SpinMutex::from(Idt::new());
+
 }
 
 // Provide the implementation of the Api trait for the Api struct
@@ -72,6 +73,7 @@ impl crate::arch::Api for Api {
     fn outb(port: u16, val: u8) {
         unsafe { asm_outb(port, val) }
     }
+
     // Initialize the bootstrap processor (BSP)
     fn init_bsp() {
         // This routine is run by the bootsrap processor to initilize itself priot to bringing up the kernel.

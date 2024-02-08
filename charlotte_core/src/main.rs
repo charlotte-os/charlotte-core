@@ -2,43 +2,44 @@
 #![no_main]
 
 mod arch;
+mod framebuffer;
 
+
+use framebuffer::*;
 use core::arch::asm;
 use core::fmt::Write;
 
 use arch::{Api, ArchApi};
 
+use crate::framebuffer::framebuffer::*;
+
+
 // Set the limine revision to 1
 static BASE_REVISION: limine::BaseRevision = limine::BaseRevision::new(1);
 
-// Request a framebuffer from Limine
-static FRAMEBUFFER_REQUEST: limine::FramebufferRequest = limine::FramebufferRequest::new(0);
+
 
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
     let mut logger = ArchApi::get_logger();
+    
 
     // Check if we have a framebuffer, and halt if we don't
-    if let Some(framebuffer_response) = FRAMEBUFFER_REQUEST.get_response().get() {
-        if framebuffer_response.framebuffer_count < 1 {
+    match init_framebuffer() {
+        Some(framebuffer) => {
+            framebuffer.clear_screen(0x00FF00FF); // Example usage: clear the screen with green color
+            framebuffer.draw_text(100, 100, "ABCDEFGHIJKLMNOPQRS \n \nTUVWXYZ", 0xFFFFFFFF);
+            framebuffer.draw_text(100, 150, "1234567890", 0xFFFFFFFF); // Example usage: draw "ABCD" in white
+            framebuffer.draw_rect(100, 200, 600, 100, 0xFFFFFFFF);
+            framebuffer.draw_triangle(Point { x: 250, y: 600 }, Point { x: 300, y: 500 }, Point { x: 350, y: 600 }, 0xFFFFFFFF);
+            write!(&mut logger, "Framebuffer initialized and drawings made.\n").unwrap();
+        },
+        None => {
+            write!(&mut logger, "Failed to initialize framebuffer.\n").unwrap();
             ArchApi::halt();
         }
-
-        // Get the first framebuffer's information
-        let framebuffer = &framebuffer_response.framebuffers()[0];
-
-        // Quick and dirty code to test drawing the framebuffer
-        for i in 0..framebuffer.width as usize { 
-            for j in 0..framebuffer.height as usize {
-                let pixel_offset = j * (framebuffer.pitch as usize) + i * (framebuffer.bpp as usize / 8) ;
-                unsafe {
-                    *(framebuffer.address.as_ptr().unwrap().add(pixel_offset) as *mut u32) = (i as u32) << 24 | (j as u32) << 16 | 0xFF;
-                }
-            }
-        }
-
-        write!(&mut logger, "Framebuffer located at: {:p}\n", framebuffer.address.as_ptr().unwrap());
-    }
+    };
+    
 
     write!(&mut logger, "Initializing BSP\n").unwrap();
     ArchApi::init_bsp();
