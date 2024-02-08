@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+#![feature(slice_internals)]
+
 mod access_control;
 mod arch;
 mod bootinfo;

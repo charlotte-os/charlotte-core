@@ -19,7 +19,7 @@ pub enum CapabilityType {
 /// There will be a global capability table for each capability type that maps capability IDs to the
 /// capability struct itself. This table will be used to look up capabilities by their IDs.
 
-type CapabilityId = u64;
+pub type CapabilityId = u64;
 
 /// A capability represents a resource and the operations that can be performed on that resource. All 
 /// capabilities must implement the Drop trait so that the resource can be cleaned up when the capability
