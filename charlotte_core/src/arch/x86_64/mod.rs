@@ -42,6 +42,7 @@ lazy_static! {
     static ref BSP_GDT: Gdt = Gdt::new(&BSP_TSS);
     // Interrupt descriptor table (IDT)
     static ref BSP_IDT: SpinMutex<Idt> = SpinMutex::from(Idt::new());
+
 }
 
 /// Provide the implementation of the Api trait for the Api struct
