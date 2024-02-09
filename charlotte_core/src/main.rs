@@ -15,11 +15,6 @@ use arch::{Api, ArchApi};
 
 use framebuffer::framebuffer::{init_framebuffer, Point};
 
-// Set the limine revision to 1
-static BASE_REVISION: limine::BaseRevision = limine::BaseRevision::new(1);
-
-
-
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
     let mut logger = ArchApi::get_logger();

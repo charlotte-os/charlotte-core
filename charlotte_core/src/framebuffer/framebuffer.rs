@@ -1,8 +1,9 @@
 use crate::framebuffer::chars::{get_char_bitmap, FONT_HEIGHT, FONT_WIDTH};
+use crate::bootinfo::FRAMEBUFFER_REQUEST;
 // External crate for bootloader-specific functions and types.
 extern crate limine;
-use limine::request::{FramebufferRequest};
 use limine::framebuffer::Framebuffer;
+
 /// A struct representing the framebuffer information,
 /// including its memory address, dimensions, pixel format, etc.
 pub struct FrameBufferInfo {
@@ -28,11 +29,12 @@ impl FrameBufferInfo {
     /// * `framebuffer` - A reference to a limine `Framebuffer` struct.
     pub fn new(framebuffer: &Framebuffer) -> Self {
         Self {
-            address: framebuffer.address.as_ptr().unwrap() as *mut u32,
-            width: framebuffer.width as usize,
-            height: framebuffer.height as usize,
-            pitch: framebuffer.pitch as usize,
-            bpp: framebuffer.bpp as usize,
+            address: framebuffer.addr() as *mut u32,
+            width: framebuffer.width() as usize,
+            height: framebuffer.height() as usize,
+            pitch: framebuffer.pitch() as usize,
+            bpp: framebuffer.bpp() as usize,
+
         }
     }
 
@@ -231,19 +233,14 @@ impl FrameBufferInfo {
     }
 }
 
-
-/// A static request for framebuffer initialization via the limine protocol.
-pub static FRAMEBUFFER_REQUEST: FramebufferRequest = limine:FramebufferRequest::new(0);
-
-
 /// Initializes the framebuffer and returns a `FrameBufferInfo` instance if successful.
 pub fn init_framebuffer() -> Option<FrameBufferInfo> {
-    if let Some(framebuffer_response) = FRAMEBUFFER_REQUEST.get_response().get() {
-        if framebuffer_response.framebuffer_count < 1 {
+    if let Some(framebuffer_response) = FRAMEBUFFER_REQUEST.get_response() {
+        if framebuffer_response.framebuffers().count() < 1 {
             return None;
         }
 
-        let framebuffer = &framebuffer_response.framebuffers()[0];
+        let framebuffer = &framebuffer_response.framebuffers().next().unwrap();
         Some(FrameBufferInfo::new(framebuffer))
     } else {
         None
