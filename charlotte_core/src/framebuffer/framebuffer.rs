@@ -1,7 +1,8 @@
 use crate::framebuffer::chars::{get_char_bitmap, FONT_HEIGHT, FONT_WIDTH};
 // External crate for bootloader-specific functions and types.
 extern crate limine;
-
+use limine::request::{FramebufferRequest};
+use limine::framebuffer::Framebuffer;
 /// A struct representing the framebuffer information,
 /// including its memory address, dimensions, pixel format, etc.
 pub struct FrameBufferInfo {
@@ -25,7 +26,7 @@ impl FrameBufferInfo {
     /// # Arguments
     ///
     /// * `framebuffer` - A reference to a limine `Framebuffer` struct.
-    pub fn new(framebuffer: &limine::Framebuffer) -> Self {
+    pub fn new(framebuffer: &Framebuffer) -> Self {
         Self {
             address: framebuffer.address.as_ptr().unwrap() as *mut u32,
             width: framebuffer.width as usize,
@@ -232,7 +233,7 @@ impl FrameBufferInfo {
 
 
 /// A static request for framebuffer initialization via the limine protocol.
-pub static FRAMEBUFFER_REQUEST: limine::FramebufferRequest = limine::FramebufferRequest::new(0);
+pub static FRAMEBUFFER_REQUEST: FramebufferRequest = limine:FramebufferRequest::new(0);
 
 
 /// Initializes the framebuffer and returns a `FrameBufferInfo` instance if successful.
