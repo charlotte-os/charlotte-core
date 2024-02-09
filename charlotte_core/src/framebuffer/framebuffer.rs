@@ -1,13 +1,21 @@
+use core::sync::atomic::{AtomicPtr, Ordering};
+
 use crate::framebuffer::chars::{get_char_bitmap, FONT_HEIGHT, FONT_WIDTH};
 use crate::bootinfo::FRAMEBUFFER_REQUEST;
 // External crate for bootloader-specific functions and types.
 extern crate limine;
+use lazy_static::lazy_static;
 use limine::framebuffer::Framebuffer;
+use spin::mutex::TicketMutex;
+
+lazy_static! {
+    pub static ref FRAMEBUFFER: TicketMutex<FrameBufferInfo> = TicketMutex::new(init_framebuffer().unwrap());
+}
 
 /// A struct representing the framebuffer information,
 /// including its memory address, dimensions, pixel format, etc.
 pub struct FrameBufferInfo {
-    address: *mut u32,
+    address: AtomicPtr<u32>,
     width: usize,
     height: usize,
     pitch: usize,
@@ -29,7 +37,7 @@ impl FrameBufferInfo {
     /// * `framebuffer` - A reference to a limine `Framebuffer` struct.
     pub fn new(framebuffer: &Framebuffer) -> Self {
         Self {
-            address: framebuffer.addr() as *mut u32,
+            address: AtomicPtr::new(framebuffer.addr() as *mut u32),
             width: framebuffer.width() as usize,
             height: framebuffer.height() as usize,
             pitch: framebuffer.pitch() as usize,
@@ -88,7 +96,7 @@ impl FrameBufferInfo {
             for x in 0..self.width {
                 let pixel_offset = y * self.pitch / (self.bpp / 8) + x;
                 unsafe {
-                    *self.address.add(pixel_offset) = color;
+                    *self.address.load(Ordering::Relaxed).add(pixel_offset) = color;
                 }
             }
         }
@@ -106,7 +114,7 @@ impl FrameBufferInfo {
         if x < self.width && y < self.height {
             let pixel_offset = y * self.pitch / (self.bpp / 8) + x;
             unsafe {
-                *self.address.add(pixel_offset) = color;
+                *self.address.load(Ordering::Relaxed).add(pixel_offset) = color;
             }
         }
     }
@@ -237,12 +245,12 @@ impl FrameBufferInfo {
 pub fn init_framebuffer() -> Option<FrameBufferInfo> {
     if let Some(framebuffer_response) = FRAMEBUFFER_REQUEST.get_response() {
         if framebuffer_response.framebuffers().count() < 1 {
-            return None;
+            panic!("No framebuffer returned from bootloader!");
         }
 
         let framebuffer = &framebuffer_response.framebuffers().next().unwrap();
         Some(FrameBufferInfo::new(framebuffer))
     } else {
-        None
+        panic!("No framebuffer returned from bootlaoder!");
     }
 }
