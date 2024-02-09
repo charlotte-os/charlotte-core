@@ -1,7 +1,7 @@
 pub const FONT_WIDTH: usize = 5;
 pub const FONT_HEIGHT: usize = 7;
 
-pub const CHAR_A: [u8; FONT_HEIGHT] = [
+const CHAR_A: [u8; FONT_HEIGHT] = [
     0b01110,
     0b10001,
     0b10001,
@@ -11,7 +11,7 @@ pub const CHAR_A: [u8; FONT_HEIGHT] = [
     0b10001,
 ];
 
-pub const CHAR_B: [u8; FONT_HEIGHT] = [
+const CHAR_B: [u8; FONT_HEIGHT] = [
     0b11110,
     0b10001,
     0b10001,
@@ -21,7 +21,7 @@ pub const CHAR_B: [u8; FONT_HEIGHT] = [
     0b11110,
 ];
 
-pub const CHAR_C: [u8; FONT_HEIGHT] = [
+const CHAR_C: [u8; FONT_HEIGHT] = [
     0b01110,
     0b10001,
     0b10000,
@@ -31,7 +31,7 @@ pub const CHAR_C: [u8; FONT_HEIGHT] = [
     0b01110,
 ];
 
-pub const CHAR_D: [u8; FONT_HEIGHT] = [
+const CHAR_D: [u8; FONT_HEIGHT] = [
     0b11110,
     0b10001,
     0b10001,
@@ -41,7 +41,7 @@ pub const CHAR_D: [u8; FONT_HEIGHT] = [
     0b11110,
 ];
 
-pub const CHAR_E: [u8; FONT_HEIGHT] = [
+const CHAR_E: [u8; FONT_HEIGHT] = [
     0b11111,
     0b10000,
     0b10000,
@@ -51,7 +51,7 @@ pub const CHAR_E: [u8; FONT_HEIGHT] = [
     0b11111,
 ];
 
-pub const CHAR_F: [u8; FONT_HEIGHT] = [
+const CHAR_F: [u8; FONT_HEIGHT] = [
     0b11111,
     0b10000,
     0b10000,
@@ -61,7 +61,7 @@ pub const CHAR_F: [u8; FONT_HEIGHT] = [
     0b10000,
 ];
 
-pub const CHAR_G: [u8; FONT_HEIGHT] = [
+const CHAR_G: [u8; FONT_HEIGHT] = [
     0b01110,
     0b10001,
     0b10000,
@@ -71,7 +71,7 @@ pub const CHAR_G: [u8; FONT_HEIGHT] = [
     0b01111,
 ];
 
-pub const CHAR_H: [u8; FONT_HEIGHT] = [
+const CHAR_H: [u8; FONT_HEIGHT] = [
     0b10001,
     0b10001,
     0b10001,
@@ -81,7 +81,7 @@ pub const CHAR_H: [u8; FONT_HEIGHT] = [
     0b10001,
 ];
 
-pub const CHAR_I: [u8; FONT_HEIGHT] = [
+const CHAR_I: [u8; FONT_HEIGHT] = [
     0b01110,
     0b00100,
     0b00100,
@@ -91,7 +91,7 @@ pub const CHAR_I: [u8; FONT_HEIGHT] = [
     0b01110,
 ];
 
-pub const CHAR_J: [u8; FONT_HEIGHT] = [
+const CHAR_J: [u8; FONT_HEIGHT] = [
     0b00111,
     0b00010,
     0b00010,
@@ -101,7 +101,7 @@ pub const CHAR_J: [u8; FONT_HEIGHT] = [
     0b01100,
 ];
 
-pub const CHAR_K: [u8; FONT_HEIGHT] = [
+const CHAR_K: [u8; FONT_HEIGHT] = [
     0b10001,
     0b10010,
     0b10100,
@@ -111,7 +111,7 @@ pub const CHAR_K: [u8; FONT_HEIGHT] = [
     0b10001,
 ];
 
-pub const CHAR_L: [u8; FONT_HEIGHT] = [
+const CHAR_L: [u8; FONT_HEIGHT] = [
     0b10000,
     0b10000,
     0b10000,
@@ -121,7 +121,7 @@ pub const CHAR_L: [u8; FONT_HEIGHT] = [
     0b11111,
 ];
 
-pub const CHAR_M: [u8; FONT_HEIGHT] = [
+const CHAR_M: [u8; FONT_HEIGHT] = [
     0b10001,
     0b11011,
     0b10101,
@@ -131,7 +131,7 @@ pub const CHAR_M: [u8; FONT_HEIGHT] = [
     0b10001,
 ];
 
-pub const CHAR_N: [u8; FONT_HEIGHT] = [
+const CHAR_N: [u8; FONT_HEIGHT] = [
     0b10001,
     0b10001,
     0b11001,
@@ -141,7 +141,7 @@ pub const CHAR_N: [u8; FONT_HEIGHT] = [
     0b10001,
 ];
 
-pub const CHAR_O: [u8; FONT_HEIGHT] = [
+const CHAR_O: [u8; FONT_HEIGHT] = [
     0b01110,
     0b10001,
     0b10001,
@@ -151,7 +151,7 @@ pub const CHAR_O: [u8; FONT_HEIGHT] = [
     0b01110,
 ];
 
-pub const CHAR_P: [u8; FONT_HEIGHT] = [
+const CHAR_P: [u8; FONT_HEIGHT] = [
     0b11110,
     0b10001,
     0b10001,
@@ -161,7 +161,7 @@ pub const CHAR_P: [u8; FONT_HEIGHT] = [
     0b10000,
 ];
 
-pub const CHAR_Q: [u8; FONT_HEIGHT] = [
+const CHAR_Q: [u8; FONT_HEIGHT] = [
     0b01110,
     0b10001,
     0b10001,
@@ -171,7 +171,7 @@ pub const CHAR_Q: [u8; FONT_HEIGHT] = [
     0b01101,
 ];
 
-pub const CHAR_R: [u8; FONT_HEIGHT] = [
+const CHAR_R: [u8; FONT_HEIGHT] = [
     0b11110,
     0b10001,
     0b10001,
@@ -181,7 +181,7 @@ pub const CHAR_R: [u8; FONT_HEIGHT] = [
     0b10001,
 ];
 
-pub const CHAR_S: [u8; FONT_HEIGHT] = [
+const CHAR_S: [u8; FONT_HEIGHT] = [
     0b01111,
     0b10000,
     0b10000,
@@ -191,7 +191,7 @@ pub const CHAR_S: [u8; FONT_HEIGHT] = [
     0b11110,
 ];
 
-pub const CHAR_T: [u8; FONT_HEIGHT] = [
+const CHAR_T: [u8; FONT_HEIGHT] = [
     0b11111,
     0b00100,
     0b00100,
@@ -201,7 +201,7 @@ pub const CHAR_T: [u8; FONT_HEIGHT] = [
     0b00100,
 ];
 
-pub const CHAR_U: [u8; FONT_HEIGHT] = [
+const CHAR_U: [u8; FONT_HEIGHT] = [
     0b10001,
     0b10001,
     0b10001,
@@ -211,7 +211,7 @@ pub const CHAR_U: [u8; FONT_HEIGHT] = [
     0b01110,
 ];
 
-pub const CHAR_V: [u8; FONT_HEIGHT] = [
+const CHAR_V: [u8; FONT_HEIGHT] = [
     0b10001,
     0b10001,
     0b10001,
@@ -221,7 +221,7 @@ pub const CHAR_V: [u8; FONT_HEIGHT] = [
     0b00100,
 ];
 
-pub const CHAR_W: [u8; FONT_HEIGHT] = [
+const CHAR_W: [u8; FONT_HEIGHT] = [
     0b10001,
     0b10001,
     0b10001,
@@ -231,7 +231,7 @@ pub const CHAR_W: [u8; FONT_HEIGHT] = [
     0b10001,
 ];
 
-pub const CHAR_X: [u8; FONT_HEIGHT] = [
+const CHAR_X: [u8; FONT_HEIGHT] = [
     0b10001,
     0b10001,
     0b01010,
@@ -241,7 +241,7 @@ pub const CHAR_X: [u8; FONT_HEIGHT] = [
     0b10001,
 ];
 
-pub const CHAR_Y: [u8; FONT_HEIGHT] = [
+const CHAR_Y: [u8; FONT_HEIGHT] = [
     0b10001,
     0b10001,
     0b10001,
@@ -251,7 +251,7 @@ pub const CHAR_Y: [u8; FONT_HEIGHT] = [
     0b00100,
 ];
 
-pub const CHAR_Z: [u8; FONT_HEIGHT] = [
+ const CHAR_Z: [u8; FONT_HEIGHT] = [
     0b11111,
     0b00001,
     0b00010,
@@ -261,7 +261,7 @@ pub const CHAR_Z: [u8; FONT_HEIGHT] = [
     0b11111,
 ];
 
-pub const CHAR_0: [u8; FONT_HEIGHT] = [
+const CHAR_0: [u8; FONT_HEIGHT] = [
     0b01110,
     0b10001,
     0b10011,
@@ -271,7 +271,7 @@ pub const CHAR_0: [u8; FONT_HEIGHT] = [
     0b01110,
 ];
 
-pub const CHAR_1: [u8; FONT_HEIGHT] = [
+const CHAR_1: [u8; FONT_HEIGHT] = [
     0b00100,
     0b01100,
     0b00100,
@@ -281,7 +281,7 @@ pub const CHAR_1: [u8; FONT_HEIGHT] = [
     0b01110,
 ];
 
-pub const CHAR_2: [u8; FONT_HEIGHT] = [
+const CHAR_2: [u8; FONT_HEIGHT] = [
     0b01110,
     0b10001,
     0b00001,
@@ -291,7 +291,7 @@ pub const CHAR_2: [u8; FONT_HEIGHT] = [
     0b11111,
 ];
 
-pub const CHAR_3: [u8; FONT_HEIGHT] = [
+const CHAR_3: [u8; FONT_HEIGHT] = [
     0b11111,
     0b00010,
     0b00100,
@@ -301,7 +301,7 @@ pub const CHAR_3: [u8; FONT_HEIGHT] = [
     0b01110,
 ];
 
-pub const CHAR_4: [u8; FONT_HEIGHT] = [
+const CHAR_4: [u8; FONT_HEIGHT] = [
     0b00010,
     0b00110,
     0b01010,
@@ -311,7 +311,7 @@ pub const CHAR_4: [u8; FONT_HEIGHT] = [
     0b00010,
 ];
 
-pub const CHAR_5: [u8; FONT_HEIGHT] = [
+const CHAR_5: [u8; FONT_HEIGHT] = [
     0b11111,
     0b10000,
     0b11110,
@@ -321,7 +321,7 @@ pub const CHAR_5: [u8; FONT_HEIGHT] = [
     0b01110,
 ];
 
-pub const CHAR_6: [u8; FONT_HEIGHT] = [
+const CHAR_6: [u8; FONT_HEIGHT] = [
     0b00110,
     0b01000,
     0b10000,
@@ -331,7 +331,7 @@ pub const CHAR_6: [u8; FONT_HEIGHT] = [
     0b01110,
 ];
 
-pub const CHAR_7: [u8; FONT_HEIGHT] = [
+const CHAR_7: [u8; FONT_HEIGHT] = [
     0b11111,
     0b00001,
     0b00010,
@@ -341,7 +341,7 @@ pub const CHAR_7: [u8; FONT_HEIGHT] = [
     0b01000,
 ];
 
-pub const CHAR_8: [u8; FONT_HEIGHT] = [
+const CHAR_8: [u8; FONT_HEIGHT] = [
     0b01110,
     0b10001,
     0b10001,
@@ -351,7 +351,7 @@ pub const CHAR_8: [u8; FONT_HEIGHT] = [
     0b01110,
 ];
 
-pub const CHAR_9: [u8; FONT_HEIGHT] = [
+const CHAR_9: [u8; FONT_HEIGHT] = [
     0b01110,
     0b10001,
     0b10001,

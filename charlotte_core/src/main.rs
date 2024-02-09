@@ -6,14 +6,12 @@ mod arch;
 mod framebuffer;
 mod bootinfo;
 
-use framebuffer::*;
 use core::arch::asm;
 use core::fmt::Write;
 
 use arch::{Api, ArchApi};
 
-use crate::framebuffer::framebuffer::*;
-
+use framebuffer::framebuffer::{init_framebuffer, Point};
 
 // Set the limine revision to 1
 static BASE_REVISION: limine::BaseRevision = limine::BaseRevision::new(1);
