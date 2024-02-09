@@ -13,28 +13,17 @@ use core::fmt::Write;
 
 use arch::{Api, ArchApi};
 
-use framebuffer::framebuffer::{init_framebuffer, Point};
+use framebuffer::framebuffer::{FRAMEBUFFER, Point};
 
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
     let mut logger = ArchApi::get_logger();
     
-
-    // Check if we have a framebuffer, and halt if we don't
-    match init_framebuffer() {
-        Some(framebuffer) => {
-            framebuffer.clear_screen(0x00FF00FF); // Example usage: clear the screen with green color
-            framebuffer.draw_text(100, 100, "ABCDEFGHIJKLMNOPQRS \n \nTUVWXYZ", 0xFFFFFFFF);
-            framebuffer.draw_text(100, 150, "1234567890", 0xFFFFFFFF); // Example usage: draw "ABCD" in white
-            framebuffer.draw_rect(100, 200, 600, 100, 0xFFFFFFFF);
-            framebuffer.draw_triangle(Point { x: 250, y: 600 }, Point { x: 300, y: 500 }, Point { x: 350, y: 600 }, 0xFFFFFFFF);
-            write!(&mut logger, "Framebuffer initialized and drawings made.\n").unwrap();
-        },
-        None => {
-            write!(&mut logger, "Failed to initialize framebuffer.\n").unwrap();
-            ArchApi::halt();
-        }
-    };
+    FRAMEBUFFER.lock().clear_screen(0x00000000);
+    FRAMEBUFFER.lock().draw_text(100, 100, "ABCDEFGHIJKLMNOPQRS \n \nTUVWXYZ", 0xFFFFFFFF);
+    FRAMEBUFFER.lock().draw_text(100, 150, "1234567890", 0xFFFFFFFF);
+    FRAMEBUFFER.lock().draw_rect(100, 150, 600, 100, 0xFFFFFFFF);
+    FRAMEBUFFER.lock().draw_triangle(Point { x: 250, y: 600 }, Point { x: 300, y: 500 }, Point { x: 350, y: 600 }, 0xFFFFFFFF);
     
 
     write!(&mut logger, "Initializing BSP\n").unwrap();
