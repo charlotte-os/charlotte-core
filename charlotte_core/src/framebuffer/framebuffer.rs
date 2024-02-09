@@ -9,6 +9,7 @@ use limine::framebuffer::Framebuffer;
 use spin::mutex::TicketMutex;
 
 lazy_static! {
+    /// Global access to the framebuffer
     pub static ref FRAMEBUFFER: TicketMutex<FrameBufferInfo> = TicketMutex::new(init_framebuffer().unwrap());
 }
 
