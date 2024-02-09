@@ -3,6 +3,8 @@
 
 #![feature(slice_internals)]
 
+
+
 mod access_control;
 mod arch;
 mod framebuffer;
@@ -27,7 +29,6 @@ unsafe extern "C" fn main() -> ! {
     FRAMEBUFFER.lock().draw_text(100, 164, "`abcdefghijklmno",0xFFFFFFF);
     FRAMEBUFFER.lock().draw_text(100, 180, "pqrstuvwxyz{:}~\t",0xFFFFFFF);
     
-
     write!(&mut logger, "Initializing BSP\n").unwrap();
     ArchApi::init_bsp();
     write!(&mut logger, "BSP Initialized\n").unwrap();
