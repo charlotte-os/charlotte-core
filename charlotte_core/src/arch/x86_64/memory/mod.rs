@@ -1,9 +1,9 @@
 //! # Memory Management Subsystem
-//! The memory management subsystem is responsible for managing the direct mapping of physical 
+//! The memory management subsystem is responsible for managing the direct mapping of physical
 //! memory in the kernel's address space, allocating and deallocating physical frames, and managing
 //! all virtual address spaces.
 
-mod pmm;
+pub mod pmm;
 mod vmm;
 
 use core::arch::x86_64::__cpuid_count;
@@ -25,4 +25,3 @@ lazy_static! {
         vsig_bits as u8
     };
 }
-

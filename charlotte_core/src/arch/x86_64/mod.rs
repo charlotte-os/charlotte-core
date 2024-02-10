@@ -5,7 +5,7 @@ mod cpu;
 mod exceptions;
 mod gdt;
 mod idt;
-mod memory;
+pub mod memory;
 mod serial;
 
 use core::fmt::Write;

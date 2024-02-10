@@ -7,11 +7,13 @@
 //! It is capable of allocating and deallocating contiguous blocks of frames, which is useful for things like
 //! DMA and certain optimization techniques.
 
-use core::{mem, result};
 use core::slice::sort::quicksort;
-use core::slice::SliceIndex;
+
+use core::{mem, result};
+use core::fmt::Write;
 
 use crate::access_control::CapabilityId;
+use crate::arch::{Api, ArchApi};
 use crate::bootinfo;
 
 use lazy_static::lazy_static;
@@ -21,7 +23,7 @@ use spin::mutex::TicketMutex;
 
 lazy_static! {
     ///This value represents the base virtual address of the direct mapping of physical memory into
-    /// kernelspace. It should have the desired physical address added to it and then be cast to a 
+    /// kernelspace. It should have the desired physical address added to it and then be cast to a
     /// pointer to access the desired physical address.
     /// Physical addresses should only ever be used while this Mutex is locked.
     /// TODO: Find a way to make this Mutex more fine-grained and function more like a read-write lock on the physical memory.
@@ -43,7 +45,7 @@ pub enum Error {
 /// It is identical to the defines used by Limine with the exception of PfaReserved, which is used to represent
 /// regions of physical memory that are reserved for use by the PFA itself and PfaNull, which is used to represent
 /// region descriptors that are not in use.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PhysicalMemoryType {
     Usable,
     Reserved,
@@ -61,7 +63,7 @@ pub enum PhysicalMemoryType {
 /// A physical memory region descriptor. This struct is used to represent a region of physical memory in the
 /// physical memory region array. It contains the base address of the region, the number of frames in the region,
 /// the type of the region, and optionally a capability capability that is used to access the region.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PhysicalMemoryRegion {
     capability: Option<CapabilityId>,
     base: usize,
@@ -71,24 +73,30 @@ pub struct PhysicalMemoryRegion {
 
 impl PhysicalMemoryRegion {
     fn is_less(a: &PhysicalMemoryRegion, b: &PhysicalMemoryRegion) -> bool {
-        if a.region_type == PhysicalMemoryType::PfaNull && b.region_type != PhysicalMemoryType::PfaNull {
-        //Null descriptors are always less than any other descriptor
+        if a.region_type == PhysicalMemoryType::PfaNull
+            && b.region_type != PhysicalMemoryType::PfaNull
+        {
+            //Null descriptors are always less than any other descriptor
             true
-        } else if a.region_type != PhysicalMemoryType::PfaNull && b.region_type == PhysicalMemoryType::PfaNull {
-        //Null descriptors are always less than any other descriptor
+        } else if a.region_type != PhysicalMemoryType::PfaNull
+            && b.region_type == PhysicalMemoryType::PfaNull
+        {
+            //Null descriptors are always less than any other descriptor
             false
-        } else if a.region_type == PhysicalMemoryType::PfaNull && b.region_type == PhysicalMemoryType::PfaNull {
-        // When both descriptors are null, they are equal
+        } else if a.region_type == PhysicalMemoryType::PfaNull
+            && b.region_type == PhysicalMemoryType::PfaNull
+        {
+            // When both descriptors are null, they are equal
             false
         } else {
-        // If neither descriptor is null, compare their base addresses
+            // If neither descriptor is null, compare their base addresses
             a.base < b.base
         }
     }
 }
 
 /// The physical frame allocator is responsible for managing and allocating physical memory frames.
-
+#[derive(Debug)]
 pub struct PhysicalFrameAllocator {
     region_array_base: usize, // physical base address of the array of physical memory regions
     region_array_len: usize,  // number of elements in the array of physical memory regions
@@ -97,7 +105,10 @@ pub struct PhysicalFrameAllocator {
 /// The average number of frames that are allocated at a time.
 /// This value is used to determine the initial size of the physical memory region array.
 /// The initial size of the array is equal to the total amount of physical frames divided by this value.
-const ALLOCATION_FACTOR: usize = 100;
+const ALLOCATION_FACTOR: usize = 50;
+
+/// The size of each frame in bytes.
+const FRAME_SIZE: usize = 4096;
 
 impl PhysicalFrameAllocator {
     /// Constructs a new PhysicalFrameAllocator and initializes it using the memory map.
@@ -138,7 +149,7 @@ impl PhysicalFrameAllocator {
                 total_memory += entry.length as usize;
             }
         }
-        total_memory / 4096
+        total_memory / FRAME_SIZE
     }
 
     /// Returns the largest usable memory region in the memory map.
@@ -190,13 +201,15 @@ impl PhysicalFrameAllocator {
                 region_array[i] = PhysicalMemoryRegion {
                     capability: None,
                     base: entry.base as usize,
-                    n_frames: entry.length as usize / 4096,
+                    n_frames: entry.length as usize / FRAME_SIZE,
                     region_type: match entry.entry_type {
                         EntryType::USABLE => PhysicalMemoryType::Usable,
                         EntryType::RESERVED => PhysicalMemoryType::Reserved,
                         EntryType::ACPI_RECLAIMABLE => PhysicalMemoryType::AcpiReclaimable,
                         EntryType::ACPI_NVS => PhysicalMemoryType::AcpiNvs,
-                        EntryType::BOOTLOADER_RECLAIMABLE => PhysicalMemoryType::BootloaderReclaimable,
+                        EntryType::BOOTLOADER_RECLAIMABLE => {
+                            PhysicalMemoryType::BootloaderReclaimable
+                        }
                         EntryType::KERNEL_AND_MODULES => PhysicalMemoryType::KernelAndModules,
                         EntryType::FRAMEBUFFER => PhysicalMemoryType::FrameBuffer,
                         _ => PhysicalMemoryType::BadMemory,
@@ -243,9 +256,13 @@ impl PhysicalFrameAllocator {
             if next_nonnull_index == region_array.len() {
                 break 'array_loop;
             }
-            //if the current region and the next region are of the same type, not null, and adjacent, merge them                 
-            if region_array[i].region_type == region_array[next_nonnull_index].region_type && region_array[i].region_type != PhysicalMemoryType::PfaNull {
-                if region_array[i].base + region_array[i].n_frames * 4096 == region_array[next_nonnull_index].base {
+            //if the current region and the next region are of the same type, not null, and adjacent, merge them
+            if region_array[i].region_type == region_array[next_nonnull_index].region_type
+                && region_array[i].region_type != PhysicalMemoryType::PfaNull
+            {
+                if region_array[i].base + region_array[i].n_frames * FRAME_SIZE
+                    == region_array[next_nonnull_index].base
+                {
                     region_array[i].n_frames += region_array[next_nonnull_index].n_frames;
                     region_array[next_nonnull_index].region_type = PhysicalMemoryType::PfaNull;
                 }
@@ -256,7 +273,10 @@ impl PhysicalFrameAllocator {
         quicksort(region_array, &PhysicalMemoryRegion::is_less);
     }
 
-    fn append_region(region_array: &mut [PhysicalMemoryRegion], region: PhysicalMemoryRegion) -> Result<(), Error> {
+    fn append_region(
+        region_array: &mut [PhysicalMemoryRegion],
+        region: PhysicalMemoryRegion,
+    ) -> Result<(), Error> {
         for i in 0..region_array.len() {
             if region_array[i].region_type == PhysicalMemoryType::PfaNull {
                 region_array[i] = region;
@@ -268,23 +288,32 @@ impl PhysicalFrameAllocator {
     }
 
     /// Allocate a contiguous block of physical memory frames.
-    pub fn allocate_frames(&mut self, n_frames: usize, capability: Option<CapabilityId>) -> Result<PhysicalMemoryRegion, Error> {
+    pub fn allocate_frames(
+        &mut self,
+        n_frames: usize,
+        capability: Option<CapabilityId>,
+    ) -> Result<PhysicalMemoryRegion, Error> {
+        let mut logger = ArchApi::get_logger();
+        writeln!(
+            &mut logger,
+            "Allocating {} frames.",
+            n_frames
+        );
+
         let mut region_array = unsafe { self.get_mut_region_array() };
         let mut allocated_region = Option::<PhysicalMemoryRegion>::None;
 
         for region in region_array.iter_mut() {
             if region.region_type == PhysicalMemoryType::Usable && region.n_frames >= n_frames {
                 //Create the descriptor for the newly allocated region
-                allocated_region = Some (
-                    PhysicalMemoryRegion {
-                        capability: capability,
-                        base: region.base,
-                        n_frames,
-                        region_type: PhysicalMemoryType::Allocated,
-                    }
-                );
+                allocated_region = Some(PhysicalMemoryRegion {
+                    capability: capability,
+                    base: region.base,
+                    n_frames,
+                    region_type: PhysicalMemoryType::Allocated,
+                });
                 //Update the region descriptor for the region that was allocated from
-                region.base += n_frames * 4096;
+                region.base += n_frames * FRAME_SIZE;
                 region.n_frames -= n_frames;
             }
         }
@@ -300,7 +329,7 @@ impl PhysicalFrameAllocator {
     pub fn deallocate_frames(&mut self, region: PhysicalMemoryRegion) -> Result<(), Error> {
         let mut region_array = unsafe { self.get_mut_region_array() };
         for r in region_array.iter_mut() {
-            if r.base == region.base && r.n_frames == region.n_frames {
+            if r.base == region.base && r.n_frames == region.n_frames && r.region_type == PhysicalMemoryType::Allocated {
                 r.region_type = PhysicalMemoryType::Usable;
                 r.capability = None;
                 Self::merge_and_sort_region_array(region_array);

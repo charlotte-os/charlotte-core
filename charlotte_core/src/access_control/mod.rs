@@ -21,7 +21,7 @@ pub enum CapabilityType {
 
 pub type CapabilityId = u64;
 
-/// A capability represents a resource and the operations that can be performed on that resource. All 
+/// A capability represents a resource and the operations that can be performed on that resource. All
 /// capabilities must implement the Drop trait so that the resource can be cleaned up when the capability
 /// is dropped.
 trait Capability: Drop {
@@ -40,7 +40,7 @@ pub struct PhysicalMemoryCapability {
     refcount: usize,
     /// Physical frame allocator index
     pfa_index: usize,
-    permissions: u8
+    permissions: u8,
 }
 
 enum PhysicalMemoryPermissions {
@@ -52,7 +52,7 @@ enum PhysicalMemoryPermissions {
     ModCacheSettings = 0b00100000,
     ModSwapSettings = 0b01000000,
     ModCopySettings = 0b10000000,
-    ModMiscSettings = 0b100000000
+    ModMiscSettings = 0b100000000,
 }
 
 impl Capability for PhysicalMemoryCapability {
