@@ -20,10 +20,12 @@ unsafe extern "C" fn main() -> ! {
     let mut logger = ArchApi::get_logger();
     
     FRAMEBUFFER.lock().clear_screen(0x00000000);
-    FRAMEBUFFER.lock().draw_text(100, 100, "ABCDEFGHIJKLMNOPQRS \n \nTUVWXYZ", 0xFFFFFFFF);
-    FRAMEBUFFER.lock().draw_text(100, 150, "1234567890", 0xFFFFFFFF);
-    FRAMEBUFFER.lock().draw_rect(100, 150, 600, 100, 0xFFFFFFFF);
-    FRAMEBUFFER.lock().draw_triangle(Point { x: 250, y: 600 }, Point { x: 300, y: 500 }, Point { x: 350, y: 600 }, 0xFFFFFFFF);
+    FRAMEBUFFER.lock().draw_text(100, 100, " !\"#$%&'()*+,-./",0xFFFFFFF);
+    FRAMEBUFFER.lock().draw_text(100, 116, "0123456789:;<=>?",0xFFFFFFF);
+    FRAMEBUFFER.lock().draw_text(100, 132, "@ABCDEFGHIJKLMNO",0xFFFFFFF);
+    FRAMEBUFFER.lock().draw_text(100, 148, "PQRSTUVWXYZ[\\]^_",0xFFFFFFF);
+    FRAMEBUFFER.lock().draw_text(100, 164, "`abcdefghijklmno",0xFFFFFFF);
+    FRAMEBUFFER.lock().draw_text(100, 180, "pqrstuvwxyz{:}~\t",0xFFFFFFF);
     
 
     write!(&mut logger, "Initializing BSP\n").unwrap();

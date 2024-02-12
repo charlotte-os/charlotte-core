@@ -132,19 +132,18 @@ impl FrameBufferInfo {
     pub fn draw_text(&self, mut x: usize, mut y: usize, text: &str, color: u32) {
         let start_x = x; // Remember the starting x position to reset to it on new lines
         for c in text.chars() {
-            if c == ' ' {
-                // Handle spaces by advancing the x position
-                x += FONT_WIDTH + 1; // Plus 1 for a gap between characters
-            } else if c == '\n' {
-                // Handle new lines by moving down and resetting x position
-                y += FONT_HEIGHT + 1; // Plus 1 for a gap between lines
-                x = start_x;
-            } else if let Some(bitmap) = get_char_bitmap(c) {
-                // Draw the character and advance the x position
-                unsafe {
-                    self.draw_char(x, y, bitmap, color);
+            match c {
+                '\n' => {
+                    y += FONT_HEIGHT + 1;
+                    x = start_x;
                 }
-                x += FONT_WIDTH + 1; // Advance cursor for the next character
+                _ => {
+                    let bitmap = get_char_bitmap(c);
+                    unsafe {
+                        self.draw_char(x, y, bitmap, color);
+                    }
+                    x += FONT_WIDTH;
+                }
             }
         }
     }
