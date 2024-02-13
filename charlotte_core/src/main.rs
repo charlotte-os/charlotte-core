@@ -13,20 +13,17 @@ use core::fmt::Write;
 
 use arch::{Api, ArchApi};
 
-use framebuffer::framebuffer::{FRAMEBUFFER, Point};
+use framebuffer::console::CONSOLE;
+
+use crate::framebuffer::framebuffer::FRAMEBUFFER;
 
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
     let mut logger = ArchApi::get_logger();
-    
+
     FRAMEBUFFER.lock().clear_screen(0x00000000);
-    FRAMEBUFFER.lock().draw_text(100, 100, " !\"#$%&'()*+,-./",0xFFFFFFF);
-    FRAMEBUFFER.lock().draw_text(100, 116, "0123456789:;<=>?",0xFFFFFFF);
-    FRAMEBUFFER.lock().draw_text(100, 132, "@ABCDEFGHIJKLMNO",0xFFFFFFF);
-    FRAMEBUFFER.lock().draw_text(100, 148, "PQRSTUVWXYZ[\\]^_",0xFFFFFFF);
-    FRAMEBUFFER.lock().draw_text(100, 164, "`abcdefghijklmno",0xFFFFFFF);
-    FRAMEBUFFER.lock().draw_text(100, 180, "pqrstuvwxyz{:}~\t",0xFFFFFFF);
-    
+    println!("Hello, world!");
+
     write!(&mut logger, "Initializing BSP\n").unwrap();
     ArchApi::init_bsp();
     write!(&mut logger, "BSP Initialized\n").unwrap();
