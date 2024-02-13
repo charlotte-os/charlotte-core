@@ -109,15 +109,12 @@ isr_segment_not_present:
     add rsp, 8 ; Clean up the error code from the stack
     iretq
 
-
 global isr_debug
 isr_debug:
     call save_regs
     call ih_debug
     call restore_regs
     iretq
-
-
 
 global isr_non_maskable_interrupt
 isr_non_maskable_interrupt:
@@ -141,14 +138,12 @@ isr_overflow:
     call restore_regs
     iretq
 
-
 global isr_bound_range_exceeded
 isr_bound_range_exceeded:
     call save_regs
     call ih_bound_range_exceeded
     call restore_regs
     iretq
-
 
 global isr_invalid_opcode
 isr_invalid_opcode:
@@ -157,14 +152,12 @@ isr_invalid_opcode:
     call restore_regs
     iretq
 
-
 global isr_device_not_available
 isr_device_not_available:
     call save_regs
     call ih_device_not_available
     call restore_regs
     iretq
-
 
 global isr_invalid_tss
 isr_invalid_tss:
@@ -176,7 +169,6 @@ isr_invalid_tss:
     add rsp, 8
     iretq
 
-
 global isr_stack_segment_fault
 isr_stack_segment_fault:
     call save_regs
@@ -187,7 +179,6 @@ isr_stack_segment_fault:
     add rsp, 8
     iretq
 
-
 global isr_reserved
 isr_reserved:
     call save_regs
@@ -196,14 +187,12 @@ isr_reserved:
     call restore_regs
     iretq
 
-
 global isr_x87_floating_point
 isr_x87_floating_point:
     call save_regs
     call ih_x87_floating_point
     call restore_regs
     iretq
-
 
 global isr_alignment_check
 isr_alignment_check:
@@ -215,14 +204,12 @@ isr_alignment_check:
     add rsp, 8
     iretq
 
-
 global isr_machine_check
 isr_machine_check:
     ; Registers are not saved since this exception is an abort
     ; Unlike Double Fault, Machine Check does not push an error code
     call ih_machine_check
     hlt ; Halt the core since machine checks indicate severe hardware issues
-
 
 global isr_simd_floating_point
 isr_simd_floating_point:
@@ -231,14 +218,12 @@ isr_simd_floating_point:
     call restore_regs
     iretq
 
-
 global isr_virtualization
 isr_virtualization:
     call save_regs
     call ih_virtualization
     call restore_regs
     iretq
-
 
 global isr_control_protection
 isr_control_protection:
@@ -250,14 +235,12 @@ isr_control_protection:
     add rsp, 8
     iretq
 
-
 global isr_hypervisor_injection
 isr_hypervisor_injection:
     call save_regs
     call ih_hypervisor_injection
     call restore_regs
     iretq
-
 
 global isr_vmm_communication
 isr_vmm_communication:
@@ -268,7 +251,6 @@ isr_vmm_communication:
     call restore_regs
     add rsp, 8 ; Clean up the error code from the stack
     iretq
-
 
 global isr_security_exception
 isr_security_exception:

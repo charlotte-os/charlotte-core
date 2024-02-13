@@ -30,7 +30,6 @@ pub fn load_exceptions(idt: &mut Idt) {
     idt.set_gate(28, isr_hypervisor_injection, 1 << 3, true, false);
     idt.set_gate(29, isr_vmm_communication, 1 << 3, true, false);
     idt.set_gate(30, isr_security_exception, 1 << 3, true, false);
-    
 }
 
 extern "C" {
@@ -101,7 +100,6 @@ extern "C" fn ih_page_fault(error_code: u64) {
     .ignore();
 }
 
-
 #[no_mangle]
 extern "C" fn ih_segment_not_present(error_code: u64) {
     let mut logger = SerialPort::try_new(COM1).unwrap();
@@ -113,7 +111,6 @@ extern "C" fn ih_segment_not_present(error_code: u64) {
     )
     .ignore();
 }
-
 
 #[no_mangle]
 extern "C" fn ih_debug() {
@@ -135,7 +132,6 @@ extern "C" fn ih_non_maskable_interrupt() {
     ).ignore();
 }
 
-
 #[no_mangle]
 extern "C" fn ih_breakpoint() {
     let mut logger = SerialPort::try_new(COM1).unwrap();
@@ -156,7 +152,6 @@ extern "C" fn ih_overflow() {
     ).ignore();
 }
 
-
 #[no_mangle]
 extern "C" fn ih_bound_range_exceeded() {
     let mut logger = SerialPort::try_new(COM1).unwrap();
@@ -166,7 +161,6 @@ extern "C" fn ih_bound_range_exceeded() {
         "Bound Range Exceeded Exception Occurred!"
     ).ignore();
 }
-
 
 #[no_mangle]
 extern "C" fn ih_invalid_opcode() {
@@ -178,7 +172,6 @@ extern "C" fn ih_invalid_opcode() {
     ).ignore();
 }
 
-
 #[no_mangle]
 extern "C" fn ih_device_not_available() {
     let mut logger = SerialPort::try_new(COM1).unwrap();
@@ -188,7 +181,6 @@ extern "C" fn ih_device_not_available() {
         "Device Not Available Exception Occurred!"
     ).ignore();
 }
-
 
 #[no_mangle]
 extern "C" fn ih_invalid_tss(error_code: u64) {
@@ -201,7 +193,6 @@ extern "C" fn ih_invalid_tss(error_code: u64) {
     ).ignore();
 }
 
-
 #[no_mangle]
 extern "C" fn ih_stack_segment_fault(error_code: u64) {
     let mut logger = SerialPort::try_new(COM1).unwrap();
@@ -213,7 +204,6 @@ extern "C" fn ih_stack_segment_fault(error_code: u64) {
     ).ignore();
 }
 
-
 #[no_mangle]
 extern "C" fn ih_reserved() {
     let mut logger = SerialPort::try_new(COM1).unwrap();
@@ -223,8 +213,6 @@ extern "C" fn ih_reserved() {
         "Unexpected Reserved Vector 15 Exception Occurred!"
     ).ignore();
 }
-
-
 
 #[no_mangle]
 extern "C" fn ih_x87_floating_point() {
@@ -236,7 +224,6 @@ extern "C" fn ih_x87_floating_point() {
     ).ignore();
 }
 
-
 #[no_mangle]
 extern "C" fn ih_alignment_check(error_code: u64) {
     let mut logger = SerialPort::try_new(COM1).unwrap();
@@ -247,7 +234,6 @@ extern "C" fn ih_alignment_check(error_code: u64) {
         error_code
     ).ignore();
 }
-
 
 #[no_mangle]
 extern "C" fn ih_machine_check() {
@@ -270,7 +256,6 @@ extern "C" fn ih_simd_floating_point() {
     ).ignore();
 }
 
-
 #[no_mangle]
 extern "C" fn ih_virtualization() {
     let mut logger = SerialPort::try_new(COM1).unwrap();
@@ -280,7 +265,6 @@ extern "C" fn ih_virtualization() {
         "Virtualization Exception Occurred!"
     ).ignore();
 }
-
 
 #[no_mangle]
 extern "C" fn ih_control_protection(error_code: u64) {
@@ -303,7 +287,6 @@ extern "C" fn ih_hypervisor_injection() {
     ).ignore();
 }
 
-
 #[no_mangle]
 extern "C" fn ih_vmm_communication(error_code: u64) {
     let mut logger = SerialPort::try_new(COM1).unwrap();
@@ -314,9 +297,6 @@ extern "C" fn ih_vmm_communication(error_code: u64) {
         error_code
     ).ignore();
 }
-
-
-
 
 #[no_mangle]
 extern "C" fn ih_security_exception(error_code: u64) {
