@@ -27,22 +27,9 @@ unsafe extern "C" fn main() -> ! {
     FRAMEBUFFER.lock().draw_text(100, 164, "`abcdefghijklmno",0xFFFFFFF);
     FRAMEBUFFER.lock().draw_text(100, 180, "pqrstuvwxyz{:}~\t",0xFFFFFFF);
     
-
     write!(&mut logger, "Initializing BSP\n").unwrap();
     ArchApi::init_bsp();
     write!(&mut logger, "BSP Initialized\n").unwrap();
-
-    // write!(&mut logger, "Testing double fault\n").unwrap();
-    // asm!("int 8");
-    // write!(&mut logger, "Double fault test passed\n").unwrap();
-
-    write!(&mut logger, "Testing divide by zero\n").unwrap();
-    asm!("int 0");
-    write!(&mut logger, "Divide by zero test passed\n").unwrap();
-
-    // write!(&mut logger, "Testing GP fault\n").unwrap();
-    // asm!("int 13");
-    // write!(&mut logger, "GP fault test passed\n").unwrap();
 
     write!(&mut logger, "All tests in main passed.\n").unwrap();
 
@@ -52,6 +39,7 @@ unsafe extern "C" fn main() -> ! {
         ArchApi::get_paddr_width()
     )
     .unwrap();
+
     writeln!(
         &mut logger,
         "Number of Significant Virtual Address Bits Supported: {}",
