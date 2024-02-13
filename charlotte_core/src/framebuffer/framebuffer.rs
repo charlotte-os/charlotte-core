@@ -10,7 +10,7 @@ use spin::mutex::TicketMutex;
 
 lazy_static! {
     /// Global access to the framebuffer
-    pub static ref FRAMEBUFFER: TicketMutex<FrameBufferInfo> = TicketMutex::new(init_framebuffer().unwrap());
+    pub static ref FRAMEBUFFER: TicketMutex<FrameBufferInfo> = TicketMutex::new(init_framebuffer().unwrap());    
 }
 
 /// A struct representing the framebuffer information,
@@ -43,7 +43,6 @@ impl FrameBufferInfo {
             height: framebuffer.height() as usize,
             pitch: framebuffer.pitch() as usize,
             bpp: framebuffer.bpp() as usize,
-
         }
     }
 
@@ -138,9 +137,8 @@ impl FrameBufferInfo {
                     x = start_x;
                 }
                 _ => {
-                    let bitmap = get_char_bitmap(c);
                     unsafe {
-                        self.draw_char(x, y, bitmap, color);
+                        self.draw_char(x, y, c, color);
                     }
                     x += FONT_WIDTH;
                 }
@@ -156,7 +154,8 @@ impl FrameBufferInfo {
     /// * `y` - The y coordinate where the character should be drawn.
     /// * `bitmap` - A reference to the bitmap array representing the character.
     /// * `color` - The color of the character in ARGB format.
-    pub fn draw_char(&self, x: usize, y: usize, bitmap: &[u8; FONT_HEIGHT], color: u32) {
+    pub fn draw_char(&self, x: usize, y: usize, chracter: char, color: u32) {
+        let bitmap = get_char_bitmap(chracter);
         for (row, &bits) in bitmap.iter().enumerate() {
             for col in 0..FONT_WIDTH {
                 if (bits >> (FONT_WIDTH - 1 - col)) & 1 == 1 {
