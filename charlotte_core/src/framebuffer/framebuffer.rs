@@ -160,6 +160,8 @@ impl FrameBufferInfo {
             for col in 0..FONT_WIDTH {
                 if (bits >> (FONT_WIDTH - 1 - col)) & 1 == 1 {
                     self.draw_pixel(x + col, y + row, color);
+                } else {
+                    self.draw_pixel(x + col, y + row, 0x00000000);
                 }
             }
         }

@@ -173,6 +173,7 @@ macro_rules! print {
 #[macro_export]
 macro_rules! println {
     ($($arg:tt)*) => {
-        CONSOLE.lock().write_fmt(format_args!(concat!($($arg,)* "\n"))).unwrap();
+        CONSOLE.lock().write_fmt(format_args!($($arg)*)).unwrap();
+        CONSOLE.lock().write_char('\n', 0xFFFFFFFF);
     }
 }
