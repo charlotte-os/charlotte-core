@@ -6,16 +6,7 @@ use crate::framebuffer::{framebuffer::FRAMEBUFFER, chars::{FONT_HEIGHT, FONT_WID
 const CONSOLE_WIDTH: usize = 80;
 const CONSOLE_HEIGHT: usize = 25;
 
-pub static CONSOLE: TicketMutex<Console> = TicketMutex::new(Console {
-    buffer: ConsoleBuffer {
-        chars: [[ConsoleChar {
-            character: '\0',
-            color: 0,
-        }; CONSOLE_WIDTH]; CONSOLE_HEIGHT],
-    },
-    cursor_x: 0,
-    cursor_y: 0,
-});
+pub static CONSOLE: TicketMutex<Console> = TicketMutex::new(Console::new());
 
 /// Represents a single character on the framebuffer console
 #[derive(Copy, Clone)]
@@ -38,7 +29,7 @@ pub struct Console {
 
 impl Console {
     /// Create a new console
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             buffer: ConsoleBuffer {
                 chars: [[ConsoleChar {
