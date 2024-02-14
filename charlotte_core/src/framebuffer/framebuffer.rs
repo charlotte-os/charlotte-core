@@ -1,7 +1,7 @@
 use core::sync::atomic::{AtomicPtr, Ordering};
 
-use crate::framebuffer::chars::{get_char_bitmap, FONT_HEIGHT, FONT_WIDTH};
 use crate::bootinfo::FRAMEBUFFER_REQUEST;
+use crate::framebuffer::chars::{get_char_bitmap, FONT_HEIGHT, FONT_WIDTH};
 // External crate for bootloader-specific functions and types.
 extern crate limine;
 use lazy_static::lazy_static;
@@ -10,7 +10,7 @@ use spin::mutex::TicketMutex;
 
 lazy_static! {
     /// Global access to the framebuffer
-    pub static ref FRAMEBUFFER: TicketMutex<FrameBufferInfo> = TicketMutex::new(init_framebuffer().unwrap());    
+    pub static ref FRAMEBUFFER: TicketMutex<FrameBufferInfo> = TicketMutex::new(init_framebuffer().unwrap());
 }
 
 /// A struct representing the framebuffer information,
@@ -86,10 +86,10 @@ impl FrameBufferInfo {
         }
     }
 
-     /// Clears the entire screen to a single color.
-    /// 
+    /// Clears the entire screen to a single color.
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `color` - The color to fill the screen with, in ARGB format.
     pub fn clear_screen(&self, color: u32) {
         for y in 0..self.height {
@@ -102,10 +102,10 @@ impl FrameBufferInfo {
         }
     }
 
-     /// Draws a single pixel at the specified location.
-    /// 
+    /// Draws a single pixel at the specified location.
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `x` - The x coordinate of the pixel.
     /// * `y` - The y coordinate of the pixel.
     /// * `color` - The color of the pixel in ARGB format.
@@ -120,9 +120,9 @@ impl FrameBufferInfo {
     }
 
     /// Draws text starting from a specified location.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `x` - The x coordinate of the starting point of the text.
     /// * `y` - The y coordinate of the starting point of the text.
     /// * `text` - The text to draw.
@@ -147,9 +147,9 @@ impl FrameBufferInfo {
     }
 
     /// Helper method to draw a single character from its bitmap.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `x` - The x coordinate where the character should be drawn.
     /// * `y` - The y coordinate where the character should be drawn.
     /// * `bitmap` - A reference to the bitmap array representing the character.
@@ -167,11 +167,10 @@ impl FrameBufferInfo {
         }
     }
 
-
     /// Draws a rectangle at the specified location and dimensions.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `x` - The x coordinate of the rectangle's top-left corner.
     /// * `y` - The y coordinate of the rectangle's top-left corner.
     /// * `width` - The width of the rectangle.
@@ -185,10 +184,10 @@ impl FrameBufferInfo {
         }
     }
 
-     /// Draws a filled triangle between three points.
-    /// 
+    /// Draws a filled triangle between three points.
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `p1`, `p2`, `p3` - The vertices of the triangle.
     /// * `color` - The color to fill the triangle with, in ARGB format.
     pub fn draw_triangle(&self, p1: Point, p2: Point, p3: Point, color: u32) {

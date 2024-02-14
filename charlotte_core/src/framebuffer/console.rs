@@ -1,7 +1,10 @@
 use core::fmt;
 use spin::mutex::TicketMutex;
 
-use crate::framebuffer::{framebuffer::FRAMEBUFFER, chars::{FONT_HEIGHT, FONT_WIDTH}};
+use crate::framebuffer::{
+    chars::{FONT_HEIGHT, FONT_WIDTH},
+    framebuffer::FRAMEBUFFER,
+};
 
 const CONSOLE_WIDTH: usize = 80;
 const CONSOLE_HEIGHT: usize = 25;
@@ -69,10 +72,7 @@ impl Console {
             }
             // Any other character
             _ => {
-                self.buffer.chars[self.cursor_y][self.cursor_x] = ConsoleChar {
-                    character,
-                    color,
-                };
+                self.buffer.chars[self.cursor_y][self.cursor_x] = ConsoleChar { character, color };
                 self.cursor_x += 1;
             }
         }
@@ -137,7 +137,7 @@ impl Console {
             for x in 0..CONSOLE_WIDTH {
                 // Draw the character to the framebuffer
                 FRAMEBUFFER.lock().draw_char(
-                    x * FONT_WIDTH + 1, // Add a 1 pixel margin between characters
+                    x * FONT_WIDTH + 1,  // Add a 1 pixel margin between characters
                     y * FONT_HEIGHT + 1, // Add a 1 pixel margin between lines
                     self.buffer.chars[y][x].character,
                     self.buffer.chars[y][x].color,

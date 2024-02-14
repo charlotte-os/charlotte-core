@@ -7,11 +7,10 @@ mod arch;
 mod bootinfo;
 mod framebuffer;
 
-use core::arch::asm;
 use core::fmt::Write;
 
-use arch::{Api, ArchApi};
 use arch::x86_64::memory::pmm::PFA;
+use arch::{Api, ArchApi};
 
 use framebuffer::console::CONSOLE;
 
@@ -61,7 +60,15 @@ unsafe extern "C" fn main() -> ! {
 
 #[panic_handler]
 fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
-    ArchApi::get_logger().write_fmt(format_args!("A kernel panic has occurred due to a Rust runtime panic.\n PanicInfo: {:?}\n", _info)).unwrap();
-    println!("A kernel panic has occurred due to a Rust runtime panic.\n PanicInfo: {:?}\n", _info);
+    ArchApi::get_logger()
+        .write_fmt(format_args!(
+            "A kernel panic has occurred due to a Rust runtime panic.\n PanicInfo: {:?}\n",
+            _info
+        ))
+        .unwrap();
+    println!(
+        "A kernel panic has occurred due to a Rust runtime panic.\n PanicInfo: {:?}\n",
+        _info
+    );
     ArchApi::panic()
 }
