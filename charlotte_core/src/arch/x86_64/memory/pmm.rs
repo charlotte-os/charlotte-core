@@ -9,8 +9,8 @@
 
 use core::slice::sort::quicksort;
 
-use core::{mem, result};
 use core::fmt::Write;
+use core::mem;
 
 use crate::access_control::CapabilityId;
 use crate::arch::{Api, ArchApi};
@@ -245,17 +245,22 @@ impl PhysicalFrameAllocator {
 
     /// Merge adjacent regions of the same type and sort the region array by base address.
     fn merge_and_sort_region_array(region_array: &mut [PhysicalMemoryRegion]) {
+        let mut next_nonnull_index: usize;
         //Merge adjacent regions of the same type
         'array_loop: for i in 0..region_array.len() {
             //find the next non-null region
-            let mut next_nonnull_index = i + 1;
-            while region_array[next_nonnull_index].region_type == PhysicalMemoryType::PfaNull {
+            next_nonnull_index = i + 1;
+
+            while next_nonnull_index < region_array.len()
+                && region_array[next_nonnull_index].region_type == PhysicalMemoryType::PfaNull
+            {
                 next_nonnull_index += 1;
             }
-            //if there are no more non-null regions, break
+
             if next_nonnull_index == region_array.len() {
                 break 'array_loop;
             }
+
             //if the current region and the next region are of the same type, not null, and adjacent, merge them
             if region_array[i].region_type == region_array[next_nonnull_index].region_type
                 && region_array[i].region_type != PhysicalMemoryType::PfaNull
@@ -294,11 +299,7 @@ impl PhysicalFrameAllocator {
         capability: Option<CapabilityId>,
     ) -> Result<PhysicalMemoryRegion, Error> {
         let mut logger = ArchApi::get_logger();
-        writeln!(
-            &mut logger,
-            "Allocating {} frames.",
-            n_frames
-        );
+        writeln!(&mut logger, "Allocating {} frames.", n_frames);
 
         let mut region_array = unsafe { self.get_mut_region_array() };
         let mut allocated_region = Option::<PhysicalMemoryRegion>::None;
@@ -329,7 +330,10 @@ impl PhysicalFrameAllocator {
     pub fn deallocate_frames(&mut self, region: PhysicalMemoryRegion) -> Result<(), Error> {
         let mut region_array = unsafe { self.get_mut_region_array() };
         for r in region_array.iter_mut() {
-            if r.base == region.base && r.n_frames == region.n_frames && r.region_type == PhysicalMemoryType::Allocated {
+            if r.base == region.base
+                && r.n_frames == region.n_frames
+                && r.region_type == PhysicalMemoryType::Allocated
+            {
                 r.region_type = PhysicalMemoryType::Usable;
                 r.capability = None;
                 Self::merge_and_sort_region_array(region_array);
