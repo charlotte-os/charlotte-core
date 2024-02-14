@@ -45,10 +45,11 @@ unsafe extern "C" fn main() -> ! {
     .unwrap();
 
     writeln!(&mut logger, "Testing physical frame allocator").unwrap();
-    match (*PFA).lock().allocate_frames(50, None) {
+    let mut pfa = PFA.lock();
+    match pfa.allocate_frames(50, None) {
         Ok(region_descriptor) => {
             writeln!(&mut logger, "Allocated region: {:?}", region_descriptor).unwrap();
-            (*PFA).lock().deallocate_frames(region_descriptor);
+            pfa.deallocate_frames(region_descriptor);
             writeln!(&mut logger, "Deallocated previously allocated region.").unwrap();
         }
         Err(e) => {
@@ -60,5 +61,7 @@ unsafe extern "C" fn main() -> ! {
 
 #[panic_handler]
 fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
+    ArchApi::get_logger().write_fmt(format_args!("A kernel panic has occurred due to a Rust runtime panic.\n PanicInfo: {:?}\n", _info)).unwrap();
+    println!("A kernel panic has occurred due to a Rust runtime panic.\n PanicInfo: {:?}\n", _info);
     ArchApi::panic()
 }
