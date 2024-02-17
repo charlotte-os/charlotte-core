@@ -32,11 +32,20 @@ lazy_static! {
     ///The physical frame allocator to be used by the kernel and user-space applications.
     pub static ref PFA: TicketMutex<PhysicalFrameAllocator> = TicketMutex::new(PhysicalFrameAllocator::new());
 }
+/// The number of frames that may need to be allocated but have not been allocated yet.
+/// To be used for things like faulted in pages and copy-on-write pages.
+/// This value is used to determine how overcommitted the system is.
+/// When the system is overcommitted by more than a certain percentage, new allocations will fail.
+static mut UNALLOCATED_FRAMES_COMMITTED: TicketMutex<usize> = TicketMutex::new(0);
+/// The percentage of committed frames that must be backed by available frames.
+/// When the system is overcommitted by more than this percentage, new allocations will fail.
+const REQUIRED_COMMIT_BACKING_PERCENTAGE: usize = 70;
 
 #[derive(Debug)]
 pub enum Error {
     InsufficientMemory,
     InsufficientContiguousMemory,
+    MemoryOvercommitted,
     PfaRegionArrayFull,
     AllocatedRegionNotFound,
 }
@@ -298,6 +307,10 @@ impl PhysicalFrameAllocator {
         n_frames: usize,
         capability: Option<CapabilityId>,
     ) -> Result<PhysicalMemoryRegion, Error> {
+        if self.get_commitment_coverage() > REQUIRED_COMMIT_BACKING_PERCENTAGE {
+            return Err(Error::MemoryOvercommitted);
+        }
+
         let mut logger = ArchApi::get_logger();
         writeln!(&mut logger, "Allocating {} frames.", n_frames);
 
@@ -341,5 +354,23 @@ impl PhysicalFrameAllocator {
             }
         }
         Err(Error::AllocatedRegionNotFound)
+    }
+    /// Obtain the number of available physical memory frames.
+    pub fn get_n_available_frames(&self) -> usize {
+        let region_array = unsafe { self.get_region_array() };
+        let mut n_available_frames = 0;
+        for region in region_array.iter() {
+            if region.region_type == PhysicalMemoryType::Usable {
+                n_available_frames += region.n_frames;
+            }
+        }
+        n_available_frames
+    }
+    /// Determine the commitment coverage of the system.
+    /// The commitment coverage is the percentage of committed frames that are backed by available frames.
+    pub fn get_commitment_coverage(&self) -> usize {
+        let available_frames = self.get_n_available_frames();
+        let commited_frames = unsafe { UNALLOCATED_FRAMES_COMMITTED.lock() };
+        (*commited_frames / available_frames) * 100
     }
 }
