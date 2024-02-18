@@ -48,6 +48,31 @@ pub enum Error {
     MemoryOvercommitted,
     PfaRegionArrayFull,
     AllocatedRegionNotFound,
+    InvalidArgument,
+}
+
+/// Commit frames for future use but do not allocate them yet.
+/// This function should be called when frames might be needed in the future but are not needed yet.
+pub fn commit_frames(n_frames: usize) -> Result<(), Error> {
+    if PFA.lock().get_commitment_coverage() >= REQUIRED_COMMIT_BACKING_PERCENTAGE {
+        return Err(Error::MemoryOvercommitted);
+    }
+
+    let mut unallocated_frames_committed = unsafe { UNALLOCATED_FRAMES_COMMITTED.lock() };
+    *unallocated_frames_committed += n_frames;
+    Ok(())
+}
+/// Uncommit frames previously committed but not allocated
+/// This function should be called when frames are actually allocated to fulfil the commitment or when the commitment is
+/// released
+pub fn uncommit_frames(n_frames: usize) -> Result<(), Error> {
+    let mut unallocated_frames_committed = unsafe { UNALLOCATED_FRAMES_COMMITTED.lock() };
+    if n_frames > unallocated_frames_committed {
+        Err(Error::InvalidArgument)
+    } else {
+        *unallocated_frames_committed -= n_frames;
+        Ok(())
+    }
 }
 
 ///This enum represents the different types of physical memory regions that the PFA manages.
@@ -307,35 +332,44 @@ impl PhysicalFrameAllocator {
         n_frames: usize,
         capability: Option<CapabilityId>,
     ) -> Result<PhysicalMemoryRegion, Error> {
+        //check if the system is overcommitted
         if self.get_commitment_coverage() > REQUIRED_COMMIT_BACKING_PERCENTAGE {
             return Err(Error::MemoryOvercommitted);
         }
 
-        let mut logger = ArchApi::get_logger();
-        writeln!(&mut logger, "Allocating {} frames.", n_frames);
-
         let mut region_array = unsafe { self.get_mut_region_array() };
-        let mut allocated_region = Option::<PhysicalMemoryRegion>::None;
-
+        let mut smallest_usable_region = Option::<&mut PhysicalMemoryRegion>::None;
+        //find the smallest usable region that can hold the requested number of frames
+        //this is done to minimize fragmentation
         for region in region_array.iter_mut() {
             if region.region_type == PhysicalMemoryType::Usable && region.n_frames >= n_frames {
-                //Create the descriptor for the newly allocated region
-                allocated_region = Some(PhysicalMemoryRegion {
-                    capability: capability,
-                    base: region.base,
-                    n_frames,
-                    region_type: PhysicalMemoryType::Allocated,
-                });
-                //Update the region descriptor for the region that was allocated from
-                region.base += n_frames * FRAME_SIZE;
-                region.n_frames -= n_frames;
+                match &smallest_usable_region {
+                    Some(sur) => {
+                        if region.n_frames < sur.n_frames {
+                            smallest_usable_region = Some(region);
+                        }
+                    }
+                    None => {
+                        smallest_usable_region = Some(region);
+                    }
+                }
             }
         }
-        match allocated_region {
-            Some(ar) => {
-                Self::append_region(region_array, ar.clone())?;
-                Ok(ar)
+        match smallest_usable_region {
+            //if a suitable region was found, allocate the frames and update the region array
+            Some(sur) => {
+                let allocated_region = PhysicalMemoryRegion {
+                    capability,
+                    base: sur.base,
+                    n_frames,
+                    region_type: PhysicalMemoryType::Allocated,
+                };
+                sur.base += n_frames * FRAME_SIZE;
+                sur.n_frames -= n_frames;
+                Self::append_region(region_array, allocated_region.clone())?;
+                Ok(allocated_region)
             }
+            //if no suitable region was found, return an error
             None => Err(Error::InsufficientContiguousMemory),
         }
     }
