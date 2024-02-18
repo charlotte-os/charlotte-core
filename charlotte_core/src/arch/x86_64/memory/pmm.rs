@@ -67,7 +67,7 @@ pub fn commit_frames(n_frames: usize) -> Result<(), Error> {
 /// released
 pub fn uncommit_frames(n_frames: usize) -> Result<(), Error> {
     let mut unallocated_frames_committed = unsafe { UNALLOCATED_FRAMES_COMMITTED.lock() };
-    if n_frames > unallocated_frames_committed {
+    if n_frames > *unallocated_frames_committed {
         Err(Error::InvalidArgument)
     } else {
         *unallocated_frames_committed -= n_frames;
