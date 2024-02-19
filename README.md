@@ -40,4 +40,4 @@ Detailed documentation will eventually be available on the project's wiki.
 Contributions are welcome and highly appreciated. Please create a new branch for your work and submit a merge request on GitHub. Make sure to rebase all your changes on master to maintain a linear commit history avoiding merge commits.
 
 ### Licensing
-This project is licensed under the GNU General Public License Version 3.0 or later as published by the Free Software Foundation. See the LICENSE file for details.
+This project is licensed under the Mozilla Public License Version 2.0 or later. See the LICENSE file for details.
