@@ -58,7 +58,7 @@ impl Console {
             '\r' => self.cursor_x = 0,
             // Tab
             '\t' => {
-                for i in 0..4 {
+                for _ in 0..4 {
                     self.write_char(' ', color);
                 }
             }

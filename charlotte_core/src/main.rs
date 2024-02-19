@@ -1,11 +1,11 @@
 #![no_std]
 #![no_main]
-#![feature(slice_internals)]
 
 mod access_control;
 mod arch;
 mod bootinfo;
 mod framebuffer;
+mod klib;
 
 use core::fmt::Write;
 
@@ -48,7 +48,7 @@ unsafe extern "C" fn main() -> ! {
     match pfa.allocate_frames(50, None) {
         Ok(region_descriptor) => {
             writeln!(&mut logger, "Allocated region: {:?}", region_descriptor).unwrap();
-            pfa.deallocate_frames(region_descriptor);
+            let _ = pfa.deallocate_frames(region_descriptor);
             writeln!(&mut logger, "Deallocated previously allocated region.").unwrap();
         }
         Err(e) => {

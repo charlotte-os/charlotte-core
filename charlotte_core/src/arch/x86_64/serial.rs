@@ -19,7 +19,7 @@ pub struct SerialPort {
 
 impl SerialPort {
     pub fn try_new(com_port: ComPort) -> Option<Self> {
-        let mut port = SerialPort {
+        let port = SerialPort {
             io_port: com_port as u16,
         };
         ArchApi::outb(port.io_port + 1, 0x00); // Disable all interrupts
