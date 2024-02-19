@@ -12,7 +12,7 @@ impl Tss {
     pub fn new(rsp0: u64) -> Self {
         Tss {
             res: 0,
-            rsp0: rsp0,
+            rsp0,
             unused: [0u8; 90],
             iopb: size_of::<Tss>() as u16,
         }
