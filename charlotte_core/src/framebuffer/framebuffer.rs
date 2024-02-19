@@ -4,14 +4,13 @@ use crate::bootinfo::FRAMEBUFFER_REQUEST;
 use crate::framebuffer::chars::{get_char_bitmap, FONT_HEIGHT, FONT_WIDTH};
 // External crate for bootloader-specific functions and types.
 extern crate limine;
-use lazy_static::lazy_static;
 use limine::framebuffer::Framebuffer;
+use spin::lazy::Lazy;
 use spin::mutex::TicketMutex;
 
-lazy_static! {
-    /// Global access to the framebuffer
-    pub static ref FRAMEBUFFER: TicketMutex<FrameBufferInfo> = TicketMutex::new(init_framebuffer().unwrap());
-}
+/// Global access to the framebuffer
+pub static FRAMEBUFFER: Lazy<TicketMutex<FrameBufferInfo>> =
+    Lazy::new(|| TicketMutex::new(init_framebuffer().unwrap()));
 
 /// A struct representing the framebuffer information,
 /// including its memory address, dimensions, pixel format, etc.

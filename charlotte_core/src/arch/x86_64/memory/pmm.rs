@@ -11,25 +11,28 @@ use core::mem;
 
 use crate::bootinfo;
 
-use lazy_static::lazy_static;
 use limine::memory_map::*;
 
+use spin::lazy::Lazy;
 use spin::mutex::TicketMutex;
 
 // TODO: move this to access ctrl when it is implemented
 pub type CapabilityId = u64;
 
-lazy_static! {
-    ///This value represents the base virtual address of the direct mapping of physical memory into
-    /// kernelspace. It should have the desired physical address added to it and then be cast to a
-    /// pointer to access the desired physical address.
-    /// Physical addresses should only ever be used while this Mutex is locked.
-    /// TODO: Find a way to make this Mutex more fine-grained and function more like a read-write lock on the physical memory.
-    pub static ref HHDM_BASE: TicketMutex<usize> = TicketMutex::new(bootinfo::HHDM_REQUEST.get_response().unwrap().offset() as usize);
+/// This value represents the base virtual address of the direct mapping of physical memory into
+/// kernelspace. It should have the desired physical address added to it and then be cast to a
+/// pointer to access the desired physical address.
+/// Physical addresses should only ever be used while this Mutex is locked.
+/// TODO: Find a way to make this Mutex more fine-grained and function more like a read-write lock on the physical memory.
+pub static HHDM_BASE: Lazy<TicketMutex<usize>> =
+    Lazy::new(
+        || TicketMutex::new(bootinfo::HHDM_REQUEST.get_response().unwrap().offset() as usize),
+    );
 
-    ///The physical frame allocator to be used by the kernel and user-space applications.
-    pub static ref PFA: TicketMutex<PhysicalFrameAllocator> = TicketMutex::new(PhysicalFrameAllocator::new());
-}
+/// The physical frame allocator to be used by the kernel and user-space applications.
+pub static PFA: Lazy<TicketMutex<PhysicalFrameAllocator>> =
+    Lazy::new(|| TicketMutex::new(PhysicalFrameAllocator::new()));
+
 /// The number of frames that may need to be allocated but have not been allocated yet.
 /// To be used for things like faulted in pages and copy-on-write pages.
 /// This value is used to determine how overcommitted the system is.
