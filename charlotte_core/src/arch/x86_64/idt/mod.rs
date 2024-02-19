@@ -94,10 +94,7 @@ struct Idtr {
 
 impl Idtr {
     fn new(size: u16, base: u64) -> Self {
-        Idtr {
-            size,
-            base,
-        }
+        Idtr { size, base }
     }
 }
 
