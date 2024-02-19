@@ -18,12 +18,12 @@ use core::str;
 
 use cpu::*;
 
+use spin::lazy::Lazy;
 use spin::mutex::spin::SpinMutex;
 
 use ignore_result::Ignore;
 
 use gdt::{tss::Tss, Gdt};
-use lazy_static::lazy_static;
 
 use serial::{ComPort, SerialPort};
 
@@ -32,18 +32,10 @@ use idt::*;
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api;
 
-// Initialize global data structures for the bootstrap processor (BSP)
-lazy_static! {
-    // Stack for ring 0 interrupts
-    static ref BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
-    // Task state segment (TSS)
-    static ref BSP_TSS: Tss = Tss::new(addr_of!(BSP_RING0_INT_STACK) as u64);
-    // Global descriptor table (GDT)
-    static ref BSP_GDT: Gdt = Gdt::new(&BSP_TSS);
-    // Interrupt descriptor table (IDT)
-    static ref BSP_IDT: SpinMutex<Idt> = SpinMutex::from(Idt::new());
-
-}
+static BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
+static BSP_TSS: Lazy<Tss> = Lazy::new(|| Tss::new(addr_of!(BSP_RING0_INT_STACK) as u64));
+static BSP_GDT: Lazy<Gdt> = Lazy::new(|| Gdt::new(&BSP_TSS));
+static BSP_IDT: SpinMutex<Idt> = SpinMutex::new(Idt::new());
 
 /// Provide the implementation of the Api trait for the Api struct
 impl crate::arch::Api for Api {

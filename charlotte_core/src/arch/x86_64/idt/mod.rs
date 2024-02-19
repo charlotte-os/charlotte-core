@@ -7,7 +7,7 @@ pub struct Idt {
 }
 
 impl Idt {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Idt {
             gates: [InterruptGate::new(); 256],
         }
