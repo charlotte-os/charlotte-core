@@ -86,7 +86,7 @@ impl Gdt {
         access_byte: u8,
         flags: u8,
     ) {
-        let mut dest_sd = if index == 5 {
+        let dest_sd = if index == 5 {
             &mut (self.tss_desc.lower)
         } else {
             &mut (self.segment_descs[index])

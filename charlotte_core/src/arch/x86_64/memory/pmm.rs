@@ -7,13 +7,9 @@
 //! It is capable of allocating and deallocating contiguous blocks of frames, which is useful for things like
 //! DMA and certain optimization techniques.
 
-use core::slice::sort::quicksort;
-
-use core::fmt::Write;
 use core::mem;
 
 use crate::access_control::CapabilityId;
-use crate::arch::{Api, ArchApi};
 use crate::bootinfo;
 
 use lazy_static::lazy_static;
@@ -79,7 +75,7 @@ pub fn uncommit_frames(n_frames: usize) -> Result<(), Error> {
 /// It is identical to the defines used by Limine with the exception of PfaReserved, which is used to represent
 /// regions of physical memory that are reserved for use by the PFA itself and PfaNull, which is used to represent
 /// region descriptors that are not in use.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd)]
 pub enum PhysicalMemoryType {
     Usable,
     Reserved,
@@ -97,7 +93,7 @@ pub enum PhysicalMemoryType {
 /// A physical memory region descriptor. This struct is used to represent a region of physical memory in the
 /// physical memory region array. It contains the base address of the region, the number of frames in the region,
 /// the type of the region, and optionally a capability capability that is used to access the region.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd)]
 pub struct PhysicalMemoryRegion {
     capability: Option<CapabilityId>,
     base: usize,
@@ -125,6 +121,16 @@ impl PhysicalMemoryRegion {
         } else {
             // If neither descriptor is null, compare their base addresses
             a.base < b.base
+        }
+    }
+}
+
+impl Ord for PhysicalMemoryRegion {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        if PhysicalMemoryRegion::is_less(self, other) {
+            core::cmp::Ordering::Less
+        } else {
+            core::cmp::Ordering::Greater
         }
     }
 }
@@ -228,7 +234,7 @@ impl PhysicalFrameAllocator {
             modifying the ALLOCATION_FACTOR constant may fix this issue.");
         }
 
-        let mut region_array = unsafe { self.get_mut_region_array() };
+        let region_array = unsafe { self.get_mut_region_array() };
         //initialize the region array using the memory map
         for (i, entry) in memory_map.iter().enumerate() {
             if entry.entry_type != EntryType::BAD_MEMORY {
@@ -298,18 +304,17 @@ impl PhysicalFrameAllocator {
             //if the current region and the next region are of the same type, not null, and adjacent, merge them
             if region_array[i].region_type == region_array[next_nonnull_index].region_type
                 && region_array[i].region_type != PhysicalMemoryType::PfaNull
-            {
-                if region_array[i].base + region_array[i].n_frames * FRAME_SIZE
+                && region_array[i].base + region_array[i].n_frames * FRAME_SIZE
                     == region_array[next_nonnull_index].base
-                {
-                    region_array[i].n_frames += region_array[next_nonnull_index].n_frames;
-                    region_array[next_nonnull_index].region_type = PhysicalMemoryType::PfaNull;
-                }
+            {
+                region_array[i].n_frames += region_array[next_nonnull_index].n_frames;
+                region_array[next_nonnull_index].region_type = PhysicalMemoryType::PfaNull;
             }
         }
 
         //Sort the region array by base address and move all null regions to the end of the array
-        quicksort(region_array, &PhysicalMemoryRegion::is_less);
+        // quicksort(region_array, &PhysicalMemoryRegion::is_less);
+        region_array.sort_unstable()
     }
 
     fn append_region(
@@ -337,7 +342,7 @@ impl PhysicalFrameAllocator {
             return Err(Error::MemoryOvercommitted);
         }
 
-        let mut region_array = unsafe { self.get_mut_region_array() };
+        let region_array = unsafe { self.get_mut_region_array() };
         let mut smallest_usable_region = Option::<&mut PhysicalMemoryRegion>::None;
         //find the smallest usable region that can hold the requested number of frames
         //this is done to minimize fragmentation
@@ -375,7 +380,7 @@ impl PhysicalFrameAllocator {
     }
     /// Deallocate a previously allocated contiguous block of physical memory frames.
     pub fn deallocate_frames(&mut self, region: PhysicalMemoryRegion) -> Result<(), Error> {
-        let mut region_array = unsafe { self.get_mut_region_array() };
+        let region_array = unsafe { self.get_mut_region_array() };
         for r in region_array.iter_mut() {
             if r.base == region.base
                 && r.n_frames == region.n_frames

@@ -66,9 +66,8 @@ impl FrameBufferInfo {
         let mut err = dx + dy; // error value e_xy
 
         loop {
-            unsafe {
-                self.draw_pixel(x0 as usize, y0 as usize, color);
-            } // Draw the current pixel
+            self.draw_pixel(x0 as usize, y0 as usize, color);
+            // Draw the current pixel
             if x0 == x1 && y0 == y1 {
                 break;
             }
@@ -137,9 +136,7 @@ impl FrameBufferInfo {
                     x = start_x;
                 }
                 _ => {
-                    unsafe {
-                        self.draw_char(x, y, c, color);
-                    }
+                    self.draw_char(x, y, c, color);
                     x += FONT_WIDTH;
                 }
             }

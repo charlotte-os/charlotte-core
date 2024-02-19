@@ -60,7 +60,7 @@ extern "C" {
 }
 
 #[no_mangle]
-extern "C" fn ih_double_fault(error_code: u64) {
+extern "C" fn ih_double_fault(_error_code: u64) {
     let mut logger = SerialPort::try_new(COM1).unwrap();
 
     writeln!(&mut logger, "A double fault has occurred! Panicking!").ignore();
@@ -78,7 +78,7 @@ extern "C" fn ih_divide_by_zero() {
 }
 
 #[no_mangle]
-extern "C" fn ih_general_protection_fault(error_code: u64) {
+extern "C" fn ih_general_protection_fault(_error_code: u64) {
     let mut logger = SerialPort::try_new(COM1).unwrap();
 
     writeln!(
