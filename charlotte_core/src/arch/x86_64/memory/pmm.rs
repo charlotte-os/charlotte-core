@@ -37,7 +37,7 @@ pub static PFA: Lazy<TicketMutex<PhysicalFrameAllocator>> =
 /// To be used for things like faulted in pages and copy-on-write pages.
 /// This value is used to determine how overcommitted the system is.
 /// When the system is overcommitted by more than a certain percentage, new allocations will fail.
-static mut UNALLOCATED_FRAMES_COMMITTED: TicketMutex<usize> = TicketMutex::new(0);
+static UNALLOCATED_FRAMES_COMMITTED: TicketMutex<usize> = TicketMutex::new(0);
 /// The percentage of committed frames that must be backed by available frames.
 /// When the system is overcommitted by more than this percentage, new allocations will fail.
 const REQUIRED_COMMIT_BACKING_PERCENTAGE: usize = 70;
@@ -61,7 +61,7 @@ pub fn commit_frames(n_frames: usize) -> Result<(), Error> {
         return Err(Error::MemoryOvercommitted);
     }
 
-    let mut unallocated_frames_committed = unsafe { UNALLOCATED_FRAMES_COMMITTED.lock() };
+    let mut unallocated_frames_committed = UNALLOCATED_FRAMES_COMMITTED.lock();
     *unallocated_frames_committed += n_frames;
     Ok(())
 }
@@ -70,7 +70,7 @@ pub fn commit_frames(n_frames: usize) -> Result<(), Error> {
 /// released
 #[allow(unused)]
 pub fn uncommit_frames(n_frames: usize) -> Result<(), Error> {
-    let mut unallocated_frames_committed = unsafe { UNALLOCATED_FRAMES_COMMITTED.lock() };
+    let mut unallocated_frames_committed = UNALLOCATED_FRAMES_COMMITTED.lock();
     if n_frames > *unallocated_frames_committed {
         Err(Error::InvalidArgument)
     } else {
@@ -417,7 +417,7 @@ impl PhysicalFrameAllocator {
     /// The commitment coverage is the percentage of committed frames that are backed by available frames.
     pub fn get_commitment_coverage(&self) -> usize {
         let available_frames = self.get_n_available_frames();
-        let commited_frames = unsafe { UNALLOCATED_FRAMES_COMMITTED.lock() };
+        let commited_frames = UNALLOCATED_FRAMES_COMMITTED.lock();
         (*commited_frames / available_frames) * 100
     }
 }
