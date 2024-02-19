@@ -5,7 +5,6 @@ mod access_control;
 mod arch;
 mod bootinfo;
 mod framebuffer;
-mod klib;
 
 use core::fmt::Write;
 
