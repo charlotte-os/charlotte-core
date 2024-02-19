@@ -30,6 +30,7 @@ pub struct Point {
     pub y: isize,
 }
 
+#[allow(unused)]
 impl FrameBufferInfo {
     /// Constructs a new `FrameBufferInfo` instance from a limine framebuffer.
     ///

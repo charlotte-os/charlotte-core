@@ -23,6 +23,7 @@ pub trait Api {
     fn inb(port: u16) -> u8;
     fn outb(port: u16, val: u8);
     fn init_bsp();
+    #[allow(unused)]
     fn init_ap();
 }
 

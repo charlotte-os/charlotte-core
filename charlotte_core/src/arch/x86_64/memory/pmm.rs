@@ -9,13 +9,15 @@
 
 use core::mem;
 
-use crate::access_control::CapabilityId;
 use crate::bootinfo;
 
 use lazy_static::lazy_static;
 use limine::memory_map::*;
 
 use spin::mutex::TicketMutex;
+
+// TODO: move this to access ctrl when it is implemented
+pub type CapabilityId = u64;
 
 lazy_static! {
     ///This value represents the base virtual address of the direct mapping of physical memory into
@@ -38,6 +40,7 @@ static mut UNALLOCATED_FRAMES_COMMITTED: TicketMutex<usize> = TicketMutex::new(0
 const REQUIRED_COMMIT_BACKING_PERCENTAGE: usize = 70;
 
 #[derive(Debug)]
+#[allow(unused)]
 pub enum Error {
     InsufficientMemory,
     InsufficientContiguousMemory,
@@ -49,6 +52,7 @@ pub enum Error {
 
 /// Commit frames for future use but do not allocate them yet.
 /// This function should be called when frames might be needed in the future but are not needed yet.
+#[allow(unused)]
 pub fn commit_frames(n_frames: usize) -> Result<(), Error> {
     if PFA.lock().get_commitment_coverage() >= REQUIRED_COMMIT_BACKING_PERCENTAGE {
         return Err(Error::MemoryOvercommitted);
@@ -61,6 +65,7 @@ pub fn commit_frames(n_frames: usize) -> Result<(), Error> {
 /// Uncommit frames previously committed but not allocated
 /// This function should be called when frames are actually allocated to fulfil the commitment or when the commitment is
 /// released
+#[allow(unused)]
 pub fn uncommit_frames(n_frames: usize) -> Result<(), Error> {
     let mut unallocated_frames_committed = unsafe { UNALLOCATED_FRAMES_COMMITTED.lock() };
     if n_frames > *unallocated_frames_committed {
