@@ -41,7 +41,7 @@ fn main() {
                 .join(path.file_stem().unwrap())
                 .with_extension("o");
             Command::new("nasm")
-                .args(&[
+                .args([
                     "-felf64",
                     "-o",
                     object.to_str().unwrap(),
