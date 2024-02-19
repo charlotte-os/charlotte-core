@@ -30,6 +30,7 @@ pub struct Console {
     cursor_y: usize,
 }
 
+#[allow(unused)]
 impl Console {
     /// Create a new console
     pub const fn new() -> Self {

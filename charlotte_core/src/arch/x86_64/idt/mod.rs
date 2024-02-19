@@ -41,11 +41,13 @@ impl Idt {
         gate.addr2 = ((isr_addr & (0xFFFFFFFF << 32)) >> 32) as u32;
         gate.reserved = 0u32;
     }
+    #[allow(unused)]
     pub fn set_present(&mut self, index: usize) {
         if index < 256 {
             self.gates[index].flags |= 0b1u8 << 7;
         }
     }
+    #[allow(unused)]
     pub fn clear_present(&mut self, index: usize) {
         if index < 256 {
             self.gates[index].flags &= !(0b1u8 << 7);

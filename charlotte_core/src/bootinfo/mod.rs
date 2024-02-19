@@ -4,6 +4,7 @@
 use limine::request::*;
 use limine::BaseRevision;
 
+#[allow(unused)]
 /// Require version 1 or later of the Limine boot protocol
 pub static BASE_REVISION: BaseRevision = BaseRevision::new();
 

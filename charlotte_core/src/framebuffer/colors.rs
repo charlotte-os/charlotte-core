@@ -1,3 +1,4 @@
+#[allow(unused)]
 pub fn blend_colors(foreground: u32, background: u32, blend_factor: u8) -> u32 {
     let fg_ratio = blend_factor as u32;
     let bg_ratio = 255 - fg_ratio as u32;

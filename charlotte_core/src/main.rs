@@ -1,7 +1,6 @@
 #![no_std]
 #![no_main]
 
-mod access_control;
 mod arch;
 mod bootinfo;
 mod framebuffer;
