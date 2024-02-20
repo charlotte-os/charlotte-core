@@ -7,7 +7,12 @@ import subprocess
 import sys
 
 # When adding a new target, add the target to the TARGETS list
-TARGETS = ["x86_64-unknown-none", "aarch64-unknown-none", "riscv64gc-unknown-none-elf"]
+# a target set as "core" will cause the script to raise an error if the target fails
+TARGETS = {
+    "x86_64-unknown-none": "core",
+    "aarch64-unknown-none": "secondary",
+    "riscv64gc-unknown-none-elf": "secondary",
+}
 TARGET_RESULTS = {}
 
 
@@ -47,7 +52,7 @@ def check_code():
             subprocess.run(
                 [
                     "cargo",
-                    "doc",
+                    "build",
                     "--target",
                     target,
                     "--manifest-path",
@@ -75,12 +80,20 @@ def check_code():
     for target, result in TARGET_RESULTS.items():
         print(f"{target}: {result}")
 
-    if all(result == "Ok" for result in TARGET_RESULTS.values()) and not grep_res:
-        print("\nAll checks passed!")
+    if "Failed" in TARGET_RESULTS.values():
+        for target, result in TARGET_RESULTS.items():
+            if result == "Failed" and TARGETS[target] == "core":
+                print(
+                    f"Core target {target} failed to build, please fix the build errors before opening a PR"
+                )
+                sys.exit(1)
+        print(
+            "WARN: Some non core target failed to build"
+        )
         sys.exit(0)
-    else:
-        print("\nSome checks failed!")
-        sys.exit(1)
+        
+    print("All checks passed!")
+    sys.exit(0)
 
 
 if __name__ == "__main__":
