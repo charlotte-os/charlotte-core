@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""Code sanity checker for charlotte_core"""
 
 import os
-import sys
 import subprocess
 
 # When adding a new target, add the target to the TARGETS list
@@ -24,7 +24,7 @@ def run_grep(lookup, filename) -> str:
 
 def check_code():
     """Check the project"""
-    grep_res = run_grep("allow(unused)", "./charlotte_core")
+    grep_res = run_grep("allow(unused)", "./charlotte_core/src")
 
     for target in TARGETS:
         print(f"Checking target: {target}")
@@ -73,6 +73,13 @@ def check_code():
     print("Target results:")
     for target, result in TARGET_RESULTS.items():
         print(f"{target}: {result}")
+
+    if all(result == "Ok" for result in TARGET_RESULTS.values()) and not grep_res:
+        print("\nAll checks passed!")
+        exit(0)
+    else:
+        print("\nSome checks failed!")
+        exit(1)
 
 
 if __name__ == "__main__":
