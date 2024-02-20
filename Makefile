@@ -21,13 +21,13 @@ charlotte_core-x86_64-debug.iso: build-x86_64-debug
 	rm -rf iso_root
 
 run-x86_64-debug: ovmf-x86_64 charlotte_core-x86_64-debug.iso
-	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d
+	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial stdio
 
 run-x86_64-extdb: ovmf-x86_64 charlotte_core-x86_64-debug.iso
 	qemu-system-x86_64 -s -S -M q35 -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d
 
 run-x86_64-log: ovmf-x86_64 charlotte_core-x86_64-debug.iso
-	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 12G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d serial file:log_x86_64.txt
+	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 12G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial file:log_x86_64.txt
 
 build-x86_64-release:
 	cd charlotte_core && cargo build --target x86_64-unknown-none --release
