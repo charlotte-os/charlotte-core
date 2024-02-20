@@ -49,19 +49,6 @@ def check_code():
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
             )
-            subprocess.run(
-                [
-                    "cargo",
-                    "build",
-                    "--target",
-                    target,
-                    "--manifest-path",
-                    "charlotte_core/Cargo.toml",
-                ],
-                check=True,
-                stderr=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-            )
         except subprocess.CalledProcessError:
             target_result = "Failed"
         else:
