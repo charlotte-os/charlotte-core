@@ -25,9 +25,6 @@ def run_grep(lookup, filename) -> str:
 def check_code():
     """Check the project"""
     grep_res = run_grep("allow(unused)", "./charlotte_core")
-    if grep_res:
-        print("Unused code detected:")
-        print(grep_res)
 
     for target in TARGETS:
         print(f"Checking target: {target}")
@@ -65,7 +62,15 @@ def check_code():
             target_result = "Ok"
         TARGET_RESULTS[target] = target_result
 
-    print("Results:")
+    print("\n\nResults:")
+    print("--------")
+    if grep_res:
+        print(
+            "Unused code warning supression detected! Please check them and remove if not needed."
+        )
+        print("Affected files:")
+        print(grep_res)
+    print("Target results:")
     for target, result in TARGET_RESULTS.items():
         print(f"{target}: {result}")
 
