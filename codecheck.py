@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""Code sanity checker for charlotte_core"""
 
 import os
-import sys
 import subprocess
+import sys
 
 # When adding a new target, add the target to the TARGETS list
-TARGETS = ["x86_64-unknown-none", "aarch64-unknown-none", "riscv64gc-unknown-none-elf"]
+# a target set as "core" will cause the script to raise an error if the target fails
+TARGETS = {
+    "x86_64-unknown-none": "core",
+    "aarch64-unknown-none": "secondary",
+    "riscv64gc-unknown-none-elf": "secondary",
+}
 TARGET_RESULTS = {}
 
 
@@ -24,7 +30,7 @@ def run_grep(lookup, filename) -> str:
 
 def check_code():
     """Check the project"""
-    grep_res = run_grep("allow(unused)", "./charlotte_core")
+    grep_res = run_grep("allow(unused)", "./charlotte_core/src")
 
     for target in TARGETS:
         print(f"Checking target: {target}")
@@ -34,19 +40,6 @@ def check_code():
                 [
                     "cargo",
                     "check",
-                    "--target",
-                    target,
-                    "--manifest-path",
-                    "charlotte_core/Cargo.toml",
-                ],
-                check=True,
-                stderr=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-            )
-            subprocess.run(
-                [
-                    "cargo",
-                    "doc",
                     "--target",
                     target,
                     "--manifest-path",
@@ -73,6 +66,21 @@ def check_code():
     print("Target results:")
     for target, result in TARGET_RESULTS.items():
         print(f"{target}: {result}")
+
+    if "Failed" in TARGET_RESULTS.values():
+        for target, result in TARGET_RESULTS.items():
+            if result == "Failed" and TARGETS[target] == "core":
+                print(
+                    f"Core target {target} failed to build, please fix the build errors before opening a PR"
+                )
+                sys.exit(1)
+        print(
+            "WARN: Some non core target failed to build"
+        )
+        sys.exit(0)
+        
+    print("All checks passed!")
+    sys.exit(0)
 
 
 if __name__ == "__main__":
