@@ -4,6 +4,7 @@
 
 import os
 import subprocess
+import sys
 
 # When adding a new target, add the target to the TARGETS list
 TARGETS = ["x86_64-unknown-none", "aarch64-unknown-none", "riscv64gc-unknown-none-elf"]
@@ -76,10 +77,10 @@ def check_code():
 
     if all(result == "Ok" for result in TARGET_RESULTS.values()) and not grep_res:
         print("\nAll checks passed!")
-        exit(0)
+        sys.exit(0)
     else:
         print("\nSome checks failed!")
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
