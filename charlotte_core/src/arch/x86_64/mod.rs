@@ -21,13 +21,13 @@ use cpu::*;
 use spin::lazy::Lazy;
 use spin::mutex::spin::SpinMutex;
 
-use ignore_result::Ignore;
-
 use gdt::{tss::Tss, Gdt};
 
 use serial::{ComPort, SerialPort};
 
 use idt::*;
+
+use crate::logln;
 
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api;
@@ -40,10 +40,10 @@ static BSP_IDT: SpinMutex<Idt> = SpinMutex::new(Idt::new());
 /// Provide the implementation of the Api trait for the Api struct
 impl crate::arch::Api for Api {
     /// Define the logger type
-    type Logger = SerialPort;
+    type DebugLogger = SerialPort;
 
     /// Get a new logger instance
-    fn get_logger() -> Self::Logger {
+    fn get_logger() -> Self::DebugLogger {
         SerialPort::try_new(ComPort::COM1).unwrap()
     }
     /// Get the number of significant physical address bits supported by the current CPU
@@ -76,31 +76,29 @@ impl crate::arch::Api for Api {
 
         let mut logger = SerialPort::try_new(ComPort::COM1).unwrap();
 
-        writeln!(&mut logger, "Initializing the bootstrap processor...").ignore();
+        logln!("Initializing the bootstrap processor...");
 
         BSP_GDT.load();
-        writeln!(&mut logger, "Loaded GDT").ignore();
+        logln!("Loaded GDT");
         Gdt::reload_segment_regs();
-        writeln!(&mut logger, "Reloaded segment registers").ignore();
+        logln!("Reloaded segment registers");
         Gdt::load_tss();
-        writeln!(&mut logger, "Loaded TSS").ignore();
+        logln!("Loaded TSS");
 
-        writeln!(&mut logger, "Registering exception ISRs in the IDT").ignore();
+        logln!("Registering exception ISRs in the IDT");
         exceptions::load_exceptions(BSP_IDT.lock().borrow_mut());
-        writeln!(&mut logger, "Exception ISRs registered").ignore();
+        logln!("Exception ISRs registered");
 
-        writeln!(&mut logger, "Attempting to load IDT").ignore();
+        logln!("Attempting to load IDT");
         BSP_IDT.lock().borrow().load();
-        writeln!(&mut logger, "Loaded IDT").ignore();
+        logln!("Loaded IDT");
 
         let mut vendor_string = [0u8; 12];
         unsafe { cpu::cpuid::asm_get_vendor_string(&mut vendor_string) }
-        writeln!(
-            &mut logger,
+        logln!(
             "CPU Vendor ID: {}",
             str::from_utf8(&vendor_string).unwrap()
-        )
-        .unwrap();
+        );
     }
     ///
     ///  Initialize the application processors (APs)
