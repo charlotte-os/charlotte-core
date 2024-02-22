@@ -1,4 +1,4 @@
-# CharlotteCore - The Kernel of the Charlotte Project
+# CharlotteCore - The Kernel of CharlotteOS
 
 CharlotteCore is an OS kernel designed to present system resources to application software through an interface that is as low level as possible while representing the least common denominator in terms of functionality for each device type. Each interface may also offer queryable extensions that depend on the specific underlying hardware. Operations on these virtual device interfaces are translated into equivalent operations on the underlying hardware through the kernel and its drivers. We refer to this design as the transitive kernel architecture.
 
