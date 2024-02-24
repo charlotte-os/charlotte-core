@@ -74,8 +74,6 @@ impl crate::arch::Api for Api {
     fn init_bsp() {
         //! This routine is run by the bootsrap processor to initilize itself priot to bringing up the kernel.
 
-        let mut logger = SerialPort::try_new(ComPort::COM1).unwrap();
-
         logln!("Initializing the bootstrap processor...");
 
         BSP_GDT.load();
