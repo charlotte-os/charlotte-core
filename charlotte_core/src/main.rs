@@ -16,8 +16,6 @@ use crate::framebuffer::framebuffer::FRAMEBUFFER;
 
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
-    let mut logger = ArchApi::get_logger();
-
     FRAMEBUFFER.lock().clear_screen(0x00000000);
     println!("Hello, world!");
 
