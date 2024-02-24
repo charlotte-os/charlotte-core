@@ -202,22 +202,11 @@ impl PhysicalFrameAllocator {
 
     /// Returns the largest usable memory region in the memory map.
     fn get_largest_usable_region(memory_map: &'static [&Entry]) -> Option<&'static Entry> {
-        let mut largest_usable_region: Option<&Entry> = None;
-        for entry in memory_map {
-            if entry.entry_type == EntryType::USABLE {
-                match largest_usable_region {
-                    Some(lur) => {
-                        if entry.length > lur.length {
-                            largest_usable_region = Some(entry);
-                        }
-                    }
-                    None => {
-                        largest_usable_region = Some(entry);
-                    }
-                }
-            }
-        }
-        largest_usable_region
+        memory_map
+            .iter()
+            .filter(|entry| entry.entry_type == EntryType::USABLE)
+            .max_by_key(|entry| entry.length)
+            .copied()
     }
 
     /// Returns the physical memory region array as a slice.
@@ -266,8 +255,8 @@ impl PhysicalFrameAllocator {
             }
         }
         //initialize the rest of the region array with null descriptors
-        for i in memory_map.len()..region_array.len() {
-            region_array[i] = PhysicalMemoryRegion {
+        for region in region_array.iter_mut().skip(memory_map.len()) {
+            *region = PhysicalMemoryRegion {
                 capability: None,
                 base: 0,
                 n_frames: 0,
@@ -329,14 +318,13 @@ impl PhysicalFrameAllocator {
         region_array: &mut [PhysicalMemoryRegion],
         region: PhysicalMemoryRegion,
     ) -> Result<(), Error> {
-        for i in 0..region_array.len() {
-            if region_array[i].region_type == PhysicalMemoryType::PfaNull {
-                region_array[i] = region;
-                Self::merge_and_sort_region_array(region_array);
-                return Ok(());
-            }
-        }
-        Err(Error::PfaRegionArrayFull)
+        let dst = region_array
+            .iter_mut()
+            .find(|r| r.region_type == PhysicalMemoryType::PfaNull)
+            .ok_or(Error::PfaRegionArrayFull)?;
+        *dst = region;
+        Self::merge_and_sort_region_array(region_array);
+        Ok(())
     }
 
     /// Allocate a contiguous block of physical memory frames.
@@ -351,41 +339,27 @@ impl PhysicalFrameAllocator {
         }
 
         let region_array = unsafe { self.get_mut_region_array() };
-        let mut smallest_usable_region = Option::<&mut PhysicalMemoryRegion>::None;
-        //find the smallest usable region that can hold the requested number of frames
-        //this is done to minimize fragmentation
-        for region in region_array.iter_mut() {
-            if region.region_type == PhysicalMemoryType::Usable && region.n_frames >= n_frames {
-                match &smallest_usable_region {
-                    Some(sur) => {
-                        if region.n_frames < sur.n_frames {
-                            smallest_usable_region = Some(region);
-                        }
-                    }
-                    None => {
-                        smallest_usable_region = Some(region);
-                    }
-                }
-            }
-        }
-        match smallest_usable_region {
-            //if a suitable region was found, allocate the frames and update the region array
-            Some(sur) => {
-                let allocated_region = PhysicalMemoryRegion {
-                    capability,
-                    base: sur.base,
-                    n_frames,
-                    region_type: PhysicalMemoryType::Allocated,
-                };
-                sur.base += n_frames * FRAME_SIZE;
-                sur.n_frames -= n_frames;
-                Self::append_region(region_array, allocated_region.clone())?;
-                Ok(allocated_region)
-            }
-            //if no suitable region was found, return an error
-            None => Err(Error::InsufficientContiguousMemory),
-        }
+        // find the smallest usable region that can hold the requested number of frames
+        // this is done to minimize fragmentation
+        let smallest_usable_region = region_array
+            .iter_mut()
+            .filter(|r| r.region_type == PhysicalMemoryType::Usable && r.n_frames >= n_frames)
+            .min_by_key(|r| r.n_frames)
+            .ok_or(Error::InsufficientContiguousMemory)?;
+
+        // allocate the frames and update the region array
+        let allocated_region = PhysicalMemoryRegion {
+            capability,
+            base: smallest_usable_region.base,
+            n_frames,
+            region_type: PhysicalMemoryType::Allocated,
+        };
+        smallest_usable_region.base += n_frames * FRAME_SIZE;
+        smallest_usable_region.n_frames -= n_frames;
+        Self::append_region(region_array, allocated_region.clone())?;
+        Ok(allocated_region)
     }
+
     /// Deallocate a previously allocated contiguous block of physical memory frames.
     pub fn deallocate_frames(&mut self, region: PhysicalMemoryRegion) -> Result<(), Error> {
         let region_array = unsafe { self.get_mut_region_array() };
