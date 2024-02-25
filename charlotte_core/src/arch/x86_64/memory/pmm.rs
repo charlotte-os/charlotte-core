@@ -109,20 +109,18 @@ pub struct PhysicalMemoryRegion {
 }
 
 impl PhysicalMemoryRegion {
+    fn is_null(&self) -> bool {
+        self.region_type == PhysicalMemoryType::PfaNull
+    }
+
     fn is_less(a: &PhysicalMemoryRegion, b: &PhysicalMemoryRegion) -> bool {
-        if a.region_type == PhysicalMemoryType::PfaNull
-            && b.region_type != PhysicalMemoryType::PfaNull
-        {
+        if a.is_null() && !b.is_null() {
             //Null descriptors are always less than any other descriptor
             true
-        } else if a.region_type != PhysicalMemoryType::PfaNull
-            && b.region_type == PhysicalMemoryType::PfaNull
-        {
+        } else if !a.is_null() && b.is_null() {
             //Null descriptors are always less than any other descriptor
             false
-        } else if a.region_type == PhysicalMemoryType::PfaNull
-            && b.region_type == PhysicalMemoryType::PfaNull
-        {
+        } else if a.is_null() && b.is_null() {
             // When both descriptors are null, they are equal
             false
         } else {
@@ -270,7 +268,7 @@ impl PhysicalFrameAllocator {
             region_type: PhysicalMemoryType::PfaReserved,
         };
         for region in region_array.iter_mut() {
-            if region.region_type == PhysicalMemoryType::PfaNull {
+            if region.is_null() {
                 *region = pfa_region;
                 break;
             }
@@ -287,12 +285,12 @@ impl PhysicalFrameAllocator {
             //find the next non-null region
             next_nonnull_index = i + 1;
 
-            if region_array[i].region_type == PhysicalMemoryType::PfaNull {
+            if region_array[i].is_null() {
                 continue;
             }
 
             while next_nonnull_index < region_array.len()
-                && region_array[next_nonnull_index].region_type == PhysicalMemoryType::PfaNull
+                && region_array[next_nonnull_index].is_null()
             {
                 next_nonnull_index += 1;
             }
@@ -322,7 +320,7 @@ impl PhysicalFrameAllocator {
     ) -> Result<(), Error> {
         let dst = region_array
             .iter_mut()
-            .find(|r| r.region_type == PhysicalMemoryType::PfaNull)
+            .find(|r| r.is_null())
             .ok_or(Error::PfaRegionArrayFull)?;
         *dst = region;
         Self::merge_and_sort_region_array(region_array);
