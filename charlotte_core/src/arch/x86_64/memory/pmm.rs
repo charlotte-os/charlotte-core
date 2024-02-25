@@ -43,7 +43,7 @@ static UNALLOCATED_FRAMES_COMMITTED: AtomicUsize = AtomicUsize::new(0);
 /// When the system is overcommitted by more than this percentage, new allocations will fail.
 const REQUIRED_COMMIT_BACKING_PERCENTAGE: usize = 70;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[allow(unused)]
 pub enum Error {
     InsufficientMemory,
@@ -82,7 +82,7 @@ pub fn uncommit_frames(n_frames: usize) -> Result<(), Error> {
 /// It is identical to the defines used by Limine with the exception of PfaReserved, which is used to represent
 /// regions of physical memory that are reserved for use by the PFA itself and PfaNull, which is used to represent
 /// region descriptors that are not in use.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Copy)]
 pub enum PhysicalMemoryType {
     Usable,
     Reserved,
@@ -100,7 +100,7 @@ pub enum PhysicalMemoryType {
 /// A physical memory region descriptor. This struct is used to represent a region of physical memory in the
 /// physical memory region array. It contains the base address of the region, the number of frames in the region,
 /// the type of the region, and optionally a capability capability that is used to access the region.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Copy)]
 pub struct PhysicalMemoryRegion {
     capability: Option<CapabilityId>,
     base: usize,
@@ -143,7 +143,7 @@ impl Ord for PhysicalMemoryRegion {
 }
 
 /// The physical frame allocator is responsible for managing and allocating physical memory frames.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct PhysicalFrameAllocator {
     region_array_base: usize, // physical base address of the array of physical memory regions
     region_array_len: usize,  // number of elements in the array of physical memory regions
@@ -358,7 +358,7 @@ impl PhysicalFrameAllocator {
         };
         smallest_usable_region.base += n_frames * FRAME_SIZE;
         smallest_usable_region.n_frames -= n_frames;
-        Self::append_region(region_array, allocated_region.clone())?;
+        Self::append_region(region_array, allocated_region)?;
         Ok(allocated_region)
     }
 
