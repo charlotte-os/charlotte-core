@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![warn(missing_copy_implementations)]
 
 mod arch;
 mod bootinfo;
