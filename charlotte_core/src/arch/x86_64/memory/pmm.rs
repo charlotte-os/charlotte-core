@@ -288,6 +288,10 @@ impl PhysicalFrameAllocator {
             //find the next non-null region
             next_nonnull_index = i + 1;
 
+            if region_array[i].region_type == PhysicalMemoryType::PfaNull {
+                continue;
+            }
+
             while next_nonnull_index < region_array.len()
                 && region_array[next_nonnull_index].region_type == PhysicalMemoryType::PfaNull
             {
@@ -300,7 +304,6 @@ impl PhysicalFrameAllocator {
 
             //if the current region and the next region are of the same type, not null, and adjacent, merge them
             if region_array[i].region_type == region_array[next_nonnull_index].region_type
-                && region_array[i].region_type != PhysicalMemoryType::PfaNull
                 && region_array[i].base + region_array[i].n_frames * FRAME_SIZE
                     == region_array[next_nonnull_index].base
             {
