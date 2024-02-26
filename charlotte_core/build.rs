@@ -53,16 +53,20 @@ fn main() {
         }
     }
 
-    let lib_path = format!("{}/libasm.a", out_dir);
-    let mut ar_command = Command::new("ar");
-    ar_command.arg("crus");
-    ar_command.arg(&lib_path);
-    for object in &objects {
-        ar_command.arg(object);
-    }
-    ar_command.status().expect("Failed to execute ar");
+    if arch.as_str() == "x86_64" {
+        let lib_path = format!("{}/libasm.a", out_dir);
+        let mut ar_command = Command::new("ar");
+        ar_command.arg("crus");
+        ar_command.arg(&lib_path);
+        for object in &objects {
+            ar_command.arg(object);
+        }
 
-    println!("cargo:rustc-link-search=native={}", out_dir);
-    println!("cargo:rustc-link-lib=static=asm");
+        ar_command.status().expect("Failed to execute ar");
+
+        println!("cargo:rustc-link-lib=static=asm");
+        println!("cargo:rustc-link-search=native={}", out_dir);
+    }
+
     println!("cargo:rerun-if-changed=asm");
 }
