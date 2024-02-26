@@ -15,7 +15,6 @@ TARGETS = {
 }
 TARGET_RESULTS = {}
 
-
 def run_grep(lookup, filename) -> str:
     """Run grep on the file and return the result"""
     try:
@@ -27,6 +26,24 @@ def run_grep(lookup, filename) -> str:
     except subprocess.CalledProcessError:
         return ""
 
+def check_style():
+    """Check code style"""
+    try:
+        subprocess.run(
+            [
+                "cargo",
+                "fmt",
+                "--check",
+                "--manifest-path",
+                "charlotte_core/Cargo.toml",
+            ],
+            check=True,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+        )
+    except subprocess.CalledProcessError:
+        print("Style issues detected!")
+        sys.exit(1)
 
 def check_code():
     """Check the project"""
@@ -82,6 +99,6 @@ def check_code():
     print("All checks passed!")
     sys.exit(0)
 
-
 if __name__ == "__main__":
+    check_style()
     check_code()

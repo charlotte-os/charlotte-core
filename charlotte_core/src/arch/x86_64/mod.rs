@@ -93,10 +93,7 @@ impl crate::arch::Api for Api {
 
         let mut vendor_string = [0u8; 12];
         unsafe { cpu::cpuid::asm_get_vendor_string(&mut vendor_string) }
-        logln!(
-            "CPU Vendor ID: {}",
-            str::from_utf8(&vendor_string).unwrap()
-        );
+        logln!("CPU Vendor ID: {}", str::from_utf8(&vendor_string).unwrap());
     }
     ///
     ///  Initialize the application processors (APs)
