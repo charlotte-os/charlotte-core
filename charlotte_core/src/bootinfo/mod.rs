@@ -16,3 +16,6 @@ pub static MEMORY_MAP_REQUEST: MemoryMapRequest = MemoryMapRequest::new();
 
 /// This request is used to obtain the framebuffer
 pub static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest::new();
+
+/// This request is used to obtain RSDP data
+pub static RSDP_REQUEST: RsdpRequest = RsdpRequest::new();
