@@ -1,7 +1,9 @@
 //! # Boot Information
 //! This module contains requests for information from the Limine boot protocol.
 
-use limine::request::*;
+pub use limine::request::*;
+pub use limine::response::*;
+pub use limine::memory_map;
 use limine::BaseRevision;
 
 #[allow(unused)]
