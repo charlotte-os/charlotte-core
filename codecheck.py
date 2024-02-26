@@ -28,6 +28,7 @@ def run_grep(lookup, filename) -> str:
 
 def check_style():
     """Check code style"""
+    print("Checking code style")
     try:
         subprocess.run(
             [
@@ -42,7 +43,7 @@ def check_style():
             stdout=subprocess.PIPE,
         )
     except subprocess.CalledProcessError:
-        print("Style issues detected!")
+        print("style issues detected please run 'cargo fmt'")
         sys.exit(1)
 
 def check_code():
