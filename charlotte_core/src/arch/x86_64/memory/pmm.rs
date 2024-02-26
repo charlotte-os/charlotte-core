@@ -5,34 +5,39 @@ use core::{cmp::PartialOrd, mem::size_of};
 use spin::{lazy::Lazy, mutex::Mutex};
 
 static DIRECT_MAP: Lazy<Mutex<PhysicalAddress>> = Lazy::new(|| {
-    Mutex::new(bootinfo::HHDM_REQUEST.get_response()
-        .expect("Limine failed to create a direct mapping of physical memory.")
-        .offset()
+    Mutex::new(
+        bootinfo::HHDM_REQUEST
+            .get_response()
+            .expect("Limine failed to create a direct mapping of physical memory.")
+            .offset(),
     )
 });
 
 type PhysicalAddress = u64;
 
 struct MemoryMap {
-    entries: &'static [&'static bootinfo::memory_map::Entry]
+    entries: &'static [&'static bootinfo::memory_map::Entry],
 }
 
 impl MemoryMap {
     pub fn get() -> MemoryMap {
         MemoryMap {
-            entries: bootinfo::MEMORY_MAP_REQUEST.get_response()
+            entries: bootinfo::MEMORY_MAP_REQUEST
+                .get_response()
                 .expect("Limine failed to obtain a memory map.")
-                .entries()
+                .entries(),
         }
     }
     pub fn total_memory(&self) -> usize {
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|entry| entry.entry_type != bootinfo::memory_map::EntryType::BAD_MEMORY)
             .map(|entry| entry.length)
             .sum::<u64>() as usize
     }
     pub fn usable_memory(&self) -> usize {
-        self.entries.iter()
+        self.entries
+            .iter()
             .filter(|entry| entry.entry_type == bootinfo::memory_map::EntryType::USABLE)
             .map(|entry| entry.length)
             .sum::<u64>() as usize
@@ -41,7 +46,8 @@ impl MemoryMap {
         self.entries.iter()
     }
     pub fn find_best_fit(&self, size: usize) -> &mut bootinfo::memory_map::Entry {
-        self.entries.iter_mut()
+        self.entries
+            .iter_mut()
             .filter(|entry| entry.entry_type == bootinfo::memory_map::EntryType::USABLE)
             .filter(|entry| entry.length as usize >= size)
             .min_by_key(|entry| entry.length)
@@ -90,7 +96,6 @@ impl Ord for PhysicalMemoryRegion {
 
 const FRAME_SIZE: usize = 4096;
 
-
 pub struct PhysicalFrameAllocator {
     region_array: &'static mut [Option<PhysicalMemoryRegion>],
     len: usize, //number of used elements in the region array
@@ -103,20 +108,30 @@ impl PhysicalFrameAllocator {
     fn new() -> Self {
         let memory_map = MemoryMap::get();
         // Use the same amount of memory as a bitmap would for the region array
-        let region_array_size = ((memory_map.total_memory() / FRAME_SIZE) * size_of::<PhysicalMemoryRegion>()) / ESTIMATED_AVG_REGION_SIZE;
+        let region_array_size = ((memory_map.total_memory() / FRAME_SIZE)
+            * size_of::<PhysicalMemoryRegion>())
+            / ESTIMATED_AVG_REGION_SIZE;
         let mut best_fit_entry = memory_map.find_best_fit(region_array_size);
         let pfa_base = best_fit_entry.base + best_fit_entry.length - region_array_size as u64;
         let pfa = PhysicalFrameAllocator {
-            region_array: unsafe { core::slice::from_raw_parts_mut((DIRECT_MAP.lock() + pfa_base) as *mut Option<PhysicalMemoryRegion>, region_array_size) },
+            region_array: unsafe {
+                core::slice::from_raw_parts_mut(
+                    (DIRECT_MAP.lock() + pfa_base) as *mut Option<PhysicalMemoryRegion>,
+                    region_array_size,
+                )
+            },
             len: 0,
         };
-        memory_map.iter()
+        memory_map
+            .iter()
             .filter(|entry| entry.entry_type == bootinfo::memory_map::EntryType::USABLE)
-            .for_each(|entry| pfa.add_region(PhysicalMemoryRegion {
-                base: entry.base,
-                size: entry.length as usize,
-                is_available: true,
-            }));
+            .for_each(|entry| {
+                pfa.add_region(PhysicalMemoryRegion {
+                    base: entry.base,
+                    size: entry.length as usize,
+                    is_available: true,
+                })
+            });
         // Sort the region array so that we can use binary search to find regions
         pfa.region_array.sort_unstable();
         // merge adjacent regions
@@ -150,7 +165,8 @@ impl PhysicalFrameAllocator {
 
     /// Returns the index of the smallest region
     fn smallest_region_index(&self) -> Result<usize, Error> {
-        self.region_array.iter()
+        self.region_array
+            .iter()
             .enumerate()
             .filter(|(_, region)| {
                 if region.is_some() {
@@ -164,7 +180,8 @@ impl PhysicalFrameAllocator {
     }
 
     fn largest_region_index(&self) -> Result<usize, Error> {
-        self.region_array.iter()
+        self.region_array
+            .iter()
             .enumerate()
             .filter(|(_, region)| {
                 if region.is_some() {
@@ -178,7 +195,8 @@ impl PhysicalFrameAllocator {
     }
 
     pub fn available_memory(&self) -> usize {
-        self.region_array.iter()
+        self.region_array
+            .iter()
             .filter(|region| {
                 if region.is_some() {
                     region.as_ref().unwrap().is_available
@@ -198,7 +216,8 @@ impl PhysicalFrameAllocator {
                 Err(Error::InsufficientMemoryAvailable)
             }
         } else {
-            self.region_array.iter()
+            self.region_array
+                .iter()
                 .enumerate()
                 .filter(|(_, region)| {
                     if region.is_some() {
@@ -218,7 +237,11 @@ impl PhysicalFrameAllocator {
         // Safety: The best_fit_region_index function ensures that the region is available
         let mut alloc_region = unsafe { self.region_array[alloc_region_index].unwrap_unchecked() };
         alloc_region.size -= count * FRAME_SIZE;
-        let new_region = PhysicalMemoryRegion::new(alloc_region.base + alloc_region.size - count * FRAME_SIZE, count * FRAME_SIZE, false);
+        let new_region = PhysicalMemoryRegion::new(
+            alloc_region.base + alloc_region.size - count * FRAME_SIZE,
+            count * FRAME_SIZE,
+            false,
+        );
         self.add_region(new_region);
 
         Ok(new_region)

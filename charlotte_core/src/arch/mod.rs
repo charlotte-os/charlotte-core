@@ -10,15 +10,17 @@ pub mod riscv64;
 #[cfg(target_arch = "x86_64")]
 pub mod x86_64;
 
-use core::fmt::{Write, Result};
+use core::fmt::{Result, Write};
 
 use spin::{lazy::Lazy, mutex::TicketMutex};
 
 use crate::framebuffer::console::CONSOLE;
 
-pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| TicketMutex::new(Logger {
-    logger: <ArchApi as Api>::get_logger(),
-}));
+pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
+    TicketMutex::new(Logger {
+        logger: <ArchApi as Api>::get_logger(),
+    })
+});
 
 pub trait Api {
     type DebugLogger: Write;
