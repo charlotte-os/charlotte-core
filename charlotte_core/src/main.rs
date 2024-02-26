@@ -2,6 +2,7 @@
 #![no_main]
 #![warn(missing_copy_implementations)]
 
+mod acpi;
 mod arch;
 mod bootinfo;
 mod framebuffer;
@@ -24,6 +25,10 @@ unsafe extern "C" fn main() -> ! {
     ArchApi::init_bsp();
     logln!("BSP Initialized");
 
+    logln!("Initializing ACPI");
+    acpi::init_acpi();
+    logln!("ACPI Initialized");
+
     logln!("All tests in main passed.");
 
     logln!("Number of Significant Physical Address Bits Supported: {}", ArchApi::get_paddr_width());
@@ -41,6 +46,7 @@ unsafe extern "C" fn main() -> ! {
             logln!("Failed to allocate region with error {:?}", e);
         }
     }
+
     ArchApi::halt()
 }
 
