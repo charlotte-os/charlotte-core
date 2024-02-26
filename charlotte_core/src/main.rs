@@ -31,8 +31,14 @@ unsafe extern "C" fn main() -> ! {
 
     logln!("All tests in main passed.");
 
-    logln!("Number of Significant Physical Address Bits Supported: {}", ArchApi::get_paddr_width());
-    logln!("Number of Significant Virtual Address Bits Supported: {}", ArchApi::get_vaddr_width());
+    logln!(
+        "Number of Significant Physical Address Bits Supported: {}",
+        ArchApi::get_paddr_width()
+    );
+    logln!(
+        "Number of Significant Virtual Address Bits Supported: {}",
+        ArchApi::get_vaddr_width()
+    );
 
     logln!("Testing physical frame allocator");
     let mut pfa = PFA.lock();
