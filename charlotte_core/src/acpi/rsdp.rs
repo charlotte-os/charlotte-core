@@ -28,16 +28,16 @@ impl Rsdp {
         *rsdp
     }
 
-    pub fn signature(&self) -> [u8; 8] {
-        self.signature
+    pub fn signature(&self) -> &str {
+        str::from_utf8(&self.signature).unwrap()
     }
 
     pub fn checksum(&self) -> u8 {
         self.checksum
     }
 
-    pub fn oem_id(&self) -> [u8; 6] {
-        self.oem_id
+    pub fn oem_id(&self) -> &str {
+        str::from_utf8(&self.oem_id).unwrap()
     }
 
     pub fn revision(&self) -> u8 {

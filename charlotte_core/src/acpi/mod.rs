@@ -23,15 +23,9 @@ impl AcpiTables {
 pub fn init_acpi() -> AcpiTables {
     if let Some(response) = RSDP_REQUEST.get_response() {
         let rsdp = Rsdp::new_from_address(response.address() as usize);
-        logln!(
-            "RSDP Signature: {:?}",
-            core::str::from_utf8(&rsdp.signature()).unwrap()
-        );
+        logln!("RSDP Signature: {}", rsdp.signature());
         logln!("RSDP Checksum: {}", rsdp.checksum());
-        logln!(
-            "RSDP OEM ID: {:?}",
-            core::str::from_utf8(&rsdp.oem_id()).unwrap()
-        );
+        logln!("RSDP OEM ID: {}", rsdp.oem_id());
         logln!("RSDP Revision: {}", rsdp.revision());
         logln!("RSDP RSDT Address: {:#X}", rsdp.rsdt_address());
         if let Some(length) = rsdp.length() {
