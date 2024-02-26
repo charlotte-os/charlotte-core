@@ -17,3 +17,6 @@ walkdir = "*"
 ignore-result = "*"
 limine = "0.2.0"
 spin = {version = "*", features = ["ticket_mutex"]}
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+aarch64-cpu = "9.4.0"
