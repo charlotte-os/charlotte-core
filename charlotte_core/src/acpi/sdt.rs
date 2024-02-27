@@ -1,7 +1,7 @@
 //! XSDT Parsing facilities
 
+use core::fmt::Write;
 use core::mem;
-use core::{f32::consts::E, fmt::Write};
 
 use crate::logln;
 
@@ -42,7 +42,7 @@ impl Sdt {
                 addr_width: 32,
             });
         }
-        logln!("Failed to validate RSDT");
+        logln!("Failed to validate RSDT, bad ACPI tables, backing off.");
 
         None
     }

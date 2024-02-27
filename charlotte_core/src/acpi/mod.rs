@@ -51,6 +51,11 @@ pub fn init_acpi() -> AcpiTables {
         if let Some(extended_checksum) = rsdp.extended_checksum() {
             logln!("RSDP Extended Checksum: {}", extended_checksum);
         }
+        logln!("SDT Signature: {}", sdt.header().signature());
+        logln!("SDT Length: {}", sdt.header().length());
+        logln!("SDT Revision: {}", sdt.header().revision());
+        logln!("SDT entry count: {}", sdt.n_entries());
+        logln!("SDT address width: {}", sdt.addr_width());
         AcpiTables::new(rsdp, sdt)
     } else {
         panic!("Failed to obtain RSDP response.");

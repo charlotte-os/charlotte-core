@@ -26,14 +26,9 @@ unsafe extern "C" fn main() -> ! {
     logln!("BSP Initialized");
 
     logln!("Initializing ACPI");
-    let acpi_tables = acpi::init_acpi();
+    acpi::init_acpi();
 
     logln!("ACPI Initialized");
-
-    logln!("SDT Signature: {}", acpi_tables.sdt().header().signature());
-    logln!("SDT Length: {}", acpi_tables.sdt().header().length());
-    logln!("SDT Revision: {}", acpi_tables.sdt().header().revision());
-    logln!("SDT entry count: {}", acpi_tables.sdt().n_entries());
 
     logln!("All tests in main passed.");
 
