@@ -1,6 +1,7 @@
 use crate::bootinfo;
 
-use core::{cmp::PartialOrd, mem::size_of};
+use core::{borrow::BorrowMut, cmp::PartialOrd, mem::size_of};
+use std::path::is_separator;
 
 use spin::{lazy::Lazy, mutex::Mutex};
 
@@ -85,6 +86,12 @@ impl PhysicalMemoryRegion {
             size,
             is_available,
         }
+    }
+}
+
+impl PhysicalMemoryRegion {
+    fn contains(&self, other: &Self) -> bool {
+        self.base <= other.base && self.base + self.size as u64 >= other.base + other.size as u64
     }
 }
 
@@ -232,7 +239,7 @@ impl PhysicalFrameAllocator {
         }
     }
 
-    pub fn allocate_frames(&mut self, count: usize) -> Result<PhysicalMemoryRegion, Error> {
+    pub fn allocate_contiguous(&mut self, count: usize) -> Result<PhysicalMemoryRegion, Error> {
         let alloc_region_index = self.best_fit_region_index(count * FRAME_SIZE)?;
         // Safety: The best_fit_region_index function ensures that the region is available
         let mut alloc_region = unsafe { self.region_array[alloc_region_index].unwrap_unchecked() };
@@ -245,6 +252,68 @@ impl PhysicalFrameAllocator {
         self.add_region(new_region);
 
         Ok(new_region)
+    }
+
+    pub fn deallocate(&mut self, region: PhysicalMemoryRegion) -> Result<(), Error> {
+        //find the containing region in the region array
+        let mut containing_region = unsafe {
+            // Safety: The region array is filtered to ensure the region is in the array.
+            // If not the appropriate error is propagated.
+            self
+                .region_array
+                .iter_mut()
+                .filter(|region| {
+                    if region.is_some() {
+                        region.as_ref().unwrap().is_available == false
+                    } else {
+                        false
+                    }
+                })
+                .find(|region| {
+                    if region.is_some() {
+                        region.as_ref().unwrap().contains(&region)
+                    } else {
+                        false
+                    }
+                })
+                .ok_or(Error::AllocatedRegionNotFound)?
+                .unwrap_unchecked();
+        };
+        //deallocate the portion of the region represented by the input region
+        let new_region = PhysicalMemoryRegion::new(
+            region.base,
+            region.size,
+            true,
+        );
+        //determine if the region is at the beginning, middle, or end of the containing region
+        //and adjust the containing region accordingly
+        if containing_region.base == region.base {
+            //if the region is at the beginning, adjust the base and size of the containing region
+            containing_region.base += region.size as u64;
+            containing_region.size -= region.size;
+        } else if containing_region.base + containing_region.size as u64 == region.base + region.size as u64 {
+            //if the region is at the end, adjust the size of the containing region
+            containing_region.size -= region.size;
+        } else {
+            //if the region is in the middle, split the containing region into two regions one before and one after the input region
+            *containing_region = Some(PhysicalMemoryRegion {
+                base: containing_region.base,
+                size: region.base - containing_region.base,
+                is_available: false,
+            });
+            let after_region = PhysicalMemoryRegion::new(
+                region.base + region.size as u64,
+                containing_region.base + containing_region.size as u64 - region.base + region.size as u64,
+                false,
+            );
+            self.add_region(after_region);
+        }
+        //add the new region to the region array
+        self.add_region(new_region);
+        //sort the region array
+        self.region_array.sort_unstable();
+
+        Ok(())
     }
 }
 
