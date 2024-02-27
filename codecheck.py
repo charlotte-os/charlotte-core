@@ -46,6 +46,8 @@ def check_style():
         print("style issues detected please run 'cargo fmt'")
         sys.exit(1)
 
+    print("Code style check passed")
+
 def check_code():
     """Check the project"""
     grep_res = run_grep("allow(unused)", "./charlotte_core/src")
@@ -89,7 +91,7 @@ def check_code():
         for target, result in TARGET_RESULTS.items():
             if result == "Failed" and TARGETS[target] == "core":
                 print(
-                    f"Core target {target} failed to build, please fix the build errors before opening a PR"
+                    f"Core target {target} failed to build, please fix the build errors!"
                 )
                 sys.exit(1)
         print(
