@@ -27,6 +27,7 @@ unsafe extern "C" fn main() -> ! {
 
     logln!("Initializing ACPI");
     acpi::init_acpi();
+
     logln!("ACPI Initialized");
 
     logln!("All tests in main passed.");
