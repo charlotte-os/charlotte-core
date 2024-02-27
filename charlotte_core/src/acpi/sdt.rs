@@ -13,6 +13,8 @@ use super::{
 pub struct Sdt {
     header: SDTHeader,
     n_entries: usize,
+    // TODO: when support for alloc is added, change this to a Vec<u64>
+    sub_tables: [Option<SDTHeader>; 32],
     addr_width: usize,
 }
 
@@ -23,28 +25,37 @@ impl Sdt {
         } else {
             rsdp.rsdt_address() as u64
         };
-        let sdt = get_table(sdt_address as usize, *b"XSDT");
+        let sdt = tables::get_table(sdt_address as usize, *b"XSDT");
         if let Some(header) = sdt {
             let n_entries = (header.length() as usize - mem::size_of::<SDTHeader>()) / 8;
             return Some(Self {
                 header,
                 n_entries,
+                sub_tables: [None; 32],
                 addr_width: 64,
             });
         }
         logln!("Found XSDT but failed to validate it");
-        let sdt = get_table(sdt_address as usize, *b"RSDT");
+        let sdt = tables::get_table(sdt_address as usize, *b"RSDT");
         if let Some(header) = sdt {
             let n_entries = (header.length() as usize - mem::size_of::<SDTHeader>()) / 4;
             return Some(Self {
                 header,
                 n_entries,
+                sub_tables: [None; 32],
                 addr_width: 32,
             });
         }
         logln!("Failed to validate RSDT, bad ACPI tables, backing off.");
 
         None
+    }
+
+    fn populate_sub_tables(&mut self, address: usize) {
+        let ptrs = unsafe { core::slice::from_raw_parts(address as *const u64, self.n_entries) };
+        for (i, ptr) in ptrs.iter().enumerate() {
+            self.sub_tables[i] = tables::get_table_any_sig(*ptr as usize);
+        }
     }
 
     pub fn header(&self) -> &SDTHeader {
@@ -58,20 +69,4 @@ impl Sdt {
     pub fn addr_width(&self) -> usize {
         self.addr_width
     }
-}
-
-fn get_table(address: usize, sig: [u8; 4]) -> Option<SDTHeader> {
-    let header = unsafe { &*(address as *const SDTHeader) };
-    if *header.signature_bytes() == sig {
-        logln!("Found table with signature: {}", header.signature());
-        if tables::validate_checksum(unsafe {
-            core::slice::from_raw_parts(address as *const u8, header.length() as usize)
-        }) {
-            logln!("Checksum is valid");
-            return Some(*header);
-        } else {
-            logln!("Checksum is invalid");
-        }
-    }
-    None
 }

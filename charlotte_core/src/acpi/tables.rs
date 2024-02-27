@@ -2,6 +2,10 @@
 
 use core::str;
 
+use core::fmt::Write;
+
+use crate::logln;
+
 #[repr(C, packed)]
 #[derive(Copy, Clone)]
 pub struct SDTHeader {
@@ -64,4 +68,34 @@ pub fn validate_checksum(data: &[u8]) -> bool {
         sum = sum.wrapping_add(*byte);
     }
     sum == 0
+}
+
+pub fn get_table(address: usize, sig: [u8; 4]) -> Option<SDTHeader> {
+    let header = unsafe { &*(address as *const SDTHeader) };
+    if *header.signature_bytes() == sig {
+        logln!("Found table with signature: {}", header.signature());
+        if validate_checksum(unsafe {
+            core::slice::from_raw_parts(address as *const u8, header.length() as usize)
+        }) {
+            logln!("Checksum is valid");
+            return Some(*header);
+        } else {
+            logln!("Checksum is invalid");
+        }
+    }
+    None
+}
+
+pub fn get_table_any_sig(address: usize) -> Option<SDTHeader> {
+    let header = unsafe { &*(address as *const SDTHeader) };
+    logln!("Found table with signature: {}", header.signature());
+    if validate_checksum(unsafe {
+        core::slice::from_raw_parts(address as *const u8, header.length() as usize)
+    }) {
+        logln!("Checksum is valid");
+        return Some(*header);
+    } else {
+        logln!("Checksum is invalid");
+    }
+    None
 }
