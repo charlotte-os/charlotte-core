@@ -57,7 +57,7 @@ impl Rsdp {
     }
 
     pub fn xsdt_address(&self) -> Option<u64> {
-        if self.revision == 0 {
+        if self.revision == 0 || self.xsdt_address == 0 {
             None
         } else {
             Some(self.xsdt_address)

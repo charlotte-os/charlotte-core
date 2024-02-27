@@ -2,6 +2,7 @@
 //! This module contains requests for information from the ACPI tables.
 
 mod rsdp;
+pub mod tables;
 
 use crate::{bootinfo::RSDP_REQUEST, logln};
 use core::fmt::Write;
@@ -17,6 +18,10 @@ impl AcpiTables {
     /// Creates a new AcpiTables.
     pub fn new(rsdp: Rsdp) -> Self {
         Self { rsdp }
+    }
+
+    pub fn rsdp(&self) -> &Rsdp {
+        &self.rsdp
     }
 }
 

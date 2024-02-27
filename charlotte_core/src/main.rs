@@ -14,6 +14,7 @@ use arch::{Api, ArchApi};
 
 use framebuffer::console::CONSOLE;
 
+use crate::acpi::tables::SDTHeader;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
 
 #[no_mangle]
@@ -26,8 +27,13 @@ unsafe extern "C" fn main() -> ! {
     logln!("BSP Initialized");
 
     logln!("Initializing ACPI");
-    acpi::init_acpi();
+    let mut acpi_tables = acpi::init_acpi();
+
     logln!("ACPI Initialized");
+
+    let xsdt = SDTHeader::new(&mut acpi_tables, *b"XSDT").unwrap();
+    logln!("XSDT Signature: {}", xsdt.signature());
+    logln!("XSDT Length: {}", xsdt.length());
 
     logln!("All tests in main passed.");
 
