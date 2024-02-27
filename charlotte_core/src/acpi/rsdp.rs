@@ -2,7 +2,7 @@ use core::str;
 
 const RSDP_SIGNATURE: [u8; 8] = *b"RSD PTR ";
 
-const RDSP_V1_LEN: usize = 20; // Length of the RSDP for version 1 (20 bytes)
+pub const RDSP_V1_LEN: usize = 20; // Length of the RSDP for version 1 (20 bytes)
 
 /// Contains information about the RSDP (Root System Description Pointer).
 #[repr(C, packed)]
