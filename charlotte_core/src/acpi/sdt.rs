@@ -10,6 +10,7 @@ use super::{
     tables::{self, SDTHeader},
 };
 
+#[derive(Copy, Clone)]
 pub struct Sdt {
     header: SDTHeader,
     n_entries: usize,
@@ -28,23 +29,31 @@ impl Sdt {
         let sdt = tables::get_table(sdt_address as usize, *b"XSDT");
         if let Some(header) = sdt {
             let n_entries = (header.length() as usize - mem::size_of::<SDTHeader>()) / 8;
-            return Some(Self {
+            let table = Some(Self {
                 header,
                 n_entries,
                 sub_tables: [None; 32],
                 addr_width: 64,
             });
+            table
+                .unwrap()
+                .populate_sub_tables((sdt_address as usize) + mem::size_of::<SDTHeader>());
+            return table;
         }
         logln!("Found XSDT but failed to validate it");
         let sdt = tables::get_table(sdt_address as usize, *b"RSDT");
         if let Some(header) = sdt {
             let n_entries = (header.length() as usize - mem::size_of::<SDTHeader>()) / 4;
-            return Some(Self {
+            let table = Some(Self {
                 header,
                 n_entries,
                 sub_tables: [None; 32],
                 addr_width: 32,
             });
+            table
+                .unwrap()
+                .populate_sub_tables((sdt_address as usize) + mem::size_of::<SDTHeader>());
+            return table;
         }
         logln!("Failed to validate RSDT, bad ACPI tables, backing off.");
 
