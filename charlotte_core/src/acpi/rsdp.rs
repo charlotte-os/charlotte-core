@@ -2,7 +2,7 @@ use core::str;
 
 const RSDP_SIGNATURE: [u8; 8] = *b"RSD PTR ";
 
-pub const RDSP_V1_LEN: usize = 20; // Length of the RSDP for version 1 (20 bytes)
+pub const RSDP_V1_LEN: usize = 20; // Length of the RSDP for version 1 (20 bytes)
 
 /// Contains information about the RSDP (Root System Description Pointer).
 #[repr(C, packed)]
@@ -90,7 +90,7 @@ impl Rsdp {
         // Ensure the checksum is valid
         // Length only exists on revision 2.0 and later
         let length = if self.revision == 0 {
-            RDSP_V1_LEN
+            RSDP_V1_LEN
         } else {
             self.length as usize
         };
