@@ -78,4 +78,15 @@ impl Sdt {
     pub fn addr_width(&self) -> usize {
         self.addr_width
     }
+
+    pub fn find_subtable(&self, signature: &[u8; 4]) -> Option<SDTHeader> {
+        for i in 0..self.n_entries {
+            if let Some(table) = self.sub_tables[i] {
+                if *table.signature_bytes() == *signature {
+                    return Some(table);
+                }
+            }
+        }
+        None
+    }
 }
