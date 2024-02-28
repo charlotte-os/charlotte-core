@@ -61,24 +61,20 @@ impl Sdt {
     }
 
     fn populate_sub_tables(&mut self, address: usize) {
-        // let ptrs = unsafe { core::slice::from_raw_parts(address as *const u64, self.n_entries) };
-        // for (i, ptr) in ptrs.iter().enumerate() {
-        //     self.sub_tables[i] = tables::get_table_any_sig(*ptr as usize);
-        // }
         for i in 0..self.n_entries {
             let mut ptr: usize = 0;
             // We need to grab each half independently since the XSDT uses 64-bit pointers
             // but the RSDT uses 32-bit pointers.
-            
+
             // The XSDT addresses are also 4-byte aligned, so we can't treat its entries as u64
             // as dereferencing them would cause a misaligned access
             let ptr_low = unsafe { *((address + i * (self.addr_width / 8)) as *const u32) };
             ptr |= ptr_low as usize;
             if self.addr_width == 64 {
-                let ptr_high = unsafe { *((address + i * (self.addr_width / 8) + 4) as *const u32) };
+                let ptr_high =
+                    unsafe { *((address + i * (self.addr_width / 8) + 4) as *const u32) };
                 ptr |= (ptr_high as usize) << 32;
             }
-            logln!("Subtable ptr: {:#X}", ptr);
             self.sub_tables[i] = tables::get_table_any_sig(ptr as usize);
         }
     }
