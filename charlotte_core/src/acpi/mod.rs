@@ -1,6 +1,7 @@
 //! # ACPI Information
 //! This module contains requests for information from the ACPI tables.
 
+mod madt;
 mod rsdp;
 mod sdt;
 pub mod tables;
@@ -10,18 +11,20 @@ use core::fmt::Write;
 
 use crate::acpi::rsdp::Rsdp;
 
+use self::madt::Madt;
 use self::sdt::Sdt;
 
 /// Stores the data for all the ACPI tables.
 pub struct AcpiTables {
     rsdp: Rsdp,
     sdt: sdt::Sdt,
+    madt: Madt,
 }
 
 impl AcpiTables {
     /// Creates a new AcpiTables.
-    pub fn new(rsdp: Rsdp, sdt: Sdt) -> Self {
-        Self { rsdp, sdt }
+    pub fn new(rsdp: Rsdp, sdt: Sdt, madt: Madt) -> Self {
+        Self { rsdp, sdt, madt }
     }
 
     pub fn rsdp(&self) -> &Rsdp {
@@ -56,7 +59,9 @@ pub fn init_acpi() -> AcpiTables {
         logln!("SDT Revision: {}", sdt.header().revision());
         logln!("SDT entry count: {}", sdt.n_entries());
         logln!("SDT address width: {}", sdt.addr_width());
-        AcpiTables::new(rsdp, sdt)
+        let madt = Madt::new(sdt.get_table(*b"APIC").unwrap());
+        logln!("MADT Local APIC Address: {:#X}", madt.local_apic_addr());
+        AcpiTables::new(rsdp, sdt, madt)
     } else {
         panic!("Failed to obtain RSDP response.");
     }
