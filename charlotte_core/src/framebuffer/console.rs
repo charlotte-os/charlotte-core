@@ -59,7 +59,12 @@ impl Console {
     }
 
     /// Write a char to the console
-    pub fn write_char(&mut self, character: char, color: Option<u32>, background_color: Option<u32>) {
+    pub fn write_char(
+        &mut self,
+        character: char,
+        color: Option<u32>,
+        background_color: Option<u32>,
+    ) {
         // Write the character to the buffer
         match character {
             // Newline
@@ -85,7 +90,11 @@ impl Console {
             }
             // Any other character
             _ => {
-                self.buffer.chars[self.cursor_y][self.cursor_x] = ConsoleChar { character, color: color.unwrap_or(self.text_color), background_color: background_color.unwrap_or(self.background_color) };
+                self.buffer.chars[self.cursor_y][self.cursor_x] = ConsoleChar {
+                    character,
+                    color: color.unwrap_or(self.text_color),
+                    background_color: background_color.unwrap_or(self.background_color),
+                };
                 self.cursor_x += 1;
             }
         }
@@ -167,7 +176,8 @@ impl Console {
     }
 }
 
-static INNER_STYLE_SETTINGS: TicketMutex<InnerPrintStyle> = TicketMutex::new(InnerPrintStyle::new());
+static INNER_STYLE_SETTINGS: TicketMutex<InnerPrintStyle> =
+    TicketMutex::new(InnerPrintStyle::new());
 
 /// Inner style settings for print macros
 struct InnerPrintStyle {
@@ -178,7 +188,7 @@ struct InnerPrintStyle {
 }
 
 impl InnerPrintStyle {
-    /// Create a 
+    /// Create a
     const fn new() -> Self {
         Self {
             text_color: None,
@@ -200,14 +210,15 @@ impl fmt::Write for Console {
     fn write_str(&mut self, string: &str) -> fmt::Result {
         let mut reading_color_type = false;
         let mut styling = INNER_STYLE_SETTINGS.lock();
-        
+
         if styling.setting_text_color {
             styling.text_color = Some(u32::from_str_radix(string, 16).unwrap_or(Color::WHITE));
             styling.setting_text_color = false;
             return Ok(());
         }
         if styling.setting_background_color {
-            styling.background_color = Some(u32::from_str_radix(string, 16).unwrap_or(Color::BLACK));
+            styling.background_color =
+                Some(u32::from_str_radix(string, 16).unwrap_or(Color::BLACK));
             styling.setting_background_color = false;
             return Ok(());
         }
@@ -221,11 +232,9 @@ impl fmt::Write for Console {
                 if character == 'b' || character == 'B' {
                     styling.setting_text_color = false;
                     styling.setting_background_color = true;
-                }
-                else if character == 'f' || character == 'F' {
+                } else if character == 'f' || character == 'F' {
                     styling.setting_text_color = true;
                     styling.setting_background_color = false;
-                    
                 }
                 reading_color_type = false;
                 continue;
