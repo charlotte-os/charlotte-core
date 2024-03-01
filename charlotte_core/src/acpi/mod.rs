@@ -34,6 +34,10 @@ impl AcpiTables {
     pub fn sdt(&self) -> &Sdt {
         &self.sdt
     }
+
+    pub fn madt(&self) -> &Madt {
+        &self.madt
+    }
 }
 
 pub fn init_acpi() -> AcpiTables {
@@ -61,6 +65,9 @@ pub fn init_acpi() -> AcpiTables {
         logln!("SDT address width: {}", sdt.addr_width());
         let madt = Madt::new(sdt.get_table(*b"APIC").unwrap());
         logln!("MADT Local APIC Address: {:#X}", madt.local_apic_addr());
+        for entry in madt.iter() {
+            logln!("MADT Entry: {:?}", entry);
+        }
         AcpiTables::new(rsdp, sdt, madt)
     } else {
         panic!("Failed to obtain RSDP response.");
