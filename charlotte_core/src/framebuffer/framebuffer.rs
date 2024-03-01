@@ -127,7 +127,14 @@ impl FrameBufferInfo {
     /// * `text` - The text to draw.
     /// * `color` - The color of the text in ARGB format.
 
-    pub fn draw_text(&self, mut x: usize, mut y: usize, text: &str, color: u32, background_color: u32) {
+    pub fn draw_text(
+        &self,
+        mut x: usize,
+        mut y: usize,
+        text: &str,
+        color: u32,
+        background_color: u32,
+    ) {
         let start_x = x; // Remember the starting x position to reset to it on new lines
         for c in text.chars() {
             match c {
