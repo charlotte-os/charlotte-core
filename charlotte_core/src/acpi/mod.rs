@@ -1,6 +1,7 @@
 //! # ACPI Information
 //! This module contains requests for information from the ACPI tables.
 
+mod fadt;
 mod madt;
 mod rsdp;
 mod sdt;

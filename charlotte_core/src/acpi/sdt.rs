@@ -62,7 +62,7 @@ impl Sdt {
             let table = Some(Self {
                 header,
                 n_entries,
-                sub_tables: sub_tables,
+                sub_tables,
                 addr_width: 32,
             });
             return table;
@@ -75,10 +75,8 @@ impl Sdt {
     /// Get the address of a table from the XSDT or RSDT
     pub fn get_table(&self, signature: [u8; 4]) -> Option<usize> {
         for i in 0..self.n_entries {
-            if self.sub_tables[i].is_some() {
-                if self.sub_tables[i].unwrap().signature == signature {
-                    return Some(self.sub_tables[i].unwrap().addr);
-                }
+            if self.sub_tables[i].is_some() && self.sub_tables[i].unwrap().signature == signature {
+                return Some(self.sub_tables[i].unwrap().addr);
             }
         }
         None
