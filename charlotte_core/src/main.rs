@@ -55,7 +55,10 @@ unsafe extern "C" fn main() -> ! {
         }
     }
 
-    println!("[f{:X}Example println with [b{:X}color [f{:X}[b{:X}formatting", Color::RED, Color::YELLOW, Color::GREEN, Color::PURPLE);
+    CONSOLE.lock().set_colors(Color::RED, Color::WHITE);
+    println!("Example of setting console colors");
+    CONSOLE.lock().set_colors(Color::WHITE, Color::BLACK);
+    println!("Example println with [b{:X}color [f{:X}[b{:X}formatting", Color::BLUE, Color::GREEN, Color::MAGENTA);
  
     ArchApi::halt()
 }
