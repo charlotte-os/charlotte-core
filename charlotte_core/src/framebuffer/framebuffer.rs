@@ -127,7 +127,7 @@ impl FrameBufferInfo {
     /// * `text` - The text to draw.
     /// * `color` - The color of the text in ARGB format.
 
-    pub fn draw_text(&self, mut x: usize, mut y: usize, text: &str, color: u32) {
+    pub fn draw_text(&self, mut x: usize, mut y: usize, text: &str, color: u32, background_color: u32) {
         let start_x = x; // Remember the starting x position to reset to it on new lines
         for c in text.chars() {
             match c {
@@ -136,7 +136,7 @@ impl FrameBufferInfo {
                     x = start_x;
                 }
                 _ => {
-                    self.draw_char(x, y, c, color);
+                    self.draw_char(x, y, c, color, background_color);
                     x += FONT_WIDTH;
                 }
             }
@@ -151,14 +151,14 @@ impl FrameBufferInfo {
     /// * `y` - The y coordinate where the character should be drawn.
     /// * `bitmap` - A reference to the bitmap array representing the character.
     /// * `color` - The color of the character in ARGB format.
-    pub fn draw_char(&self, x: usize, y: usize, chracter: char, color: u32) {
+    pub fn draw_char(&self, x: usize, y: usize, chracter: char, color: u32, background_color: u32) {
         let bitmap = get_char_bitmap(chracter);
         for (row, &bits) in bitmap.iter().enumerate() {
             for col in 0..FONT_WIDTH {
                 if (bits >> (FONT_WIDTH - 1 - col)) & 1 == 1 {
                     self.draw_pixel(x + col, y + row, color);
                 } else {
-                    self.draw_pixel(x + col, y + row, 0x00000000);
+                    self.draw_pixel(x + col, y + row, background_color);
                 }
             }
         }
