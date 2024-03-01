@@ -1,8 +1,8 @@
 use crate::bootinfo;
 
-use core::{borrow::BorrowMut, cmp::PartialOrd, mem::size_of};
-use std::path::is_separator;
+use core::{borrow::{Borrow, BorrowMut}, cmp::PartialOrd, mem::size_of, ops::Deref};
 
+use alloc::borrow::ToOwned;
 use spin::{lazy::Lazy, mutex::Mutex};
 
 static DIRECT_MAP: Lazy<Mutex<PhysicalAddress>> = Lazy::new(|| {
@@ -43,7 +43,7 @@ impl MemoryMap {
             .map(|entry| entry.length)
             .sum::<u64>() as usize
     }
-    pub fn iter(&self) -> core::slice::Iter<bootinfo::memory_map::Entry> {
+    pub fn iter(&self) -> core::slice::Iter<&bootinfo::memory_map::Entry> {
         self.entries.iter()
     }
     pub fn find_best_fit(&self, size: usize) -> &mut bootinfo::memory_map::Entry {
@@ -123,7 +123,7 @@ impl PhysicalFrameAllocator {
         let pfa = PhysicalFrameAllocator {
             region_array: unsafe {
                 core::slice::from_raw_parts_mut(
-                    (DIRECT_MAP.lock() + pfa_base) as *mut Option<PhysicalMemoryRegion>,
+                    (DIRECT_MAP.lock().deref() + pfa_base) as *mut Option<PhysicalMemoryRegion>,
                     region_array_size,
                 )
             },
@@ -142,7 +142,7 @@ impl PhysicalFrameAllocator {
         // Sort the region array so that we can use binary search to find regions
         pfa.region_array.sort_unstable();
         // merge adjacent regions
-        pfa.merge_adjacent_regions();
+        pfa.compact_regions();
 
         pfa
     }
