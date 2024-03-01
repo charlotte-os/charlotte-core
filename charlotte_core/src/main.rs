@@ -12,13 +12,14 @@ use core::fmt::Write;
 use arch::x86_64::memory::pmm::PFA;
 use arch::{Api, ArchApi};
 
+use framebuffer::colors::Color;
 use framebuffer::console::CONSOLE;
 
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
 
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
-    FRAMEBUFFER.lock().clear_screen(0x00000000);
+    FRAMEBUFFER.lock().clear_screen(Color::BLACK);
     println!("Hello, world!");
 
     logln!("Initializing BSP");
@@ -54,6 +55,8 @@ unsafe extern "C" fn main() -> ! {
         }
     }
 
+    println!("[f{:X}Example println with [b{:X}color [f{:X}[b{:X}formatting", Color::RED, Color::YELLOW, Color::GREEN, Color::PURPLE);
+ 
     ArchApi::halt()
 }
 
