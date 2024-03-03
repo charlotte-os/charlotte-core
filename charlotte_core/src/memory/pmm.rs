@@ -14,7 +14,7 @@ static DIRECT_MAP: Lazy<Mutex<PhysicalAddress>> = Lazy::new(|| {
     )
 });
 
-static PHYSICAL_FRAME_ALLOCATOR: Lazy<Mutex<PhysicalFrameAllocator>> = Lazy::new(|| {
+pub static PHYSICAL_FRAME_ALLOCATOR: Lazy<Mutex<PhysicalFrameAllocator>> = Lazy::new(|| {
     Mutex::new(PhysicalFrameAllocator::new())
 });
 

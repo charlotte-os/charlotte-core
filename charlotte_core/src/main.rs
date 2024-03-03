@@ -41,6 +41,40 @@ unsafe extern "C" fn main() -> ! {
     logln!("Physical Address Space Size: {} MiB", memory_map.total_memory() / 1024 / 1024);
     logln!("Total Physical Memory: {} MiB", memory_map.usable_memory() / 1024 / 1024);
 
+    logln!("Testing Physical Memory Manager");
+    logln!("Performing single frame allocation and deallocation test.");
+    let alloc = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
+    let alloc2 = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
+    match alloc {
+        Ok(frame) => {
+            logln!("Allocated frame: {:?}", frame);
+            PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
+            logln!("Deallocated frame: {:?}", frame);
+        }
+        Err(e) => {
+            logln!("Failed to allocate frame: {:?}", e);
+        }
+    }
+    let alloc3 = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
+    logln!("alloc2: {:?}, alloc3: {:?}", alloc2, alloc3);
+    PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc2.unwrap());
+    PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc3.unwrap());
+    logln!("Single frame allocation and deallocation test complete.");
+    logln!("Performing contiguous frame allocation and deallocation test.");
+    let contiguous_alloc = PHYSICAL_FRAME_ALLOCATOR.lock().allocate_contiguous(256, 64);
+    match contiguous_alloc {
+        Ok(frame) => {
+            logln!("Allocated contiguous frames: {:?}", frame);
+            PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
+            logln!("Deallocated contiguous frames: {:?}", frame);
+        }
+        Err(e) => {
+            logln!("Failed to allocate contiguous frames: {:?}", e);
+        }
+    }
+    logln!("Contiguous frame allocation and deallocation test complete.");
+    logln!("Physical Memory Manager test suite finished.");
+
     logln!("Halting BSP");
     ArchApi::halt()
 }
