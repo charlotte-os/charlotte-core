@@ -40,20 +40,6 @@ unsafe extern "C" fn main() -> ! {
     let memory_map = MemoryMap::get();
     logln!("Physical Address Space Size: {} MiB", memory_map.total_memory() / 1024 / 1024);
     logln!("Total Physical Memory: {} MiB", memory_map.usable_memory() / 1024 / 1024);
-    logln!("Available Physical Memory: {} MiB", PHYSICAL_MEMORY_MANAGER.lock().pfa.available_memory().expect("available_memory overflowed usize") / 1024 / 1024);
-/*     logln!("Testing physical frame allocator");
-    let region = PHYSICAL_MEMORY_MANAGER.lock().pfa.allocate_contiguous(32);
-    match region {
-        Ok(r) => {
-            logln!("Allocated region: {:?}", r);
-            logln!("Deallocating region");
-            PHYSICAL_MEMORY_MANAGER.lock().pfa.deallocate(r);
-        }
-        Err(e) => {
-            logln!("Failed to allocate region with error: {:?}", e);
-        }
-    }
-    logln!("Physical frame allocator test complete"); */
 
     logln!("Halting BSP");
     ArchApi::halt()
