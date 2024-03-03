@@ -48,6 +48,9 @@ charlotte_core-x86_64-release.iso: build-x86_64-release
 run-x86_64-release: ovmf-x86_64 charlotte_core-x86_64-release.iso
 	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 12G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-release.iso -boot d
 
+check-x86_64:
+	cd charlotte_core && cargo check --target x86_64-unknown-none
+
 # aarch64
 
 ovmf-aarch64:
