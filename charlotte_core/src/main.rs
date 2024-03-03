@@ -47,9 +47,9 @@ unsafe extern "C" fn main() -> ! {
     let alloc2 = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
     match alloc {
         Ok(frame) => {
-            logln!("Allocated frame: {:?}", frame);
+            logln!("Allocated frame with physical base address: {:?}", frame);
             PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
-            logln!("Deallocated frame: {:?}", frame);
+            logln!("Deallocated frame with physical base address: {:?}", frame);
         }
         Err(e) => {
             logln!("Failed to allocate frame: {:?}", e);
@@ -64,9 +64,9 @@ unsafe extern "C" fn main() -> ! {
     let contiguous_alloc = PHYSICAL_FRAME_ALLOCATOR.lock().allocate_contiguous(256, 64);
     match contiguous_alloc {
         Ok(frame) => {
-            logln!("Allocated contiguous frames: {:?}", frame);
+            logln!("Allocated physically contiguous region with physical base address: {:?}", frame);
             PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
-            logln!("Deallocated contiguous frames: {:?}", frame);
+            logln!("Deallocated physically contiguous region with physical base address: {:?}", frame);
         }
         Err(e) => {
             logln!("Failed to allocate contiguous frames: {:?}", e);

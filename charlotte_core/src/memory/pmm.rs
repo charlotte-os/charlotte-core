@@ -76,7 +76,7 @@ pub enum Error {
 
 enum RegionAvailability {
     Available,
-    Unavailable(usize),
+    Unavailable(PhysicalAddress),
 }
 
 const FRAME_SIZE: usize = 4096;
@@ -145,9 +145,9 @@ impl PhysicalFrameAllocator {
         self.bitmap[frame / FRAME_SIZE / 8] &= !(1 << (frame / FRAME_SIZE % 8));
         Ok(())
     }
-    pub fn allocate_contiguous(&mut self, size: usize, alignment: usize) -> Result<PhysicalAddress, Error> {
+    pub fn allocate_contiguous(&mut self, n_frames: usize, alignment: usize) -> Result<PhysicalAddress, Error> {
         //validate inputs
-        if size == 0 {
+        if n_frames == 0 {
             return Err(Error::InvalidSize);
         }
         if !Self::is_power_of_two(alignment) {
@@ -160,22 +160,19 @@ impl PhysicalFrameAllocator {
         } else {
             alignment
         };
-        let corrected_size = ((size / corrected_alignment) + 1) * corrected_alignment;
 
-        let mut base = 0usize;
-        while base < self.bitmap.len() - corrected_size / FRAME_SIZE {
-            match self.check_region(base, corrected_size) {
+        let mut base: PhysicalAddress = 0usize;
+        while base < self.bitmap.len() - n_frames * FRAME_SIZE {
+            match self.check_region(base, n_frames) {
                 RegionAvailability::Available => {
-                    for i in 0..corrected_size / FRAME_SIZE {
-                        self.bitmap[base + i] = 0xFF;
-                    }
-                    if corrected_size % FRAME_SIZE != 0 {
-                        self.bitmap[base + corrected_size / FRAME_SIZE] |= 0xFF << (corrected_size % FRAME_SIZE);
+                    for addr in (base..base + n_frames).step_by(FRAME_SIZE) {
+                        self.set_by_address(addr);
                     }
                     return Ok(base * FRAME_SIZE);
                 }
                 RegionAvailability::Unavailable(last_frame) => {
-                    base = last_frame + corrected_alignment / FRAME_SIZE;
+                    // skip to the next properly aligned address after the last frame in the gap using the magic of integer division
+                    base = (((last_frame + FRAME_SIZE) / corrected_alignment) + 1) * corrected_alignment;
                     continue;
                 }
             }
@@ -183,8 +180,9 @@ impl PhysicalFrameAllocator {
         Err(Error::InsufficientContiguousMemoryAvailable)
     }
 
-    pub fn deallocate_contiguous(&mut self, base: PhysicalAddress, size: usize) -> Result<(), Error> {
-        if size == 0 {
+    pub fn deallocate_contiguous(&mut self, base: PhysicalAddress, n_frames: usize) -> Result<(), Error> {
+        // validate inputs
+        if n_frames == 0 {
             return Err(Error::InvalidSize);
         }
         if base % FRAME_SIZE != 0 {
@@ -193,38 +191,44 @@ impl PhysicalFrameAllocator {
         if base / FRAME_SIZE >= self.bitmap.len() {
             return Err(Error::AddressOutOfRange);
         }
-        if size % FRAME_SIZE != 0 {
-            return Err(Error::InvalidSize);
-        }
-        for i in 0..size / FRAME_SIZE {
-            self.bitmap[base / FRAME_SIZE + i] = 0;
-        }
-        if size % FRAME_SIZE != 0 {
-            self.bitmap[base / FRAME_SIZE + size / FRAME_SIZE] &= !(0xFF << (size % FRAME_SIZE));
-        }
 
-        for addr in base..base + size {
-            self.bitmap[addr / FRAME_SIZE] &= !(1 << (addr % FRAME_SIZE));
+        for addr in (base..base + n_frames * FRAME_SIZE).step_by(FRAME_SIZE) {
+            self.clear_by_address(addr);
         }
         Ok(())
     }
 
-    fn check_region(&self, base: usize, length: usize) -> RegionAvailability {
+    fn check_region(&self, base: usize, n_frames: usize) -> RegionAvailability {
         // search the region in reverse order so that if a gap is found 
         // the address of the last frame in the gap is returned
         // this is useful for the allocate_contiguous method
         // if a gap is found, the method can continue searching from after the gap
-        for i in (0..length / FRAME_SIZE).rev() {
-            if self.bitmap[base + i] != 0xFF {
-                return RegionAvailability::Unavailable(base + i);
-            }
-        }
-        if length % FRAME_SIZE != 0 {
-            if self.bitmap[base + length / FRAME_SIZE] & (0xFF << (length % FRAME_SIZE)) != 0xFF << (length % FRAME_SIZE) {
-                return RegionAvailability::Unavailable(base + length / FRAME_SIZE);
+        for i in (0..n_frames).rev() {
+            let address = base + i * FRAME_SIZE;
+            if self.get_by_address(address) == true {
+                return RegionAvailability::Unavailable(address);
             }
         }
         RegionAvailability::Available
+    }
+
+    fn index_to_address(&self, byte: usize, bit: usize) -> PhysicalAddress {
+        (byte * 8 + bit) * FRAME_SIZE
+    }
+    fn address_to_index(&self, address: PhysicalAddress) -> (usize, usize) {
+        (address / FRAME_SIZE / 8, address / FRAME_SIZE % 8)
+    }
+    fn get_by_address(&self, address: PhysicalAddress) -> bool {
+        let (byte, bit) = self.address_to_index(address);
+        self.bitmap[byte] & (1 << bit) != 0
+    }
+    fn set_by_address(&mut self, address: PhysicalAddress) {
+        let (byte, bit) = self.address_to_index(address);
+        self.bitmap[byte] |= 1 << bit;
+    }
+    fn clear_by_address(&mut self, address: PhysicalAddress) {
+        let (byte, bit) = self.address_to_index(address);
+        self.bitmap[byte] &= !(1 << bit);
     }
 
     fn is_power_of_two(x: usize) -> bool {
