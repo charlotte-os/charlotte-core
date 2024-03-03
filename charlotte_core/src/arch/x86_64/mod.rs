@@ -5,7 +5,6 @@ mod cpu;
 mod exceptions;
 mod gdt;
 mod idt;
-pub mod memory;
 mod serial;
 
 use core::fmt::Write;
@@ -48,11 +47,11 @@ impl crate::arch::Api for Api {
     }
     /// Get the number of significant physical address bits supported by the current CPU
     fn get_paddr_width() -> u8 {
-        *memory::PADDR_SIG_BITS
+        *cpu::PADDR_SIG_BITS
     }
     /// Get the number of significant virtual address bits supported by the current CPU
     fn get_vaddr_width() -> u8 {
-        *memory::VADDR_SIG_BITS
+        *cpu::VADDR_SIG_BITS
     }
     /// Halt the calling LP
     fn halt() -> ! {
@@ -92,7 +91,7 @@ impl crate::arch::Api for Api {
         logln!("Loaded IDT");
 
         let mut vendor_string = [0u8; 12];
-        unsafe { cpu::cpuid::asm_get_vendor_string(&mut vendor_string) }
+        unsafe { cpu::asm_get_vendor_string(&mut vendor_string) }
         logln!("CPU Vendor ID: {}", str::from_utf8(&vendor_string).unwrap());
     }
     ///
