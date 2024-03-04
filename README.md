@@ -15,7 +15,8 @@ CharlotteCore is written in Rust and Assembly language
 ### Target Platforms
 
 - x86-64 PCs with UEFI and ACPI (In Progress)
-- Aarch64 devices with UEFI and ACPI (Planned)
+- Aarch64 devices with UEFI and ACPI (In Progress)
+- RISC-V devices with UEFI and ACPI (Under Consideration)
 
 ### Building and Testing
 
