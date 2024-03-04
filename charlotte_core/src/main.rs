@@ -2,6 +2,7 @@
 #![no_main]
 #![warn(missing_copy_implementations)]
 
+mod acpi;
 mod arch;
 mod bootinfo;
 mod framebuffer;
@@ -11,6 +12,7 @@ use core::fmt::Write;
 
 use arch::{Api, ArchApi};
 
+use framebuffer::colors::Color;
 use framebuffer::console::CONSOLE;
 
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
@@ -19,12 +21,17 @@ use memory::pmm::*;
 
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
-    FRAMEBUFFER.lock().clear_screen(0x00000000);
+    FRAMEBUFFER.lock().clear_screen(Color::BLACK);
     println!("Hello, world!");
 
     logln!("Initializing BSP");
     ArchApi::init_bsp();
     logln!("BSP Initialized");
+
+    logln!("Initializing ACPI");
+    acpi::init_acpi();
+
+    logln!("ACPI Initialized");
 
     logln!("All tests in main passed.");
 
