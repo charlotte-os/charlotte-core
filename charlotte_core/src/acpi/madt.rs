@@ -58,6 +58,12 @@ impl Iterator for MadtIter {
     fn next(&mut self) -> Option<Self::Item> {
         if self.offset < self.len {
             let header = unsafe { &*((self.addr + self.offset) as *const MadtEntryHeader) };
+
+            // FIXME: w/a for arm64
+            if header.length == 0 {
+                return None;
+            }
+
             let entry = match header.entry_type {
                 0 => MadtEntry::ProcessorLocalApic(unsafe {
                     *((self.addr + self.offset) as *const ProcessorLocalApic)
