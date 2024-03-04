@@ -14,10 +14,8 @@ static DIRECT_MAP: Lazy<Mutex<PhysicalAddress>> = Lazy::new(|| {
     )
 });
 
-pub static PHYSICAL_FRAME_ALLOCATOR: Lazy<Mutex<PhysicalFrameAllocator>> = Lazy::new(|| {
-    Mutex::new(PhysicalFrameAllocator::new())
-});
-
+pub static PHYSICAL_FRAME_ALLOCATOR: Lazy<Mutex<PhysicalFrameAllocator>> =
+    Lazy::new(|| Mutex::new(PhysicalFrameAllocator::new()));
 
 type PhysicalAddress = usize;
 
@@ -83,7 +81,7 @@ const FRAME_SIZE: usize = 4096;
 
 /// A bitmap based physical frame allocator
 pub struct PhysicalFrameAllocator {
-    bitmap: &'static mut [u8]
+    bitmap: &'static mut [u8],
 }
 
 impl PhysicalFrameAllocator {
@@ -96,7 +94,14 @@ impl PhysicalFrameAllocator {
         // create the PFA
         let pfa = PhysicalFrameAllocator {
             // Safety: The region is guaranteed to be valid and the length is guaranteed to be large enough to hold the bitmap
-            bitmap: unsafe { slice_from_raw_parts_mut((*DIRECT_MAP.lock().deref_mut() + region.base as usize) as *mut u8, total_memory / FRAME_SIZE as usize).as_mut().unwrap_unchecked()}
+            bitmap: unsafe {
+                slice_from_raw_parts_mut(
+                    (*DIRECT_MAP.lock().deref_mut() + region.base as usize) as *mut u8,
+                    total_memory / FRAME_SIZE as usize,
+                )
+                .as_mut()
+                .unwrap_unchecked()
+            },
         };
         // clear the bitmap to mark all frames as unavailable
         for byte in pfa.bitmap.iter_mut() {
@@ -145,7 +150,11 @@ impl PhysicalFrameAllocator {
         self.bitmap[frame / FRAME_SIZE / 8] &= !(1 << (frame / FRAME_SIZE % 8));
         Ok(())
     }
-    pub fn allocate_contiguous(&mut self, n_frames: usize, alignment: usize) -> Result<PhysicalAddress, Error> {
+    pub fn allocate_contiguous(
+        &mut self,
+        n_frames: usize,
+        alignment: usize,
+    ) -> Result<PhysicalAddress, Error> {
         //validate inputs
         if n_frames == 0 {
             return Err(Error::InvalidSize);
@@ -153,7 +162,7 @@ impl PhysicalFrameAllocator {
         if !Self::is_power_of_two(alignment) {
             return Err(Error::AddressMisaligned);
         }
-        
+
         // if the requested alignment is less than the frame size, then the alignment is the frame size
         let corrected_alignment = if alignment < FRAME_SIZE {
             FRAME_SIZE
@@ -172,7 +181,8 @@ impl PhysicalFrameAllocator {
                 }
                 RegionAvailability::Unavailable(last_frame) => {
                     // skip to the next properly aligned address after the last frame in the gap using the magic of integer division
-                    base = (((last_frame + FRAME_SIZE) / corrected_alignment) + 1) * corrected_alignment;
+                    base = (((last_frame + FRAME_SIZE) / corrected_alignment) + 1)
+                        * corrected_alignment;
                     continue;
                 }
             }
@@ -180,7 +190,11 @@ impl PhysicalFrameAllocator {
         Err(Error::InsufficientContiguousMemoryAvailable)
     }
 
-    pub fn deallocate_contiguous(&mut self, base: PhysicalAddress, n_frames: usize) -> Result<(), Error> {
+    pub fn deallocate_contiguous(
+        &mut self,
+        base: PhysicalAddress,
+        n_frames: usize,
+    ) -> Result<(), Error> {
         // validate inputs
         if n_frames == 0 {
             return Err(Error::InvalidSize);
@@ -199,7 +213,7 @@ impl PhysicalFrameAllocator {
     }
 
     fn check_region(&self, base: usize, n_frames: usize) -> RegionAvailability {
-        // search the region in reverse order so that if a gap is found 
+        // search the region in reverse order so that if a gap is found
         // the address of the last frame in the gap is returned
         // this is useful for the allocate_contiguous method
         // if a gap is found, the method can continue searching from after the gap
@@ -239,5 +253,4 @@ impl PhysicalFrameAllocator {
             x & (x - 1) == 0
         }
     }
-
 }

@@ -45,8 +45,14 @@ unsafe extern "C" fn main() -> ! {
     );
 
     let memory_map = MemoryMap::get();
-    logln!("Physical Address Space Size: {} MiB", memory_map.total_memory() / 1024 / 1024);
-    logln!("Total Physical Memory: {} MiB", memory_map.usable_memory() / 1024 / 1024);
+    logln!(
+        "Physical Address Space Size: {} MiB",
+        memory_map.total_memory() / 1024 / 1024
+    );
+    logln!(
+        "Total Physical Memory: {} MiB",
+        memory_map.usable_memory() / 1024 / 1024
+    );
 
     logln!("Testing Physical Memory Manager");
     logln!("Performing single frame allocation and deallocation test.");
@@ -71,9 +77,15 @@ unsafe extern "C" fn main() -> ! {
     let contiguous_alloc = PHYSICAL_FRAME_ALLOCATOR.lock().allocate_contiguous(256, 64);
     match contiguous_alloc {
         Ok(frame) => {
-            logln!("Allocated physically contiguous region with physical base address: {:?}", frame);
+            logln!(
+                "Allocated physically contiguous region with physical base address: {:?}",
+                frame
+            );
             PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
-            logln!("Deallocated physically contiguous region with physical base address: {:?}", frame);
+            logln!(
+                "Deallocated physically contiguous region with physical base address: {:?}",
+                frame
+            );
         }
         Err(e) => {
             logln!("Failed to allocate contiguous frames: {:?}", e);
