@@ -170,10 +170,10 @@ impl PhysicalFrameAllocator {
         while base < self.bitmap.len() - n_frames * FRAME_SIZE {
             match self.check_region(base, n_frames) {
                 RegionAvailability::Available => {
-                    for addr in (base..base + n_frames).step_by(FRAME_SIZE) {
+                    for addr in (base..base + n_frames * FRAME_SIZE).step_by(FRAME_SIZE) {
                         self.set_by_address(addr);
                     }
-                    return Ok(base * FRAME_SIZE);
+                    return Ok(base);
                 }
                 RegionAvailability::Unavailable(last_frame) => {
                     // skip to the next properly aligned address after the last frame in the gap using the magic of integer division
@@ -215,7 +215,7 @@ impl PhysicalFrameAllocator {
         // if a gap is found, the method can continue searching from after the gap
         for i in (0..n_frames).rev() {
             let address = base + i * FRAME_SIZE;
-            if self.get_by_address(address) == true {
+            if self.get_by_address(address) {
                 return RegionAvailability::Unavailable(address);
             }
         }
