@@ -103,20 +103,17 @@ impl PhysicalFrameAllocator {
         // find a region that is large enough to hold the bitmap
         let region = memory_map.find_best_fit(bitmap_len)
             .expect("Failed to find a physical memory region large enough to hold the physical frame allocator bitmap");
-        // create the PFA
-        let pfa = PhysicalFrameAllocator {
-            // Safety: The region is guaranteed to be valid and the length is guaranteed to be large enough to hold the bitmap
-            bitmap: unsafe {
-                from_raw_parts_mut(
-                    (*DIRECT_MAP.lock().deref_mut() + region.base as usize).bits() as *mut u8,
-                    bitmap_len,
-                )
-            },
+
+        // Initialize bitmap and create PFA
+        let bitmap_addr = (*DIRECT_MAP.lock().deref_mut() + region.base as usize).bits() as *mut u8;
+        let bitmap = unsafe {
+            // clear the bitmap to mark all frames as unavailable
+            bitmap_addr.write_bytes(0xff, bitmap_len);
+            from_raw_parts_mut(bitmap_addr, bitmap_len)
         };
-        // clear the bitmap to mark all frames as unavailable
-        for byte in pfa.bitmap.iter_mut() {
-            *byte = 1;
-        }
+
+        let pfa = PhysicalFrameAllocator { bitmap };
+
         // clear the bits corresponding to available frames
         for entry in MemoryMap::get().iter() {
             if entry.entry_type == bootinfo::memory_map::EntryType::USABLE {
