@@ -127,6 +127,11 @@ impl PhysicalFrameAllocator {
         pfa
     }
 
+    #[inline]
+    const fn frame_capacity(&self) -> usize {
+        self.bitmap.len() * 8
+    }
+
     pub fn allocate(&mut self) -> Result<PhysicalAddress, Error> {
         for (byte_index, byte) in self.bitmap.iter_mut().enumerate() {
             let bit_index = byte.trailing_ones() as usize;
@@ -141,7 +146,7 @@ impl PhysicalFrameAllocator {
         if frame % FRAME_SIZE != 0 {
             return Err(Error::AddressMisaligned);
         }
-        if frame / FRAME_SIZE >= self.bitmap.len() {
+        if frame / FRAME_SIZE >= self.frame_capacity() {
             return Err(Error::AddressOutOfRange);
         }
         self.clear_by_address(frame);
@@ -164,7 +169,7 @@ impl PhysicalFrameAllocator {
         let corrected_alignment = alignment.max(FRAME_SIZE);
 
         let mut base: PhysicalAddress = 0usize;
-        while base < self.bitmap.len() - n_frames * FRAME_SIZE {
+        while (base / FRAME_SIZE) + n_frames < self.frame_capacity() {
             match self.check_region(base, n_frames) {
                 RegionAvailability::Available => {
                     for addr in (base..base + n_frames * FRAME_SIZE).step_by(FRAME_SIZE) {
@@ -195,7 +200,7 @@ impl PhysicalFrameAllocator {
         if base % FRAME_SIZE != 0 {
             return Err(Error::AddressMisaligned);
         }
-        if base / FRAME_SIZE >= self.bitmap.len() {
+        if base / FRAME_SIZE >= self.frame_capacity() {
             return Err(Error::AddressOutOfRange);
         }
 
