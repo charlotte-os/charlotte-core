@@ -201,7 +201,7 @@ impl PhysicalFrameAllocator {
         if !base.is_page_aligned() {
             return Err(Error::AddressMisaligned);
         }
-        if base.pfn() >= self.frame_capacity() {
+        if base.pfn() >= self.frame_capacity() || base.pfn() + n_frames >= self.frame_capacity() {
             return Err(Error::AddressOutOfRange);
         }
 
