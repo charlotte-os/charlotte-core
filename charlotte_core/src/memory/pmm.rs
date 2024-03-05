@@ -129,13 +129,10 @@ impl PhysicalFrameAllocator {
 
     pub fn allocate(&mut self) -> Result<PhysicalAddress, Error> {
         for (byte_index, byte) in self.bitmap.iter_mut().enumerate() {
-            if *byte != 0xFF {
-                for bit_index in 0..8 {
-                    if *byte & (1 << bit_index) == 0 {
-                        *byte |= 1 << bit_index;
-                        return Ok(byte_index * 8 + bit_index);
-                    }
-                }
+            let bit_index = byte.trailing_ones() as usize;
+            if bit_index < 8 {
+                *byte |= 1 << bit_index;
+                return Ok(self.index_to_address(byte_index, bit_index));
             }
         }
         Err(Error::OutOfMemory)
