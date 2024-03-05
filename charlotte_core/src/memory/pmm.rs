@@ -125,8 +125,8 @@ impl PhysicalFrameAllocator {
             }
         }
         // set the bits corresponding to the bitmap as unavailable
-        let start_frame = core::ptr::addr_of!(pfa.bitmap) as usize / FRAME_SIZE;
-        let end_frame = (start_frame + pfa.bitmap.len()) / FRAME_SIZE;
+        let start_frame = region.base as usize / FRAME_SIZE;
+        let end_frame = ((region.base + region.length) as usize).div_ceil(FRAME_SIZE);
         for frame in start_frame..end_frame {
             pfa.bitmap[frame / 8] |= 1 << (frame % 8);
         }
