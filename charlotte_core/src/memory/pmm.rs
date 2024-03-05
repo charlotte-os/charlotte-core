@@ -2,7 +2,7 @@ use crate::memory::address::PhysicalAddress;
 use crate::{bootinfo, logln};
 use core::{fmt::Write, ops::DerefMut};
 
-use core::ptr::slice_from_raw_parts_mut;
+use core::slice::from_raw_parts_mut;
 
 use spin::{lazy::Lazy, mutex::Mutex};
 
@@ -31,6 +31,7 @@ impl MemoryMap {
                 .entries(),
         }
     }
+
     pub fn total_memory(&self) -> usize {
         self.entries
             .iter()
@@ -38,6 +39,7 @@ impl MemoryMap {
             .map(|entry| entry.length)
             .sum::<u64>() as usize
     }
+
     pub fn usable_memory(&self) -> usize {
         self.entries
             .iter()
@@ -45,9 +47,19 @@ impl MemoryMap {
             .map(|entry| entry.length)
             .sum::<u64>() as usize
     }
+
+    fn highest_address(&self) -> usize {
+        self.entries
+            .iter()
+            .map(|entry| entry.base + entry.length)
+            .max()
+            .unwrap_or(0) as usize
+    }
+
     pub fn iter(&self) -> core::slice::Iter<&bootinfo::memory_map::Entry> {
         self.entries.iter()
     }
+
     pub fn find_best_fit(&self, size: usize) -> Result<&bootinfo::memory_map::Entry, Error> {
         self.entries
             .iter()
@@ -86,20 +98,19 @@ pub struct PhysicalFrameAllocator {
 impl PhysicalFrameAllocator {
     fn new() -> PhysicalFrameAllocator {
         let memory_map = MemoryMap::get();
-        let total_memory = &memory_map.total_memory();
+        let total_memory = memory_map.highest_address();
+        let bitmap_len = (total_memory / FRAME_SIZE).div_ceil(u8::BITS as usize);
         // find a region that is large enough to hold the bitmap
-        let region = &memory_map.find_best_fit(total_memory / FRAME_SIZE / 8)
+        let region = memory_map.find_best_fit(bitmap_len)
             .expect("Failed to find a physical memory region large enough to hold the physical frame allocator bitmap");
         // create the PFA
         let pfa = PhysicalFrameAllocator {
             // Safety: The region is guaranteed to be valid and the length is guaranteed to be large enough to hold the bitmap
             bitmap: unsafe {
-                slice_from_raw_parts_mut(
+                from_raw_parts_mut(
                     (*DIRECT_MAP.lock().deref_mut() + region.base as usize).bits() as *mut u8,
-                    total_memory / FRAME_SIZE as usize,
+                    bitmap_len,
                 )
-                .as_mut()
-                .unwrap_unchecked()
             },
         };
         // clear the bitmap to mark all frames as unavailable
