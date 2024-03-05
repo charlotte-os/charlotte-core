@@ -1,3 +1,4 @@
+use crate::memory::address::PhysicalAddress;
 use crate::{bootinfo, logln};
 use core::{fmt::Write, ops::DerefMut};
 
@@ -6,18 +7,16 @@ use core::ptr::slice_from_raw_parts_mut;
 use spin::{lazy::Lazy, mutex::Mutex};
 
 static DIRECT_MAP: Lazy<Mutex<PhysicalAddress>> = Lazy::new(|| {
-    Mutex::new(
+    Mutex::new(PhysicalAddress::new(
         bootinfo::HHDM_REQUEST
             .get_response()
             .expect("Limine failed to create a direct mapping of physical memory.")
-            .offset() as PhysicalAddress,
-    )
+            .offset() as usize,
+    ))
 });
 
 pub static PHYSICAL_FRAME_ALLOCATOR: Lazy<Mutex<PhysicalFrameAllocator>> =
     Lazy::new(|| Mutex::new(PhysicalFrameAllocator::new()));
-
-type PhysicalAddress = usize;
 
 pub struct MemoryMap {
     entries: &'static [&'static bootinfo::memory_map::Entry],
@@ -96,7 +95,7 @@ impl PhysicalFrameAllocator {
             // Safety: The region is guaranteed to be valid and the length is guaranteed to be large enough to hold the bitmap
             bitmap: unsafe {
                 slice_from_raw_parts_mut(
-                    (*DIRECT_MAP.lock().deref_mut() + region.base as usize) as *mut u8,
+                    (*DIRECT_MAP.lock().deref_mut() + region.base as usize).bits() as *mut u8,
                     total_memory / FRAME_SIZE as usize,
                 )
                 .as_mut()
@@ -143,10 +142,10 @@ impl PhysicalFrameAllocator {
         Err(Error::OutOfMemory)
     }
     pub fn deallocate(&mut self, frame: PhysicalAddress) -> Result<(), Error> {
-        if frame % FRAME_SIZE != 0 {
+        if !frame.is_page_aligned() {
             return Err(Error::AddressMisaligned);
         }
-        if frame / FRAME_SIZE >= self.frame_capacity() {
+        if frame.pfn() >= self.frame_capacity() {
             return Err(Error::AddressOutOfRange);
         }
         self.clear_by_address(frame);
@@ -168,19 +167,21 @@ impl PhysicalFrameAllocator {
         // if the requested alignment is less than the frame size, then the alignment is the frame size
         let corrected_alignment = alignment.max(FRAME_SIZE);
 
-        let mut base: PhysicalAddress = 0usize;
-        while (base / FRAME_SIZE) + n_frames < self.frame_capacity() {
+        let mut base = PhysicalAddress::new(0);
+        while base.pfn() + n_frames < self.frame_capacity() {
             match self.check_region(base, n_frames) {
                 RegionAvailability::Available => {
-                    for addr in (base..base + n_frames * FRAME_SIZE).step_by(FRAME_SIZE) {
+                    for addr in base.iter_frames(n_frames) {
                         self.set_by_address(addr);
                     }
                     return Ok(base);
                 }
                 RegionAvailability::Unavailable(last_frame) => {
                     // skip to the next properly aligned address after the last frame in the gap using the magic of integer division
-                    base = (((last_frame + FRAME_SIZE) / corrected_alignment) + 1)
-                        * corrected_alignment;
+                    base = PhysicalAddress::new(
+                        (((last_frame.bits() + FRAME_SIZE) / corrected_alignment) + 1)
+                            * corrected_alignment,
+                    );
                     continue;
                 }
             }
@@ -197,26 +198,25 @@ impl PhysicalFrameAllocator {
         if n_frames == 0 {
             return Err(Error::InvalidSize);
         }
-        if base % FRAME_SIZE != 0 {
+        if !base.is_page_aligned() {
             return Err(Error::AddressMisaligned);
         }
-        if base / FRAME_SIZE >= self.frame_capacity() {
+        if base.pfn() >= self.frame_capacity() {
             return Err(Error::AddressOutOfRange);
         }
 
-        for addr in (base..base + n_frames * FRAME_SIZE).step_by(FRAME_SIZE) {
+        for addr in base.iter_frames(n_frames) {
             self.clear_by_address(addr);
         }
         Ok(())
     }
 
-    fn check_region(&self, base: usize, n_frames: usize) -> RegionAvailability {
+    fn check_region(&self, base: PhysicalAddress, n_frames: usize) -> RegionAvailability {
         // search the region in reverse order so that if a gap is found
         // the address of the last frame in the gap is returned
         // this is useful for the allocate_contiguous method
         // if a gap is found, the method can continue searching from after the gap
-        for i in (0..n_frames).rev() {
-            let address = base + i * FRAME_SIZE;
+        for address in base.iter_frames(n_frames).rev() {
             if self.get_by_address(address) {
                 return RegionAvailability::Unavailable(address);
             }
@@ -225,19 +225,23 @@ impl PhysicalFrameAllocator {
     }
 
     fn index_to_address(&self, byte: usize, bit: usize) -> PhysicalAddress {
-        (byte * 8 + bit) * FRAME_SIZE
+        PhysicalAddress::from_pfn(byte * 8 + bit)
     }
+
     fn address_to_index(&self, address: PhysicalAddress) -> (usize, usize) {
-        (address / FRAME_SIZE / 8, address / FRAME_SIZE % 8)
+        (address.pfn() / 8, address.pfn() % 8)
     }
+
     fn get_by_address(&self, address: PhysicalAddress) -> bool {
         let (byte, bit) = self.address_to_index(address);
         self.bitmap[byte] & (1 << bit) != 0
     }
+
     fn set_by_address(&mut self, address: PhysicalAddress) {
         let (byte, bit) = self.address_to_index(address);
         self.bitmap[byte] |= 1 << bit;
     }
+
     fn clear_by_address(&mut self, address: PhysicalAddress) {
         let (byte, bit) = self.address_to_index(address);
         self.bitmap[byte] &= !(1 << bit);
