@@ -147,7 +147,7 @@ impl PhysicalFrameAllocator {
         if frame / FRAME_SIZE >= self.bitmap.len() {
             return Err(Error::AddressOutOfRange);
         }
-        self.bitmap[frame / FRAME_SIZE / 8] &= !(1 << (frame / FRAME_SIZE % 8));
+        self.clear_by_address(frame);
         Ok(())
     }
     pub fn allocate_contiguous(
