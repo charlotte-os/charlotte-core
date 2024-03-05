@@ -112,23 +112,23 @@ impl PhysicalFrameAllocator {
             from_raw_parts_mut(bitmap_addr, bitmap_len)
         };
 
-        let pfa = PhysicalFrameAllocator { bitmap };
+        let mut pfa = PhysicalFrameAllocator { bitmap };
 
         // clear the bits corresponding to available frames
         for entry in MemoryMap::get().iter() {
             if entry.entry_type == bootinfo::memory_map::EntryType::USABLE {
-                let start_frame = entry.base as usize / FRAME_SIZE;
-                let end_frame = (entry.base + entry.length) as usize / FRAME_SIZE;
-                for frame in start_frame..end_frame {
-                    pfa.bitmap[frame / 8] &= !(1 << (frame % 8));
+                let start = PhysicalAddress::new(entry.base as usize);
+                let n_frames = entry.length as usize / FRAME_SIZE;
+                for addr in start.iter_frames(n_frames) {
+                    pfa.clear_by_address(addr);
                 }
             }
         }
         // set the bits corresponding to the bitmap as unavailable
-        let start_frame = region.base as usize / FRAME_SIZE;
-        let end_frame = ((region.base + region.length) as usize).div_ceil(FRAME_SIZE);
-        for frame in start_frame..end_frame {
-            pfa.bitmap[frame / 8] |= 1 << (frame % 8);
+        let bitmap_start = PhysicalAddress::new(region.base as usize);
+        let bitmap_frames = (region.length as usize).div_ceil(FRAME_SIZE);
+        for addr in bitmap_start.iter_frames(bitmap_frames) {
+            pfa.set_by_address(addr);
         }
 
         pfa
