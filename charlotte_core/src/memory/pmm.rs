@@ -159,16 +159,12 @@ impl PhysicalFrameAllocator {
         if n_frames == 0 {
             return Err(Error::InvalidSize);
         }
-        if !Self::is_power_of_two(alignment) {
+        if !alignment.is_power_of_two() {
             return Err(Error::AddressMisaligned);
         }
 
         // if the requested alignment is less than the frame size, then the alignment is the frame size
-        let corrected_alignment = if alignment < FRAME_SIZE {
-            FRAME_SIZE
-        } else {
-            alignment
-        };
+        let corrected_alignment = alignment.max(FRAME_SIZE);
 
         let mut base: PhysicalAddress = 0usize;
         while base < self.bitmap.len() - n_frames * FRAME_SIZE {
@@ -243,14 +239,5 @@ impl PhysicalFrameAllocator {
     fn clear_by_address(&mut self, address: PhysicalAddress) {
         let (byte, bit) = self.address_to_index(address);
         self.bitmap[byte] &= !(1 << bit);
-    }
-
-    fn is_power_of_two(x: usize) -> bool {
-        // handle the overflow case
-        if x == 0 {
-            false
-        } else {
-            x & (x - 1) == 0
-        }
     }
 }
