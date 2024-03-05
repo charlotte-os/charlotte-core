@@ -185,12 +185,10 @@ impl PhysicalFrameAllocator {
                     return Ok(base);
                 }
                 RegionAvailability::Unavailable(last_frame) => {
-                    // skip to the next properly aligned address after the last frame in the gap using the magic of integer division
+                    // skip to the next properly aligned address after the last frame in the gap
                     base = PhysicalAddress::new(
-                        (((last_frame.bits() + FRAME_SIZE) / corrected_alignment) + 1)
-                            * corrected_alignment,
+                        (last_frame.bits() + FRAME_SIZE).next_multiple_of(corrected_alignment),
                     );
-                    continue;
                 }
             }
         }
