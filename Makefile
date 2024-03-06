@@ -6,7 +6,6 @@ ovmf-x86_64:
 
 build-x86_64-debug:
 	cd charlotte_core && cargo build --target x86_64-unknown-none
-charlotte_core-x86_64-debug.iso: build-x86_64-debug
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/x86_64-unknown-none/debug/charlotte_core \
@@ -20,18 +19,17 @@ charlotte_core-x86_64-debug.iso: build-x86_64-debug
 		iso_root -o charlotte_core-x86_64-debug.iso
 	rm -rf iso_root
 
-run-x86_64-debug: ovmf-x86_64 charlotte_core-x86_64-debug.iso
+run-x86_64-debug: ovmf-x86_64 build-x86_64-debug
 	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial stdio
 
-run-x86_64-extdb: ovmf-x86_64 charlotte_core-x86_64-debug.iso
+run-x86_64-extdb: ovmf-x86_64 build-x86_64-debug
 	qemu-system-x86_64 -s -S -M q35 -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d
 
-run-x86_64-log: ovmf-x86_64 charlotte_core-x86_64-debug.iso
+run-x86_64-log: ovmf-x86_64 build-x86_64-debug
 	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 12G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial file:log_x86_64.txt
 
 build-x86_64-release:
 	cd charlotte_core && cargo build --target x86_64-unknown-none --release
-charlotte_core-x86_64-release.iso: build-x86_64-release
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/x86_64-unknown-none/release/charlotte_core \
@@ -45,7 +43,7 @@ charlotte_core-x86_64-release.iso: build-x86_64-release
 		iso_root -o charlotte_core-x86_64-release.iso
 	rm -rf iso_root
 
-run-x86_64-release: ovmf-x86_64 charlotte_core-x86_64-release.iso
+run-x86_64-release: ovmf-x86_64 build-x86_64-release
 	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 12G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-release.iso -boot d
 
 check-x86_64:
