@@ -1,7 +1,6 @@
 //! MADT Parsing facilities
-use core::mem;
-
 use crate::acpi::tables::{get_table, SDTHeader};
+use core::mem;
 
 /// The MADT
 pub struct Madt {
@@ -40,7 +39,7 @@ impl Madt {
         MadtIter {
             addr: self.addr + mem::size_of::<SDTHeader>() + 8, // Skip over the header, the local APIC address and flags
             offset: 0,
-            len: self.header.length() as usize,
+            len: self.header.length() as usize - mem::size_of::<SDTHeader>() - 8,
         }
     }
 }
@@ -58,11 +57,6 @@ impl Iterator for MadtIter {
     fn next(&mut self) -> Option<Self::Item> {
         if self.offset < self.len {
             let header = unsafe { &*((self.addr + self.offset) as *const MadtEntryHeader) };
-
-            // FIXME: w/a for arm64
-            if header.length == 0 {
-                return None;
-            }
 
             let entry = match header.entry_type {
                 0 => MadtEntry::ProcessorLocalApic(unsafe {
