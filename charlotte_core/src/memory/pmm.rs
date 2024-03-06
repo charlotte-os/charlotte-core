@@ -1,18 +1,17 @@
+use crate::bootinfo;
 use crate::memory::address::PhysicalAddress;
-use crate::{bootinfo, logln};
-use core::{fmt::Write, ops::DerefMut};
 
 use core::slice::from_raw_parts_mut;
 
 use spin::{lazy::Lazy, mutex::Mutex};
 
-static DIRECT_MAP: Lazy<Mutex<PhysicalAddress>> = Lazy::new(|| {
-    Mutex::new(PhysicalAddress::new(
+static DIRECT_MAP: Lazy<PhysicalAddress> = Lazy::new(|| {
+    PhysicalAddress::new(
         bootinfo::HHDM_REQUEST
             .get_response()
             .expect("Limine failed to create a direct mapping of physical memory.")
             .offset() as usize,
-    ))
+    )
 });
 
 pub static PHYSICAL_FRAME_ALLOCATOR: Lazy<Mutex<PhysicalFrameAllocator>> =
@@ -105,7 +104,7 @@ impl PhysicalFrameAllocator {
             .expect("Failed to find a physical memory region large enough to hold the physical frame allocator bitmap");
 
         // Initialize bitmap and create PFA
-        let bitmap_addr = (*DIRECT_MAP.lock().deref_mut() + region.base as usize).bits() as *mut u8;
+        let bitmap_addr = (*DIRECT_MAP + region.base as usize).bits() as *mut u8;
         let bitmap = unsafe {
             // clear the bitmap to mark all frames as unavailable
             bitmap_addr.write_bytes(0xff, bitmap_len);
