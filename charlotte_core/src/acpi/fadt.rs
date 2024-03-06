@@ -1,5 +1,7 @@
 //! Fixed ACPI Description Table (FADT) definition
 
+use derive_getters::Getters;
+
 use super::tables::SDTHeader;
 
 /// Address space types to make the meaning of the field more clear
@@ -37,7 +39,7 @@ pub enum AccessSize {
 
 /// Generic address structure
 /// Used to describe registers
-#[repr(C, packed)]
+#[repr(C)]
 #[derive(Copy, Clone)]
 pub struct GenericAddress {
     address_space: u8,
@@ -95,8 +97,8 @@ impl GenericAddress {
 /// Fixed ACPI Description Table (FADT)
 /// The FADT is a table that provides an ACPI-compliant OS with the information it needs to
 /// to enact power management related actions.
-#[repr(C, packed)]
-#[derive(Copy, Clone)]
+#[repr(C)]
+#[derive(Copy, Clone, Getters)]
 pub struct Fadt {
     header: SDTHeader,
     firmware_ctrl: u32,
