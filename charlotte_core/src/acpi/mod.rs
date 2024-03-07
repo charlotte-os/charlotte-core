@@ -12,6 +12,7 @@ use core::fmt::Write;
 
 use crate::acpi::rsdp::Rsdp;
 
+use self::fadt::Fadt;
 use self::madt::Madt;
 use self::sdt::Sdt;
 
@@ -20,12 +21,18 @@ pub struct AcpiTables {
     rsdp: Rsdp,
     sdt: sdt::Sdt,
     madt: Madt,
+    fadt: Fadt,
 }
 
 impl AcpiTables {
     /// Creates a new AcpiTables.
-    pub fn new(rsdp: Rsdp, sdt: Sdt, madt: Madt) -> Self {
-        Self { rsdp, sdt, madt }
+    pub fn new(rsdp: Rsdp, sdt: Sdt, madt: Madt, fadt: Fadt) -> Self {
+        Self {
+            rsdp,
+            sdt,
+            madt,
+            fadt,
+        }
     }
 
     pub fn rsdp(&self) -> &Rsdp {
@@ -69,7 +76,9 @@ pub fn init_acpi() -> AcpiTables {
         for entry in madt.iter() {
             logln!("MADT Entry: {:?}", entry);
         }
-        AcpiTables::new(rsdp, sdt, madt)
+        let fadt = Fadt::new(sdt.get_table(*b"FACP").unwrap()).unwrap();
+        logln!("Parsed FADT");
+        AcpiTables::new(rsdp, sdt, madt, fadt)
     } else {
         panic!("Failed to obtain RSDP response.");
     }

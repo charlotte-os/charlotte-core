@@ -2,7 +2,7 @@
 
 use derive_getters::Getters;
 
-use super::tables::SDTHeader;
+use super::tables::{get_table, SDTHeader};
 
 /// Address space types to make the meaning of the field more clear
 #[repr(C)]
@@ -40,7 +40,7 @@ pub enum AccessSize {
 /// Generic address structure
 /// Used to describe registers
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct GenericAddress {
     address_space: u8,
     bit_width: u8,
@@ -98,7 +98,7 @@ impl GenericAddress {
 /// The FADT is a table that provides an ACPI-compliant OS with the information it needs to
 /// to enact power management related actions.
 #[repr(C)]
-#[derive(Copy, Clone, Getters)]
+#[derive(Copy, Clone, Getters, Debug)]
 pub struct Fadt {
     header: SDTHeader,
     firmware_ctrl: u32,
@@ -157,11 +157,14 @@ pub struct Fadt {
 }
 
 impl Fadt {
-    pub fn new(facp: &SDTHeader) -> Option<Self> {
-        if facp.signature() != "FACP" {
-            return None;
+    pub fn new(addr: usize) -> Option<Self> {
+        let header = get_table(addr, *b"FACP");
+
+        if let Some(_header) = header {
+            let fadt = unsafe { &*(addr as *const Fadt) };
+            Some(*fadt)
+        } else {
+            None
         }
-        let fadt = unsafe { &*(facp as *const SDTHeader as *const Fadt) };
-        Some(*fadt)
     }
 }
