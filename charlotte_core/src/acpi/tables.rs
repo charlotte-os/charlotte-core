@@ -7,7 +7,7 @@ use core::fmt::Write;
 use crate::logln;
 
 #[repr(C, packed)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct SDTHeader {
     signature: [u8; 4],
     length: u32,

@@ -45,7 +45,7 @@ impl Sdt {
             let table = Some(Self {
                 header,
                 n_entries,
-                sub_tables: sub_tables,
+                sub_tables,
                 addr_width: 64,
             });
             return table;
