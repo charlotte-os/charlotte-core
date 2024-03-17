@@ -252,3 +252,25 @@ impl PhysicalFrameAllocator {
         self.bitmap[byte] &= !(1 << bit);
     }
 }
+
+#[cfg(test)]
+mod test {
+    use test_macros::kernel_test;
+    use crate::*;
+
+    #[kernel_test]
+    fn test_success() {
+        use core::fmt::Write;
+        crate::logln!("Kernel test");
+
+        test_assert!(true);
+    }
+
+    #[kernel_test]
+    fn test_failure() {
+        use core::fmt::Write;
+        crate::logln!("Kernel test");
+
+        test_assert!(false);
+    }
+}

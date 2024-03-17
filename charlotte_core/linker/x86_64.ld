@@ -36,11 +36,12 @@ SECTIONS
 
     /* Move to the next memory page for .data */
     . += CONSTANT(MAXPAGESIZE);
-
     .data : {
         *(.data .data.*)
+        stests = .;
+        KEEP(*(.kernel_tests));
+        etests = .;
     } :data
-
     /* Dynamic section for relocations, both in its own PHDR and inside data PHDR */
     .dynamic : {
         *(.dynamic)

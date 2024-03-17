@@ -32,6 +32,9 @@ SECTIONS
 
     .rodata : {
         *(.rodata .rodata.*)
+        stests = .;
+        KEEP(*(.kernel_tests));
+        etests = .;
     } :rodata
 
     /* Move to the next memory page for .data */
