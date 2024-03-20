@@ -1,7 +1,7 @@
 # Charlotte Core
 ### The Kernel of CharlotteOS
 
-Charlotte Core is a hybrid operating system kernel developed part of of CharlotteOS.
+Charlotte Core is a hybrid operating system kernel developed as a part of CharlotteOS.
 
 ### Status
 
