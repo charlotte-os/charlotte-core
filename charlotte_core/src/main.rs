@@ -6,6 +6,7 @@ mod acpi;
 mod arch;
 mod bootinfo;
 mod framebuffer;
+mod libk;
 mod memory;
 
 use core::fmt::Write;
