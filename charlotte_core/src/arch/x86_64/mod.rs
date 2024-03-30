@@ -1,6 +1,15 @@
 //! # x86_64 Architecture Module
 //! This module implements the Arch interface for the x86_64 instruction set architecture (ISA).
 
+mod cpu;
+mod exceptions;
+mod gdt;
+mod idt;
+mod interrupts;
+mod memory;
+mod serial;
+mod timers;
+
 use core::fmt::Write;
 use core::str;
 use core::{
@@ -48,7 +57,7 @@ impl crate::arch::Api for Api {
     type Api = Api;
     /// Define the logger type
     type DebugLogger = SerialPort;
-    type Serial = SerialPort;
+    type MemMap = memory::PageMap;
 
     fn isa_init() -> Self {
         FRAMEBUFFER.lock().clear_screen(Color::BLACK);
@@ -100,13 +109,13 @@ impl crate::arch::Api for Api {
         *VADDR_SIG_BITS
     }
     /// Validates a physical address in accordance with the x86_64 architecture
-    fn validate_paddr(paddr: usize) -> bool {
+    fn validate_paddr(raw: usize) -> bool {
         // Non-significant bits must be zero
         let unused_bitmask = !(1 << Self::get_paddr_width() - 1);
-        (paddr & unused_bitmask) == 0   
+        (raw & unused_bitmask) == 0   
     }
     /// Validates a virtual address in accordance with the x86_64 architecture
-    fn validate_vaddr(vaddr: VirtualAddress) -> bool {
+    fn validate_vaddr(raw: u64) -> bool {
         // Canonical form check
         let unused_bitmask = !(1 << Self::get_vaddr_width() - 1);
         (raw & unused_bitmask) == 0 || (raw & unused_bitmask) == unused_bitmask

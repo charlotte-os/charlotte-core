@@ -126,8 +126,8 @@ pub trait Api {
     /// memory
     fn get_paddr_width() -> u8;
     fn get_vaddr_width() -> u8;
-    fn validate_paddr(paddr: usize) -> bool;
-    fn validate_vaddr(vaddr: u64) -> bool;
+    fn validate_paddr(raw: usize) -> bool;
+    fn validate_vaddr(raw: u64) -> bool;
     /// cpu
     fn halt() -> !;
     fn panic() -> !;

@@ -75,7 +75,7 @@ impl Add<usize> for PhysicalAddress {
 
 pub struct VirtualAddress(u64);
 
-enum VAddrError {
+pub enum VAddrError {
     InvalidForm,
     InvalidAlignment,
 }
