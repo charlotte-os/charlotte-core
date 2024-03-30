@@ -1,5 +1,5 @@
-use crate::memory::address::{PhysicalAddress, VirtualAddress};
 use crate::arch::MemoryMap;
+use crate::memory::address::{PhysicalAddress, VirtualAddress};
 
 pub struct PageMap {
     pml4_addr: Option<PhysicalAddress>,
@@ -13,7 +13,6 @@ impl Clone for PageMap {
     fn clone(&self) -> Self {
         todo!()
     }
-    
 }
 
 impl Drop for PageMap {
@@ -26,9 +25,7 @@ impl MemoryMap for PageMap {
     type Error = Error;
 
     fn new() -> Self {
-        Self {
-            pml4_addr: None,
-        }
+        Self { pml4_addr: None }
     }
 
     fn map_page(paddr: PhysicalAddress, vaddr: VirtualAddress) -> Result<(), Self::Error> {

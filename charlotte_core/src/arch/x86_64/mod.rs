@@ -112,7 +112,7 @@ impl crate::arch::Api for Api {
     fn validate_paddr(raw: usize) -> bool {
         // Non-significant bits must be zero
         let unused_bitmask = !(1 << Self::get_paddr_width() - 1);
-        (raw & unused_bitmask) == 0   
+        (raw & unused_bitmask) == 0
     }
     /// Validates a virtual address in accordance with the x86_64 architecture
     fn validate_vaddr(raw: u64) -> bool {
@@ -210,7 +210,6 @@ impl Api {
     /// This routine is run by each application processor to initialize itself prior to being handed off to the scheduler.
     fn init_ap() {
         todo!("Implement init_ap() for the x86_64 architecture once a scheduler exists.");
-        
     }
 
     fn init_timers(&self) {

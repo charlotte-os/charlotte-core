@@ -49,63 +49,63 @@ pub trait MemoryMap: Clone + Drop {
     ///
     /// Returns an error of type `Self::Error` if mapping fails.
     fn map_page(paddr: PhysicalAddress, vaddr: VirtualAddress) -> Result<(), Self::Error>;
-    
+
     /// Unmaps a page from the given page map at the given virtual address.
     ///
     /// # Arguments
-    /// 
+    ///
     /// * `vaddr` - The virtual address to unmap.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
     fn unmap_page(vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
 
     /// Maps a large page (2 MiB) at the given virtual address.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `paddr` - The physical address to map.
     /// * `vaddr` - The virtual address to map to.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns an error of type `Self::Error` if mapping fails.
     fn map_large_page(paddr: PhysicalAddress, vaddr: VirtualAddress) -> Result<(), Self::Error>;
 
     /// Unmaps a large page from the given page map at the given virtual address.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `vaddr` - The virtual address to unmap.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
     fn unmap_large_page(vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
 
     /// Maps a huge page (1 GiB) at the given virtual address.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `paddr` - The physical address to map.
     /// * `vaddr` - The virtual address to map to.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns an error of type `Self::Error` if mapping fails.
     fn map_huge_page(paddr: PhysicalAddress, vaddr: VirtualAddress) -> Result<(), Self::Error>;
 
     /// Unmaps a huge page from the given page map at the given virtual address.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `vaddr` - The virtual address to unmap.
     ///
     /// # Returns
-    /// 
+    ///
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
     fn unmap_huge_page(vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
@@ -114,7 +114,7 @@ pub trait MemoryMap: Clone + Drop {
 pub trait Api {
     type Api: Api;
     type DebugLogger: Write;
-    type MemMap: MemoryMap; 
+    type MemMap: MemoryMap;
 
     /// Each ISA implementation does something specific within this function,
     /// you should check the relevant implementation under each ISA folder linked bellow:
