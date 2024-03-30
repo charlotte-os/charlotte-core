@@ -15,12 +15,18 @@ Charlotte Core is written in Rust and Assembly language
 
 - x86-64 PCs with UEFI and ACPI (In Progress)
 - Aarch64 devices with UEFI and ACPI (In Progress)
-- RISC-V devices with UEFI and ACPI (Under Consideration)
+- RISC-V devices with UEFI and ACPI (Not under active development yet)
 
 ### Building and Testing
 
-#### Building
+When you first clone this respository make sure to run the following commands to ensure that the git submodules are initialized and up to date:
+```bash
+git submodule init
+git submodule update
+```
 
+#### Building
+The following commands are used to build the debug and release versions of the kernel.
 ```bash
 make build-x86_64-debug    # debug
 make build-x86_64-release  # release
@@ -31,9 +37,13 @@ make build-x86_64-release  # release
 make run-x86_64-debug    # For testing a debug build in qemu
 make run-x86_64-release  # For testing a release build in qemu
 ```
+
+The `x86_64` portion of any of the previous commands can be replaced with `aarch64` or `riscv64` to build the kernel for the Arm and RISC-V architectures respectively however it should be noted that support for these ISAs is much less complete
+than for x86_64 for the time being.
+
 ### Documentation
 
-Detailed documentation will eventually be available on the project's wiki.
+Detailed documentation will eventually be available on the project's wiki and website.
 
 ### Contributing
 
