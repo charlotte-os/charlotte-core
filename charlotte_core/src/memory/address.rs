@@ -1,14 +1,17 @@
 use core::num::NonZeroUsize;
 use core::ops::Add;
 
+use crate::arch::{Api, ArchApi};
+
+const PAGE_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(4096) };
+const PAGE_SHIFT: usize = 12;
+const PAGE_MASK: u64 = !0xfffu64;
+
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct PhysicalAddress(usize);
 
 impl PhysicalAddress {
-    const FRAME_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(4096) };
-    const FRAME_SHIFT: usize = 12;
-
     #[inline]
     pub const fn new(addr: usize) -> Self {
         Self(addr)
@@ -21,12 +24,12 @@ impl PhysicalAddress {
 
     #[inline]
     pub const fn pfn(&self) -> usize {
-        self.bits() >> Self::FRAME_SHIFT
+        self.bits() >> PAGE_SHIFT
     }
 
     #[inline]
     pub const fn from_pfn(pfn: usize) -> Self {
-        Self::new(pfn << Self::FRAME_SHIFT)
+        Self::new(pfn << PAGE_SHIFT)
     }
 
     #[inline]
@@ -36,13 +39,13 @@ impl PhysicalAddress {
 
     #[inline]
     pub const fn is_page_aligned(&self) -> bool {
-        self.is_aligned_to(Self::FRAME_SIZE)
+        self.is_aligned_to(PAGE_SIZE)
     }
 
     #[inline]
     pub fn iter_frames(&self, n_frames: usize) -> impl DoubleEndedIterator<Item = PhysicalAddress> {
-        (self.bits()..(self.bits() + n_frames * Self::FRAME_SIZE.get()))
-            .step_by(Self::FRAME_SIZE.get())
+        (self.bits()..(self.bits() + n_frames * PAGE_SIZE.get()))
+            .step_by(PAGE_SIZE.get())
             .map(PhysicalAddress::new)
     }
 }
@@ -67,5 +70,88 @@ impl Add<usize> for PhysicalAddress {
     #[inline]
     fn add(self, val: usize) -> Self::Output {
         Self::new(self.bits() + val)
+    }
+}
+
+pub struct VirtualAddress(u64);
+
+enum VAddrError {
+    InvalidForm,
+    InvalidAlignment,
+}
+
+impl VirtualAddress {
+    const NULL: VirtualAddress = VirtualAddress(0);
+    /// Default constructor that provides a null virtual address
+    /// (0x0 is to be used as the null virtual address in CharlotteOS)
+    #[inline]
+    pub fn new() -> Self {
+        Self(0)
+    }
+    /// Check if the virtual address is null
+    #[inline]
+    pub fn is_null(&self) -> bool {
+        self.0 == 0
+    }
+    /// Check if the virtual address is aligned to the specified alignment
+    #[inline]
+    pub fn is_aligned_to(&self, align: u64) -> bool {
+        self.0 % align == 0
+    }
+    /// Get the base address of the page that the virtual address is in
+    #[inline]
+    pub fn get_page_base(&self) -> u64 {
+        self.0 & PAGE_MASK
+    }
+    /// Get the offset of the virtual address from the base address of the page
+    #[inline]
+    pub fn get_page_offset(&self) -> u64 {
+        self.0 & !PAGE_MASK
+    }
+}
+
+impl TryFrom<u64> for VirtualAddress {
+    type Error = VAddrError;
+
+    fn try_from(addr: u64) -> Result<Self, Self::Error> {
+        if ArchApi::validate_vaddr(addr) {
+            Ok(Self(addr))
+        } else {
+            Err(VAddrError::InvalidForm)
+        }
+    }
+}
+
+impl From<VirtualAddress> for u64 {
+    #[inline]
+    fn from(addr: VirtualAddress) -> Self {
+        addr.0
+    }
+}
+
+/// VirtualAddress can be converted to a const or mut pointer.
+/// Safety: This conversion itself is safe, but dereferencing the resulting pointer may not be.
+/// This is why only converstions to raw pointers are provided because dereferencing raw pointers is considered unsafe
+/// and requires that invariants the compiler cannot verify are upheld by the developer.
+impl<T> From<VirtualAddress> for *const T {
+    #[inline]
+    fn from(addr: VirtualAddress) -> *const T {
+        addr.0 as *const T
+    }
+}
+
+impl<T> From<VirtualAddress> for *mut T {
+    #[inline]
+    fn from(addr: VirtualAddress) -> *mut T {
+        addr.0 as *mut T
+    }
+}
+
+impl Add<usize> for VirtualAddress {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, val: usize) -> Self::Output {
+        Self(self.0 + val as u64)
     }
 }

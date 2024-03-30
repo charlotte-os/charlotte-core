@@ -16,33 +16,126 @@ pub mod riscv64;
 #[cfg(target_arch = "x86_64")]
 pub mod x86_64;
 
+use core::fmt::*;
+use core::result::Result;
+
+use spin::{lazy::Lazy, mutex::TicketMutex};
+
+use crate::{acpi::AcpiTables, framebuffer::console::CONSOLE};
+
+use crate::memory::address::{PhysicalAddress, VirtualAddress};
+
 pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
     TicketMutex::new(Logger {
         logger: <ArchApi as Api>::get_logger(),
     })
 });
 
+/// Common interface for ISA specific memory map structures.
+pub trait MemoryMap: Clone + Drop {
+    type Error;
+
+    /// Creates a new instance of the memory map.
+    fn new() -> Self;
+
+    /// Maps a page at the given virtual address.
+    ///
+    /// # Arguments
+    ///
+    /// * `paddr` - The physical address to map.
+    /// * `vaddr` - The virtual address to map to.
+    ///
+    /// # Returns
+    ///
+    /// Returns an error of type `Self::Error` if mapping fails.
+    fn map_page(paddr: PhysicalAddress, vaddr: VirtualAddress) -> Result<(), Self::Error>;
+    
+    /// Unmaps a page from the given page map at the given virtual address.
+    ///
+    /// # Arguments
+    /// 
+    /// * `vaddr` - The virtual address to unmap.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
+    /// previously mapped to the given virtual address if successful.
+    fn unmap_page(vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
+
+    /// Maps a large page (2 MiB) at the given virtual address.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `paddr` - The physical address to map.
+    /// * `vaddr` - The virtual address to map to.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns an error of type `Self::Error` if mapping fails.
+    fn map_large_page(paddr: PhysicalAddress, vaddr: VirtualAddress) -> Result<(), Self::Error>;
+
+    /// Unmaps a large page from the given page map at the given virtual address.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `vaddr` - The virtual address to unmap.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
+    /// previously mapped to the given virtual address if successful.
+    fn unmap_large_page(vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
+
+    /// Maps a huge page (1 GiB) at the given virtual address.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `paddr` - The physical address to map.
+    /// * `vaddr` - The virtual address to map to.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns an error of type `Self::Error` if mapping fails.
+    fn map_huge_page(paddr: PhysicalAddress, vaddr: VirtualAddress) -> Result<(), Self::Error>;
+
+    /// Unmaps a huge page from the given page map at the given virtual address.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `vaddr` - The virtual address to unmap.
+    ///
+    /// # Returns
+    /// 
+    /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
+    /// previously mapped to the given virtual address if successful.
+    fn unmap_huge_page(vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
+}
+
 pub trait Api {
     type Api: Api;
     type DebugLogger: Write;
-    type Serial: Serial;
+    type MemMap: MemoryMap; 
 
     /// Each ISA implementation does something specific within this function,
     /// you should check the relevant implementation under each ISA folder linked bellow:
     /// * [X86_64](x86_64::Api::isa_init)
     fn isa_init() -> Self;
 
+    /// logging
     fn get_logger() -> Self::DebugLogger;
-    fn get_serial(&self) -> Self::Serial;
+    /// memory
     fn get_paddr_width() -> u8;
     fn get_vaddr_width() -> u8;
-    #[allow(unused)]
+    fn validate_paddr(paddr: usize) -> bool;
+    fn validate_vaddr(vaddr: u64) -> bool;
+    /// cpu
     fn halt() -> !;
     fn panic() -> !;
+    /// io ports
     fn inb(port: u16) -> u8;
     fn outb(port: u16, val: u8);
-    #[allow(unused)]
-    fn init_ap(&mut self);
+    /// processor initialization
+    fn init_bsp();
     #[allow(unused)]
     fn init_timers(&self);
     fn init_interrupts(&mut self);
@@ -66,7 +159,7 @@ pub struct Logger {
 }
 
 impl Write for Logger {
-    fn write_str(&mut self, s: &str) -> Result {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
         write!(self.logger, "{}", s).unwrap();
         write!(CONSOLE.lock(), "{}", s).unwrap();
         Ok(())

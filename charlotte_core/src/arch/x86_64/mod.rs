@@ -80,6 +80,7 @@ impl crate::arch::Api for Api {
     }
 
     /// Get a new logger instance
+    #[inline]
     fn get_logger() -> Self::DebugLogger {
         SerialPort::try_new(ComPort::COM1).unwrap()
     }
@@ -89,30 +90,47 @@ impl crate::arch::Api for Api {
     }
 
     /// Get the number of significant physical address bits supported by the current CPU
+    #[inline]
     fn get_paddr_width() -> u8 {
         *PADDR_SIG_BITS
     }
     /// Get the number of significant virtual address bits supported by the current CPU
+    #[inline]
     fn get_vaddr_width() -> u8 {
         *VADDR_SIG_BITS
     }
-
+    /// Validates a physical address in accordance with the x86_64 architecture
+    fn validate_paddr(paddr: usize) -> bool {
+        // Non-significant bits must be zero
+        let unused_bitmask = !(1 << Self::get_paddr_width() - 1);
+        (paddr & unused_bitmask) == 0   
+    }
+    /// Validates a virtual address in accordance with the x86_64 architecture
+    fn validate_vaddr(vaddr: VirtualAddress) -> bool {
+        // Canonical form check
+        let unused_bitmask = !(1 << Self::get_vaddr_width() - 1);
+        (raw & unused_bitmask) == 0 || (raw & unused_bitmask) == unused_bitmask
+    }
     /// Halt the calling LP
+    #[inline]
     fn halt() -> ! {
         unsafe { asm_halt() }
     }
 
     /// Kernel Panic
+    #[inline]
     fn panic() -> ! {
         unsafe { asm_halt() }
     }
 
     /// Read a byte from the specified port
+    #[inline]
     fn inb(port: u16) -> u8 {
         unsafe { asm_inb(port) }
     }
 
     /// Write a byte to the specified port
+    #[inline]
     fn outb(port: u16, val: u8) {
         unsafe { asm_outb(port, val) }
     }
@@ -179,55 +197,42 @@ impl Api {
         unsafe { asm_get_vendor_string(&mut vendor_string) }
         logln!("CPU Vendor ID: {}", str::from_utf8(&vendor_string).unwrap());
     }
+    /// Initialize the application processors (APs)
+    /// This routine is run by each application processor to initialize itself prior to being handed off to the scheduler.
+    fn init_ap() {
+        todo!("Implement init_ap() for the x86_64 architecture once a scheduler exists.");
+        
+    }
 
-    fn pmm_self_test() {
-        logln!(
-            "Number of Significant Physical Address Bits Supported: {}",
-            Api::get_paddr_width()
-        );
-        logln!(
-            "Number of Significant Virtual Address Bits Supported: {}",
-            Api::get_vaddr_width()
-        );
+    fn init_timers(&self) {
+        unimplemented!()
+    }
 
-        logln!("Testing Physical Memory Manager");
-        logln!("Performing single frame allocation and deallocation test.");
-        let alloc = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
-        let alloc2 = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
-        match alloc {
-            Ok(frame) => {
-                logln!("Allocated frame with physical base address: {:?}", frame);
-                let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
-                logln!("Deallocated frame with physical base address: {:?}", frame);
+    fn init_interrupts(&self) {
+        if let Some(tables) = self.tables {
+            logln!("Initializing interrupt controllers");
+            if !check_apic_is_present() {
+                panic!("APIC is not present according to CPUID");
             }
-            Err(e) => {
-                logln!("Failed to allocate frame: {:?}", e);
-            }
+            // enable the lapic
+            logln!("Enable LAPIC");
+            set_apic_base(get_apic_base());
+            logln!(
+                "Spurious Interrupt vector register {:X}",
+                read_apic_reg(tables.madt(), 0xF0)
+            );
+            write_apic_reg(
+                tables.madt(),
+                0xF0,
+                read_apic_reg(tables.madt(), 0xF0) | (1 << 8),
+            );
+        } else {
+            panic!("Interrupts initialization without initializing ACPI tables");
         }
-        let alloc3 = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
-        logln!("alloc2: {:?}, alloc3: {:?}", alloc2, alloc3);
-        let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc2.unwrap());
-        let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc3.unwrap());
-        logln!("Single frame allocation and deallocation test complete.");
-        logln!("Performing contiguous frame allocation and deallocation test.");
-        let contiguous_alloc = PHYSICAL_FRAME_ALLOCATOR.lock().allocate_contiguous(256, 64);
-        match contiguous_alloc {
-            Ok(frame) => {
-                logln!(
-                    "Allocated physically contiguous region with physical base address: {:?}",
-                    frame
-                );
-                let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
-                logln!(
-                    "Deallocated physically contiguous region with physical base address: {:?}",
-                    frame
-                );
-            }
-            Err(e) => {
-                logln!("Failed to allocate contiguous frames: {:?}", e);
-            }
-        }
-        logln!("Contiguous frame allocation and deallocation test complete.");
-        logln!("Physical Memory Manager test suite finished.");
+    }
+
+    fn init_acpi_tables(&mut self, tbls: &AcpiTables) {
+        // Copy the tables passed in to the API
+        self.tables = Some(tbls.clone());
     }
 }
