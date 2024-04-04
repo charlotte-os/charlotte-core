@@ -47,8 +47,30 @@ pub trait MemoryMap: Clone + Drop {
     ///
     /// # Returns
     ///
-    /// Returns an error of type `Self::Error` if mapping fails.
-    fn map_page(paddr: PhysicalAddress, vaddr: VirtualAddress) -> Result<(), Self::Error>;
+    /// Returns an instance of Self with no pages mapped
+
+    /// Loads the page map into the logical processor.
+    ///
+    /// # Arguments
+    ///
+    /// * `paddr` - The physical address of the highest level page map table.
+    ///
+    /// # Returns
+    ///
+    /// Returns an error of type `Self::Error` if loading fails.
+    fn load(&self) -> Result<(), Self::Error>;
+
+    /// Maps a page at the given virtual address.
+    ///
+    /// # Arguments
+    ///
+    /// * `paddr` - The physical base address of the page frame to be mapped
+    /// * `vaddr` - The virtual base address to which the page frame should be mapped
+    fn map_page(
+        &mut self,
+        paddr: PhysicalAddress,
+        vaddr: VirtualAddress,
+    ) -> Result<(), Self::Error>;
 
     /// Unmaps a page from the given page map at the given virtual address.
     ///
@@ -60,7 +82,7 @@ pub trait MemoryMap: Clone + Drop {
     ///
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
-    fn unmap_page(vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
+    fn unmap_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
 
     /// Maps a large page (2 MiB) at the given virtual address.
     ///
@@ -72,7 +94,11 @@ pub trait MemoryMap: Clone + Drop {
     /// # Returns
     ///
     /// Returns an error of type `Self::Error` if mapping fails.
-    fn map_large_page(paddr: PhysicalAddress, vaddr: VirtualAddress) -> Result<(), Self::Error>;
+    fn map_large_page(
+        &mut self,
+        paddr: PhysicalAddress,
+        vaddr: VirtualAddress,
+    ) -> Result<(), Self::Error>;
 
     /// Unmaps a large page from the given page map at the given virtual address.
     ///
@@ -84,7 +110,7 @@ pub trait MemoryMap: Clone + Drop {
     ///
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
-    fn unmap_large_page(vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
+    fn unmap_large_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
 
     /// Maps a huge page (1 GiB) at the given virtual address.
     ///
@@ -96,7 +122,11 @@ pub trait MemoryMap: Clone + Drop {
     /// # Returns
     ///
     /// Returns an error of type `Self::Error` if mapping fails.
-    fn map_huge_page(paddr: PhysicalAddress, vaddr: VirtualAddress) -> Result<(), Self::Error>;
+    fn map_huge_page(
+        &mut self,
+        paddr: PhysicalAddress,
+        vaddr: VirtualAddress,
+    ) -> Result<(), Self::Error>;
 
     /// Unmaps a huge page from the given page map at the given virtual address.
     ///
@@ -108,7 +138,7 @@ pub trait MemoryMap: Clone + Drop {
     ///
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
-    fn unmap_huge_page(vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
+    fn unmap_huge_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
 }
 
 pub trait Api {
