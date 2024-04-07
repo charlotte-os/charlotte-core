@@ -17,14 +17,6 @@ Charlotte Core is written in Rust and Assembly language
 - Aarch64 devices with UEFI and ACPI (In Progress)
 - RISC-V devices with UEFI and ACPI (Not under active development yet)
 
-### Building and Testing
-
-When you first clone this respository make sure to run the following commands to ensure that the git submodules are initialized and up to date:
-```bash
-git submodule init
-git submodule update
-```
-
 #### Building
 The following commands are used to build the debug and release versions of the kernel.
 ```bash
