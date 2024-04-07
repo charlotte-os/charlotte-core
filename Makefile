@@ -1,10 +1,16 @@
 #x86_64
 
+limine:
+	@if [ ! -d "limine" ]; then \
+		git clone https://github.com/limine-bootloader/limine.git --branch=v5.x-branch-binary --depth=1;\
+	fi
+	make -C limine
+
 ovmf-x86_64:
 	mkdir -p ovmf-x86_64
 	cd ovmf-x86_64 && curl -o OVMF.fd https://retrage.github.io/edk2-nightly/bin/RELEASEX64_OVMF.fd
 
-build-x86_64-debug:
+build-x86_64-debug: limine
 	cd charlotte_core && cargo build --target x86_64-unknown-none
 	rm -rf iso_root
 	mkdir -p iso_root
@@ -28,7 +34,7 @@ run-x86_64-extdb: ovmf-x86_64 build-x86_64-debug
 run-x86_64-log: ovmf-x86_64 build-x86_64-debug
 	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 12G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial file:log_x86_64.txt
 
-build-x86_64-release:
+build-x86_64-release: limine
 	cd charlotte_core && cargo build --target x86_64-unknown-none --release
 	rm -rf iso_root
 	mkdir -p iso_root
@@ -54,7 +60,7 @@ check-x86_64:
 ovmf-aarch64:
 	mkdir -p ovmf-aarch64
 	cd ovmf-aarch64 && curl -o OVMF.fd https://retrage.github.io/edk2-nightly/bin/RELEASEAARCH64_QEMU_EFI.fd
-build-aarch64-debug:
+build-aarch64-debug: limine
 	cd charlotte_core && cargo build --target aarch64-unknown-none
 charlotte_core-aarch64-debug.iso: build-aarch64-debug
 	rm -rf iso_root
@@ -76,7 +82,7 @@ run-aarch64-log: ovmf-aarch64 charlotte_core-aarch64-debug.iso
 		-serial file:log_aarch64.txt
 
 
-build-aarch64-release:
+build-aarch64-release: limine
 	cd charlotte_core && cargo build --target aarch64-unknown-none --release
 charlotte_core-aarch64-release.iso: build-aarch64-release
 	rm -rf iso_root
