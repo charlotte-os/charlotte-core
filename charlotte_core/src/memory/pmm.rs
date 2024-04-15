@@ -5,13 +5,15 @@ use core::slice::from_raw_parts_mut;
 
 use spin::{lazy::Lazy, mutex::Mutex};
 
-static DIRECT_MAP: Lazy<PhysicalAddress> = Lazy::new(|| {
-    PhysicalAddress::new(
-        bootinfo::HHDM_REQUEST
-            .get_response()
-            .expect("Limine failed to create a direct mapping of physical memory.")
-            .offset() as usize,
-    )
+use super::address::VirtualAddress;
+
+pub static DIRECT_MAP: Lazy<VirtualAddress> = Lazy::new(|| {
+    bootinfo::HHDM_REQUEST
+        .get_response()
+        .expect("Limine failed to create a direct mapping of physical memory.")
+        .offset()
+        .try_into()
+        .expect("The direct map address provided by Limine is invalid.")
 });
 
 pub static PHYSICAL_FRAME_ALLOCATOR: Lazy<Mutex<PhysicalFrameAllocator>> =

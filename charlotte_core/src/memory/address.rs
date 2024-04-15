@@ -2,6 +2,7 @@ use core::num::NonZeroUsize;
 use core::ops::Add;
 
 use crate::arch::{Api, ArchApi};
+use crate::memory::pmm::DIRECT_MAP;
 
 const PAGE_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(4096) };
 const PAGE_SHIFT: usize = 12;
@@ -64,6 +65,20 @@ impl From<PhysicalAddress> for usize {
     }
 }
 
+impl<T> From<PhysicalAddress> for *const T {
+    #[inline]
+    fn from(addr: PhysicalAddress) -> *const T {
+        (*DIRECT_MAP + addr.bits()).into()
+    }
+}
+
+impl<T> From<PhysicalAddress> for *mut T {
+    #[inline]
+    fn from(addr: PhysicalAddress) -> *mut T {
+        (*DIRECT_MAP + addr.bits()).into()
+    }
+}
+
 impl Add<usize> for PhysicalAddress {
     type Output = Self;
 
@@ -73,8 +88,11 @@ impl Add<usize> for PhysicalAddress {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct VirtualAddress(u64);
 
+#[derive(Debug)]
 pub enum VAddrError {
     InvalidForm,
     InvalidAlignment,
@@ -87,6 +105,10 @@ impl VirtualAddress {
     #[inline]
     pub fn new() -> Self {
         Self(0)
+    }
+    #[inline]
+    pub fn bits(&self) -> u64 {
+        self.0
     }
     /// Check if the virtual address is null
     #[inline]

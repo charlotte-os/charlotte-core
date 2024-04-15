@@ -101,12 +101,12 @@ impl crate::arch::Api for Api {
     /// Get the number of significant physical address bits supported by the current CPU
     #[inline]
     fn get_paddr_width() -> u8 {
-        *PADDR_SIG_BITS
+        *memory::PADDR_SIGBITS
     }
     /// Get the number of significant virtual address bits supported by the current CPU
     #[inline]
     fn get_vaddr_width() -> u8 {
-        *VADDR_SIG_BITS
+        *memory::VADDR_SIGBITS
     }
     /// Validates a physical address in accordance with the x86_64 architecture
     fn validate_paddr(raw: usize) -> bool {
