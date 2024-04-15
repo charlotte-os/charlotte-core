@@ -1,5 +1,6 @@
 use core::arch::x86_64::{CpuidResult, __cpuid_count};
 use core::convert::From;
+use core::ops::{Index, IndexMut};
 
 use spin::lazy::Lazy;
 
@@ -35,7 +36,7 @@ pub enum Error {
     InvalidAddress,
     InvalidPAddrAlignment,
     InvalidVAddrAlignment,
-    UnableToAllocatePageMapTable,
+    UnableToAllocatePageTable,
 }
 
 #[repr(transparent)]
@@ -95,7 +96,13 @@ impl PageTable {
         }
     }
 
-    fn clear_entry(&mut self, index: usize) {
+    /// Clears the entry at the given index
+    /// # Safety
+    /// This function is unsafe because it can clear an entry without dropping the lower level page table
+    /// that it points to and all of its descendants which would be a memory leak
+    /// This function should only be called when the page table being pointed to has been deallocated
+    /// TODO: Implement a safe wrapper as a method of the PageMap struct
+    unsafe fn clear_entry(&mut self, index: usize) {
         self.entries[index] = 0u64;
     }
 
@@ -107,6 +114,36 @@ impl PageTable {
     /// Create an entry in the current table that points to a huge, large, or regular page
     fn set_page_entry(&mut self, index: usize, paddr: PhysicalAddress, flags: u64) {
         self.entries[index] = paddr.bits() as u64 | flags;
+    }
+}
+
+impl Index<usize> for PageTable {
+    type Output = u64;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entries[index]
+    }
+}
+
+impl IndexMut<usize> for PageTable {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.entries[index]
+    }
+}
+
+impl Drop for PageTable {
+    fn drop(&mut self) {
+        for entry in self.entries.iter() {
+            if *entry & 1 == 1 {
+                // Drop the page table that this entry points to using head recursion
+
+                // TODO: Call the drop method on the page table that this entry points to
+                let paddr = PhysicalAddress::from((*entry & 0x000FFFFF_FFFFF000) as usize);
+                let table = unsafe { &mut *(paddr.bits()) };
+                // TODO: Free the page frame that the page table is stored in
+                // TODO: clear the entry in the current table
+            }
+        }
     }
 }
 
