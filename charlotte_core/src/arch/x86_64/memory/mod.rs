@@ -30,6 +30,13 @@ pub static VADDR_SIGBITS: Lazy<u8> = Lazy::new(|| {
     }
 });
 
+static ADDR_MASK: Lazy<u64> = Lazy::new(|| {
+    // Create a mask that will clear all bits in a PTE that are not address bits
+    let mut mask = 2 ^ PADDR_SIGBITS - 1;
+    mask &= !0xFFF; // Clear the lower 12 bits
+    mask
+});
+
 pub enum Error {
     UnsupportedOperation,
     InvalidArgument,
@@ -38,6 +45,30 @@ pub enum Error {
     InvalidVAddrAlignment,
     UnableToAllocatePageTable,
 }
+
+enum PteFlags {
+    Present = 1,
+    Write = 1 << 1,
+    User = 1 << 2,
+    WriteThrough = 1 << 3,
+    CacheDisable = 1 << 4,
+    Accessed = 1 << 5,
+    Dirty = 1 << 6, // Only for entries that point to pages
+    PageSize = 1 << 7, // Only for entires in the PDPT, and PD for 1G and 2M pages
+    Global = 1 << 8,
+    NoExecute = 1 << 63,
+}
+
+static FLAG_MASK: u64 = PteFlags::Present as u64
+    | PteFlags::Write as u64
+    | PteFlags::User as u64
+    | PteFlags::WriteThrough as u64
+    | PteFlags::CacheDisable as u64
+    | PteFlags::Accessed as u64
+    | PteFlags::Dirty as u64
+    | PteFlags::PageSize as u64
+    | PteFlags::Global as u64
+    | PteFlags::NoExecute as u64;
 
 #[repr(transparent)]
 struct PageTable {
@@ -66,7 +97,7 @@ impl PageTable {
         frame
     }
 
-    fn get(&self, index: usize) -> PhysicalAddress {
+    fn get_paddr(&self, index: usize) -> PhysicalAddress {
         PhysicalAddress::from((self.entries[index] & 0x000FFFFF_FFFFF000) as usize)
     }
 
@@ -107,13 +138,11 @@ impl PageTable {
     }
 
     /// Create an entry in the current table that points to the next table down the hierarchy
-    fn set_normal_entry(&mut self, index: usize, paddr: PhysicalAddress, flags: u64) {
-        self.entries[index] = paddr.bits() as u64 | flags;
-    }
-
-    /// Create an entry in the current table that points to a huge, large, or regular page
-    fn set_page_entry(&mut self, index: usize, paddr: PhysicalAddress, flags: u64) {
-        self.entries[index] = paddr.bits() as u64 | flags;
+    /// CURRENT IMPLEMENTATION IS WRONG
+    fn set_entry(&mut self, index: usize, paddr: PhysicalAddress, flags: u64) {
+        let corrected_flags = flags & FLAG_MASK;
+        let corrected_paddr = paddr.bits() as u64 & *ADDR_MASK;
+        self.entries[index] = corrected_paddr | corrected_flags;
     }
 }
 
@@ -131,22 +160,6 @@ impl IndexMut<usize> for PageTable {
     }
 }
 
-impl Drop for PageTable {
-    fn drop(&mut self) {
-        for entry in self.entries.iter() {
-            if *entry & 1 == 1 {
-                // Drop the page table that this entry points to using head recursion
-
-                // TODO: Call the drop method on the page table that this entry points to
-                let paddr = PhysicalAddress::from((*entry & 0x000FFFFF_FFFFF000) as usize);
-                let table = unsafe { &mut *(paddr.bits()) };
-                // TODO: Free the page frame that the page table is stored in
-                // TODO: clear the entry in the current table
-            }
-        }
-    }
-}
-
 /// A page map used to map virtual addresses to physical addresses under the x86_64 architecture
 pub struct PageMap {
     // The value that will be loaded into the CR3 register when this page map is loaded
@@ -154,14 +167,119 @@ pub struct PageMap {
 }
 
 impl Clone for PageMap {
+    /// Perform an explicit deep copy of the page map
+    /// 
+    /// Warning: This is a computationally expensive operation
+    /// 
+    /// TODO: Handle huge and large page entries by not treating them as pointers to page tables
     fn clone(&self) -> Self {
-        todo!()
+        // Create a new page map cr3 value
+        let mut cr3 = 0u64;
+        // Set the flags equal to the flags of the current page map
+        cr3 = self.cr3 & 0xFFF;
+        // Check to see if the current page map has a PML4 table
+        if self.cr3 & !0xFFF != 0 {
+            // Allocate a frame for the new PML4 table
+            let new_pml4_paddr = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().unwrap();
+            // Set the cr3 value to point to the new PML4 table
+            cr3 |= new_pml4_paddr.bits() as u64;
+        }
+        // Replicate every PML4 entry down the hierarchy
+        let self_pml4_paddr = PhysicalAddress::from((self.cr3 & !0xFFF) as usize);
+        let self_pml4_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + self_pml4_paddr.bits())) };
+        let pml4_paddr = PhysicalAddress::from((self.cr3 & !0xFFF) as usize);
+        let pml4_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pml4_paddr.bits())) };
+
+        for i4 in 0..512 {
+            if self_pml4_table.is_present(i4) {
+                    let self_pdpt_paddr = self_pml4_table.get_paddr(i4);
+                    let self_pdpt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + self_pdpt_paddr.bits())) };
+                    let pdpt_paddr = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().unwrap();
+                    pml4_table.map(i4, pdpt_paddr, self_pml4_table[i4] & FLAG_MASK);
+                    let pdpt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pdpt_paddr.bits())) };
+
+                    for ipdpt in 0..512 {
+                        if self_pdpt_table.is_present(ipdpt) {
+                            let self_pd_paddr = self_pdpt_table.get_paddr(ipdpt);
+                            let self_pd_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + self_pd_paddr.bits())) };
+                            let pd_paddr = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().unwrap();
+                            pdpt_table.map(ipdpt, pd_paddr, self_pdpt_table[ipdpt] & FLAG_MASK);
+                            let pd_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pd_paddr.bits())) };
+
+                            for ipd in 0..512 {
+                                if self_pd_table.is_present(ipd) {
+                                    let self_pt_paddr = self_pd_table.get_paddr(ipd);
+                                    let self_pt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + self_pt_paddr.bits())) };
+                                    let pt_paddr = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().unwrap();
+                                    pd_table.map(ipd, pt_paddr, self_pd_table[ipd] & FLAG_MASK);
+                                    let pt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pt_paddr.bits())) };
+
+                                    for ipt in 0..512 {
+                                        if self_pt_table.is_present(ipt) {
+                                            // if the page is present then map the page to the new page table by copying the entry
+                                            pt_table[ipt] = self_pt_table[ipt];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+            }
+        }
+        PageMap {
+            cr3,
+        }
     }
 }
 
 impl Drop for PageMap {
+    /// Drop the page map and deallocate all of the page tables that constitute it.
+    /// 
+    /// This destructor does not deallocate the frames that the page tables point to
+    /// because the page tables are not the owners of the frames, the capabilities with 
+    /// which the frames were allocated are the owners of the frames and they will deallocate
+    /// the frames when they are dropped.
+    /// This is because the same frames can be accesses from multiple address spaces and 
+    /// just because a frame is unmapped from an address space does not mean that the process that did so
+    /// may not want to map the frame again in the future using the capability the owns it
     fn drop(&mut self) {
-        todo!()
+        // Check to see if the cr3 value point to a PML4 table
+        // If it does not then return
+        if !0xFFF & self.cr3 == 0 {
+            return;
+        } else {
+            // iterate through the PML4 table and drop all of the tables that it points to recursively
+            let pml4_paddr = PhysicalAddress::from((self.cr3 & !0xFFF) as usize);
+            let pml4_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pml4_paddr.bits())) };
+
+            for i in 0..512 {
+                if pml4_table.is_present(i) {
+                    let pdpt_paddr = pml4_table.get(i);
+                    let pdpt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pdpt_paddr.bits())) };
+
+                    for j in 0..512 {
+                        if pdpt_table.is_present(j) {
+                            let pd_paddr = pdpt_table.get(j);
+                            let pd_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pd_paddr.bits())) };
+
+                            for k in 0..512 {
+                                if pd_table.is_present(k) {
+                                    let pt_paddr = pd_table.get(k);
+                                    let pt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pt_paddr.bits())) };
+
+                                    PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(pt_paddr);
+                                }
+                            }
+
+                            PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(pd_paddr);
+                        }
+                    }
+
+                    PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(pdpt_paddr);
+                }
+            }
+        }
     }
 }
 
