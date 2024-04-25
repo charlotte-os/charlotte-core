@@ -81,6 +81,7 @@ pub enum Error {
     InvalidAlignment,
 }
 
+#[derive(Debug, Clone, Copy)]
 enum RegionAvailability {
     Available,
     Unavailable(PhysicalAddress),

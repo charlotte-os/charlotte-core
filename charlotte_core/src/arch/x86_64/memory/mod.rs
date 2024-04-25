@@ -3,12 +3,18 @@ use core::ops::{Index, IndexMut};
 
 use spin::lazy::Lazy;
 
+use crate::arch::MemoryMap;
 use crate::memory::address::{PhysicalAddress, VirtualAddress};
 use crate::memory::pmm::*;
 
 // Determines whether 5 level or 4 level paging is in use
 // As of now 5 level paging is not supported
 // const USE_5_LEVEL_PAGING: bool = false;
+
+const DEFAULT_KERNEL_TABLE_FLAGS: u64 =
+    PteFlags::Present as u64 | PteFlags::Write as u64 | PteFlags::Global as u64;
+const DEFAULT_USER_TABLE_FLAGS: u64 =
+    PteFlags::Present as u64 | PteFlags::Write as u64 | PteFlags::User as u64;
 
 /// The number of significant binary digits in a physical address
 pub static PADDR_SIGBITS: Lazy<u8> = Lazy::new(|| {
@@ -35,6 +41,17 @@ static ADDR_MASK: Lazy<u64> = Lazy::new(|| {
     mask
 });
 
+static FLAG_MASK: u64 = PteFlags::Present as u64
+    | PteFlags::Write as u64
+    | PteFlags::User as u64
+    | PteFlags::WriteThrough as u64
+    | PteFlags::CacheDisable as u64
+    | PteFlags::Accessed as u64
+    | PteFlags::Dirty as u64
+    | PteFlags::PageSize as u64
+    | PteFlags::Global as u64
+    | PteFlags::NoExecute as u64;
+
 pub enum Error {
     UnsupportedOperation,
     InvalidArgument,
@@ -42,9 +59,10 @@ pub enum Error {
     InvalidPAddrAlignment,
     InvalidVAddrAlignment,
     UnableToAllocatePageTable,
+    VAddrRangeUnavailable,
 }
 
-enum PteFlags {
+pub enum PteFlags {
     Present = 1,
     Write = 1 << 1,
     User = 1 << 2,
@@ -56,17 +74,6 @@ enum PteFlags {
     Global = 1 << 8,
     NoExecute = 1 << 63,
 }
-
-static FLAG_MASK: u64 = PteFlags::Present as u64
-    | PteFlags::Write as u64
-    | PteFlags::User as u64
-    | PteFlags::WriteThrough as u64
-    | PteFlags::CacheDisable as u64
-    | PteFlags::Accessed as u64
-    | PteFlags::Dirty as u64
-    | PteFlags::PageSize as u64
-    | PteFlags::Global as u64
-    | PteFlags::NoExecute as u64;
 
 #[repr(transparent)]
 struct PageTable {
@@ -83,8 +90,11 @@ impl PageTable {
     fn map(&mut self, index: usize, paddr: PhysicalAddress, flags: u64) -> Result<(), Error> {
         if paddr.bits() & 0xFFF != 0 {
             Err(Error::InvalidPAddrAlignment)
+        } else if self.entries[index] & PteFlags::Present as u64 != 0 {
+            // The entry is already present
+            Err(Error::VAddrRangeUnavailable)
         } else {
-            self.entries[index] = paddr.bits() as u64 | flags;
+            self.entries[index] = (paddr.bits() as u64 & *ADDR_MASK) | (flags & FLAG_MASK);
             Ok(())
         }
     }
@@ -162,6 +172,166 @@ impl IndexMut<usize> for PageTable {
 pub struct PageMap {
     // The value that will be loaded into the CR3 register when this page map is loaded
     cr3: u64,
+}
+
+impl PageMap {
+    /// Create a new page map
+    /// # Arguments
+    /// * `pcid` - The PCID to use
+    /// # Returns
+    /// * `Ok(PageMap)` - If the page map was successfully created
+    /// * `Err(Error)` - If the page map could not be created
+    fn try_new(pcid: u16) -> Result<Self, Error> {
+        let pml4_paddr = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().unwrap();
+        Ok(PageMap {
+            cr3: Self::make_cr3(pml4_paddr, pcid)?,
+        })
+    }
+    /// Create a cr3 value from a PML4 table physical address and a PCID
+    /// # Arguments
+    /// * `pml4_paddr` - The physical address of the PML4 table
+    /// * `pcid` - The PCID to use
+    /// # Returns
+    /// * The cr3 value
+    /// # Safety
+    ///
+    fn make_cr3(pml4_paddr: PhysicalAddress, pcid: u16) -> Result<u64, Error> {
+        if pml4_paddr.bits() & 0xFFF != 0 {
+            return Err(Error::InvalidPAddrAlignment);
+        }
+        if pcid > 0xFFF {
+            return Err(Error::InvalidArgument);
+        }
+        Ok(pml4_paddr.bits() as u64 & *ADDR_MASK | pcid as u64)
+    }
+}
+
+impl MemoryMap for PageMap {
+    type Error = Error;
+    type Flags = u64;
+    /// Load this page map into the CR3 register
+    /// # Safety
+    /// This function is unsafe because it can cause a page fault if the page map is not valid
+    /// This function should only be called when the page map is known to be valid
+    /// # Warning: Loading an invalid page map can lead to kernel panic and total system failure
+    /// This function is thus fundamentally unsafe and cannot be made safe
+    unsafe fn load(&self) {
+        unsafe {
+            asm_load_page_map(PhysicalAddress::from(self.cr3 as usize));
+        }
+    }
+    /// Map a single page in the page map
+    /// # Arguments
+    /// * `vaddr` - The virtual address to map the page to
+    /// * `paddr` - The physical address to map
+    /// * `flags` - The flags to set in the page table entry
+    /// # Returns
+    /// * `Ok(())` - If the page was successfully mapped
+    /// * `Err(Error)` - If the page could not be mapped
+    fn map_page(
+        &mut self,
+        vaddr: VirtualAddress,
+        paddr: PhysicalAddress,
+        flags: u64,
+    ) -> Result<(), Error> {
+        // Check to see if the physical address is aligned to a page boundary
+        if paddr.bits() & 0xFFF != 0 {
+            return Err(Error::InvalidPAddrAlignment);
+        }
+        // Check to see if the virtual address is aligned to a page boundary
+        if vaddr.bits() & 0xFFF != 0 {
+            return Err(Error::InvalidVAddrAlignment);
+        }
+
+        let table_flags = if flags & PteFlags::User as u64 != 0 {
+            DEFAULT_USER_TABLE_FLAGS
+        } else {
+            DEFAULT_KERNEL_TABLE_FLAGS
+        };
+
+        // Traverse the page map hierarchy to find the correct page table to map the page to
+        // Find the address of the PML4 table and get a reference to it
+        let pml4_paddr = PhysicalAddress::from((self.cr3 & !0xFFF) as usize);
+        let pml4_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pml4_paddr.bits())) };
+        // Check the appropriate index in the PML4 table to get the address of the PDPT table
+        // If the PDPT table is not present then allocate a frame for it and set the PML4 entry to point to it
+        let pdpt_paddr = match pml4_table.is_present(vaddr.pml4_index()) {
+            true => pml4_table.get_paddr(vaddr.pml4_index()),
+            false => {
+                let pdpt_paddr = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().unwrap();
+                pml4_table.map(vaddr.pml4_index(), pdpt_paddr, table_flags);
+                pdpt_paddr
+            }
+        };
+        // Get a reference to the PDPT table
+        let pdpt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pdpt_paddr.bits())) };
+        // Check the appropriate index in the PDPT table to get the address of the PD table
+        // If the PD table is not present then allocate a frame for it and set the PDPT entry to point to it
+        let pd_paddr = match pdpt_table.is_present(vaddr.pdpt_index()) {
+            true => {
+                // Check to see if a huge page is mapped to the PDPT entry of interest
+                // If so then the virtual address range is unavailable
+                if pdpt_table.is_size_bit_set(vaddr.pdpt_index()) {
+                    return Err(Error::VAddrRangeUnavailable);
+                }
+                pdpt_table.get_paddr(vaddr.pdpt_index())
+            }
+            false => {
+                let pd_paddr = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().unwrap();
+                pdpt_table.map(vaddr.pdpt_index(), pd_paddr, table_flags)?;
+                pd_paddr
+            }
+        };
+        // Get a reference to the PD table
+        let pd_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pd_paddr.bits())) };
+        // Check the appropriate index in the PD table to get the address of the PT table
+        // If the PT table is not present then allocate a frame for it and set the PD entry to point to it
+        let pt_paddr = match pd_table.is_present(vaddr.pd_index()) {
+            true => {
+                // Check to see if a large page is mapped to the PD entry of interest
+                // If so then the virtual address range is unavailable
+                if pd_table.is_size_bit_set(vaddr.pd_index()) {
+                    return Err(Error::VAddrRangeUnavailable);
+                }
+                pd_table.get_paddr(vaddr.pd_index())
+            }
+            false => {
+                let pt_paddr = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().unwrap();
+                pd_table.map(vaddr.pd_index(), pt_paddr, table_flags)?;
+                pt_paddr
+            }
+        };
+        // Get a reference to the PT table
+        let pt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pt_paddr.bits())) };
+        // Map the page to the PT table
+        pt_table.map(vaddr.pt_index(), paddr, flags)?;
+        Ok(())
+    }
+    fn unmap_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Error> {
+        todo!("Implement unmap_page")
+    }
+    fn map_large_page(
+        &mut self,
+        vaddr: VirtualAddress,
+        paddr: PhysicalAddress,
+        flags: u64,
+    ) -> Result<(), Error> {
+        todo!("Implement map_large_page")
+    }
+    fn unmap_large_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Error> {
+        todo!("Implement unmap_large_page")
+    }
+    fn map_huge_page(
+        &mut self,
+        vaddr: VirtualAddress,
+        paddr: PhysicalAddress,
+        flags: u64,
+    ) -> Result<(), Error> {
+        todo!("Implement map_huge_page")
+    }
+    fn unmap_huge_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Error> {
+        todo!("Implement unmap_huge_page")
+    }
 }
 
 impl Clone for PageMap {

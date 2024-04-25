@@ -1,4 +1,4 @@
-//! # Arch
+//! # Instruction Set Architecture Abstraction Subsystem
 //! This module provides a common interface for interacting with code that is specific to each supported
 //! instruction set architecture (ISA). It provides a set of traits and types that can be used to interact
 //! with ISA specific code in a consistent and platform independent manner.
@@ -34,113 +34,77 @@ pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
 /// Common interface for ISA specific memory map structures.
 pub trait MemoryMap: Clone + Drop {
     type Error;
-
-    /// Creates a new instance of the memory map.
-    fn new() -> Self;
-
-    /// Maps a page at the given virtual address.
-    ///
-    /// # Arguments
-    ///
-    /// * `paddr` - The physical address to map.
-    /// * `vaddr` - The virtual address to map to.
-    ///
-    /// # Returns
-    ///
-    /// Returns an instance of Self with no pages mapped
+    type Flags;
 
     /// Loads the page map into the logical processor.
-    ///
-    /// # Arguments
-    ///
-    /// * `paddr` - The physical address of the highest level page map table.
-    ///
-    /// # Returns
-    ///
-    /// Returns an error of type `Self::Error` if loading fails.
-    fn load(&self) -> Result<(), Self::Error>;
+    unsafe fn load(&self);
 
     /// Maps a page at the given virtual address.
-    ///
     /// # Arguments
-    ///
+    /// * `vaddr` - The virtual address to map the page to
     /// * `paddr` - The physical base address of the page frame to be mapped
-    /// * `vaddr` - The virtual base address to which the page frame should be mapped
+    /// * `flags` - The flags to apply to the page table entry
     fn map_page(
         &mut self,
-        paddr: PhysicalAddress,
         vaddr: VirtualAddress,
+        paddr: PhysicalAddress,
+        flags: Self::Flags,
     ) -> Result<(), Self::Error>;
 
     /// Unmaps a page from the given page map at the given virtual address.
-    ///
     /// # Arguments
-    ///
     /// * `vaddr` - The virtual address to unmap.
-    ///
     /// # Returns
-    ///
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
     fn unmap_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
 
     /// Maps a large page (2 MiB) at the given virtual address.
-    ///
     /// # Arguments
-    ///
+    /// * `vaddr` - The virtual address to map.
     /// * `paddr` - The physical address to map.
-    /// * `vaddr` - The virtual address to map to.
-    ///
+    /// * `flags` - The flags to apply to the page table entry.
     /// # Returns
-    ///
     /// Returns an error of type `Self::Error` if mapping fails.
     fn map_large_page(
         &mut self,
-        paddr: PhysicalAddress,
         vaddr: VirtualAddress,
+        paddr: PhysicalAddress,
+        flags: Self::Flags,
     ) -> Result<(), Self::Error>;
 
     /// Unmaps a large page from the given page map at the given virtual address.
-    ///
     /// # Arguments
-    ///
     /// * `vaddr` - The virtual address to unmap.
-    ///
     /// # Returns
-    ///
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
     fn unmap_large_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
 
     /// Maps a huge page (1 GiB) at the given virtual address.
-    ///
     /// # Arguments
-    ///
+    /// * `vaddr` - The virtual address to map.
     /// * `paddr` - The physical address to map.
-    /// * `vaddr` - The virtual address to map to.
-    ///
+    /// * `flags` - The flags to apply to the page table entry.
     /// # Returns
-    ///
     /// Returns an error of type `Self::Error` if mapping fails.
     fn map_huge_page(
         &mut self,
-        paddr: PhysicalAddress,
         vaddr: VirtualAddress,
+        paddr: PhysicalAddress,
+        flags: Self::Flags,
     ) -> Result<(), Self::Error>;
 
     /// Unmaps a huge page from the given page map at the given virtual address.
-    ///
     /// # Arguments
-    ///
     /// * `vaddr` - The virtual address to unmap.
-    ///
     /// # Returns
-    ///
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
     fn unmap_huge_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
 }
 
+/// Common interface for ISA specific functionality.
 pub trait Api {
     type Api: Api;
     type DebugLogger: Write;
