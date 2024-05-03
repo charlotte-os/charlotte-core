@@ -5,12 +5,13 @@
 
 # CHANGE THIS when there are new requirements
 # WARNING: A package might be named differently on different distributions
-required_packages_common="nasm xorriso make"
+required_packages_common="nasm xorriso make curl"
 
 # Here are the requirements with different names on different distros
 required_packages_ubuntu="qemu-system"
 required_packages_debian="qemu-system-x86"
 required_packages_arch="qemu"
+required_packages_fedora="qemu"
 required_packages_macos="qemu"
 
 # WARNING: sudo needed
@@ -48,6 +49,7 @@ if [ "$(uname)" = "Darwin" ]; then
     for package in $required_packages_common; do
         wrapper "Install \"$package\" package" brew install "$package"
     done
+    install_rust_nightly
 
     for package in $required_packages_macos; do
         wrapper "Install \"$package\" package" brew install "$package"
@@ -59,35 +61,46 @@ else
         if [ -n "$ID" ]; then
             case "$ID" in
                 ubuntu)
-                    install_rust_nightly
                     for package in $required_packages_common; do
                         wrapper "Install \"$package\" package" sudo apt-get -y install "$package"
                     done
+                    install_rust_nightly
 
                     for package in $required_packages_ubuntu; do
                         wrapper "Install \"$package\" package" sudo apt-get -y install "$package"
                     done
                     ;;
                 debian)
-                    install_rust_nightly
                     for package in $required_packages_common; do
                         wrapper "Install \"$package\" package" sudo apt-get -y install "$package"
                     done
+                    install_rust_nightly
 
                     for package in $required_packages_debian; do
                         wrapper "Install \"$package\" package" sudo apt-get -y install "$package"
                     done
                     ;;
                 arch)
-                    install_rust_nightly
                     for package in $required_packages_common; do
                         wrapper "Install \"$package\" package" sudo pacman -S --noconfirm --needed "$package"
                     done
+                    install_rust_nightly
 
                     for package in $required_packages_arch; do
                         wrapper "Install \"$package\" package" sudo pacman -S --noconfirm --needed "$package"
                     done
                     ;;
+                fedora)
+                    for package in $required_packages_common; do
+                        wrapper "Install \"$package\" package" sudo dnf install -y "$package"
+                    done
+                    install_rust_nightly
+
+                    for package in $required_packages_fedora; do
+                        wrapper "Install \"$package\" package" sudo dnf install -y "$package"
+                    done
+                    ;;
+
                 *)
                     printf "\033[1m[\e[31mFail\e[0m\033[1m] Linux distribution is not supported\n"
                     exit 1
