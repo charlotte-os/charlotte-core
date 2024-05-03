@@ -1,5 +1,9 @@
 #x86_64
 
+install-requirements:
+	chmod +x ./tools/install-requirements.sh
+	./tools/install-requirements.sh
+
 limine:
 	@if [ ! -d "limine" ]; then \
 		git clone https://github.com/limine-bootloader/limine.git --branch=v5.x-branch-binary --depth=1;\
