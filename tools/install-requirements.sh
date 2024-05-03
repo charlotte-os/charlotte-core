@@ -100,6 +100,7 @@ else
                         wrapper "Install \"$package\" package" sudo dnf install -y "$package"
                     done
                     ;;
+
                 *)
                     printf "\033[1m[\e[31mFail\e[0m\033[1m] Linux distribution is not supported\n"
                     exit 1
