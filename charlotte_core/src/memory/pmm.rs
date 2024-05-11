@@ -1,6 +1,6 @@
-use crate::{bootinfo, logln};
-use crate::Write;
 use crate::memory::address::PhysicalAddress;
+use crate::Write;
+use crate::{bootinfo, logln};
 
 use core::slice::from_raw_parts_mut;
 
@@ -13,10 +13,11 @@ pub static DIRECT_MAP: Lazy<VirtualAddress> = Lazy::new(|| {
         .get_response()
         .expect("Limine failed to create a direct mapping of physical memory.")
         .offset()
-        .try_into().unwrap_or_else(|e| {
-        logln!("Address returned by limine is invalid: {:X?}", e);
-        panic!()
-    })
+        .try_into()
+        .unwrap_or_else(|e| {
+            logln!("Address returned by limine is invalid: {:X?}", e);
+            panic!()
+        })
 });
 
 pub static PHYSICAL_FRAME_ALLOCATOR: Lazy<Mutex<PhysicalFrameAllocator>> =
