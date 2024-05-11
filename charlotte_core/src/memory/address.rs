@@ -94,8 +94,8 @@ pub struct VirtualAddress(u64);
 
 #[derive(Debug)]
 pub enum VAddrError {
-    InvalidForm,
-    InvalidAlignment,
+    InvalidForm(u64),
+    InvalidAlignment(u64),
 }
 
 impl VirtualAddress {
@@ -155,7 +155,7 @@ impl TryFrom<u64> for VirtualAddress {
         if ArchApi::validate_vaddr(addr) {
             Ok(Self(addr))
         } else {
-            Err(VAddrError::InvalidForm)
+            Err(VAddrError::InvalidForm(addr))
         }
     }
 }

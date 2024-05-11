@@ -117,7 +117,7 @@ impl crate::arch::Api for Api {
     /// Validates a virtual address in accordance with the x86_64 architecture
     fn validate_vaddr(raw: u64) -> bool {
         // Canonical form check
-        let unused_bitmask = !(1 << Self::get_vaddr_width() - 1);
+        let unused_bitmask = 1 << Self::get_vaddr_width() - 1;
         (raw & unused_bitmask) == 0 || (raw & unused_bitmask) == unused_bitmask
     }
     /// Halt the calling LP
