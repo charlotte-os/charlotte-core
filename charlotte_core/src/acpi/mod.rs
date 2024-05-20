@@ -5,6 +5,7 @@ mod fadt;
 mod madt;
 mod rsdp;
 mod sdt;
+mod bgrt;
 pub mod tables;
 
 use crate::{bootinfo::RSDP_REQUEST, logln};
@@ -15,6 +16,7 @@ use crate::acpi::rsdp::Rsdp;
 use self::fadt::Fadt;
 use self::madt::Madt;
 use self::sdt::Sdt;
+use self::bgrt::Bgrt;
 
 /// Stores the data for all the ACPI tables.
 pub struct AcpiTables {
@@ -22,16 +24,18 @@ pub struct AcpiTables {
     sdt: sdt::Sdt,
     madt: Madt,
     fadt: Fadt,
+    bgrt: Bgrt,
 }
 
 impl AcpiTables {
     /// Creates a new AcpiTables.
-    pub fn new(rsdp: Rsdp, sdt: Sdt, madt: Madt, fadt: Fadt) -> Self {
+    pub fn new(rsdp: Rsdp, sdt: Sdt, madt: Madt, fadt: Fadt, bgrt: Bgrt) -> Self {
         Self {
             rsdp,
             sdt,
             madt,
             fadt,
+            bgrt
         }
     }
 
@@ -77,8 +81,34 @@ pub fn init_acpi() -> AcpiTables {
             logln!("MADT Entry: {:?}", entry);
         }
         let fadt = Fadt::new(sdt.get_table(*b"FACP").unwrap()).unwrap();
+        
+        logln!("RSDP oem ID: {:?}", rsdp.oem_id());
         logln!("Parsed FADT");
-        AcpiTables::new(rsdp, sdt, madt, fadt)
+        let mut bgrt = Bgrt::new(sdt.get_table(*b"BGRT").unwrap()).unwrap();
+        logln!("BGRT  Signature: {}", bgrt.signature());
+        logln!("BGRT  Checksum: {}", bgrt.checksum());
+        logln!("BGRT  OEM ID: {}", bgrt.oem_id());
+        logln!("BGRT  OEM Table ID: {}", bgrt.oem_table_id());
+        logln!("BGRT  Revision: {}", bgrt.revision());
+        logln!("BGRT  Creator ID: {}", bgrt.creator_id());
+        logln!("BGRT  Creator Revision: {}", bgrt.creator_revision());
+
+        bgrt.set_version();
+        logln!("BGRT  Version: {}", bgrt.version());
+
+        logln!("BGRT  Status: {}", bgrt.status());
+        logln!("BGRT  Image Type: {}", bgrt.image_type());
+        logln!("BGRT  Image Address: {}", bgrt.image_address());
+        logln!("BGRT  X Offset: {}", bgrt.x_offset());
+        logln!("BGRT  Y Offset: {}", bgrt.y_offset());
+
+        if let Some(length) = bgrt.length() {
+            logln!("Length: {}", length);
+        } else {
+            logln!("Length: None");
+        }
+        logln!("Parsed BGRT");
+        AcpiTables::new(rsdp, sdt, madt, fadt, bgrt)
     } else {
         panic!("Failed to obtain RSDP response.");
     }
