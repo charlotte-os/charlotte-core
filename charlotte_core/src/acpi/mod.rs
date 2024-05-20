@@ -1,11 +1,11 @@
 //! # ACPI Information
 //! This module contains requests for information from the ACPI tables.
 
+mod bgrt;
 mod fadt;
 mod madt;
 mod rsdp;
 mod sdt;
-mod bgrt;
 pub mod tables;
 
 use crate::{bootinfo::RSDP_REQUEST, logln};
@@ -13,10 +13,10 @@ use core::fmt::Write;
 
 use crate::acpi::rsdp::Rsdp;
 
+use self::bgrt::Bgrt;
 use self::fadt::Fadt;
 use self::madt::Madt;
 use self::sdt::Sdt;
-use self::bgrt::Bgrt;
 
 /// Stores the data for all the ACPI tables.
 pub struct AcpiTables {
@@ -35,7 +35,7 @@ impl AcpiTables {
             sdt,
             madt,
             fadt,
-            bgrt
+            bgrt,
         }
     }
 
@@ -81,7 +81,7 @@ pub fn init_acpi() -> AcpiTables {
             logln!("MADT Entry: {:?}", entry);
         }
         let fadt = Fadt::new(sdt.get_table(*b"FACP").unwrap()).unwrap();
-        
+
         logln!("RSDP oem ID: {:?}", rsdp.oem_id());
         logln!("Parsed FADT");
         let mut bgrt = Bgrt::new(sdt.get_table(*b"BGRT").unwrap()).unwrap();
