@@ -70,7 +70,7 @@ pub enum PteFlags {
     CacheDisable = 1 << 4,
     Accessed = 1 << 5,
     Dirty = 1 << 6,    // Only for entries that point to pages
-    PageSize = 1 << 7, // Only for entires in the PDPT, and PD for 1G and 2M pages
+    PageSize = 1 << 7, // Only for entires in the PDPT, and PD for 1GiB and 2MiB pages
     Global = 1 << 8,
     NoExecute = 1 << 63,
 }
@@ -308,7 +308,46 @@ impl MemoryMap for PageMap {
         Ok(())
     }
     fn unmap_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Error> {
-        todo!("Implement unmap_page")
+        let pml4_paddr = PhysicalAddress::from((self.cr3 & !0xFFF) as usize);
+        let pml4_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pml4_paddr.bits())) };
+        let pdpt_paddr = pml4_table.get_paddr(vaddr.pml4_index());
+        let pdpt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pdpt_paddr.bits())) };
+        let pd_paddr = pdpt_table.get_paddr(vaddr.pdpt_index());
+        let pd_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pd_paddr.bits())) };
+        let pt_paddr = pd_table.get_paddr(vaddr.pd_index());
+        let pt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pt_paddr.bits())) };
+
+        let frame = pt_table.unmap(vaddr.pt_index());
+
+        unsafe {
+            // Check to see if the PT table is empty
+            if pt_table.entries.iter().all(|entry| *entry == 0) {
+                // Deallocate the PT table
+                PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(pt_paddr);
+                // Clear the PD entry
+                pd_table.clear_entry(vaddr.pd_index());
+
+                // Check to see if the PD table is empty
+                if pd_table.entries.iter().all(|entry| *entry == 0) {
+                    // Deallocate the PD table
+                    PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(pd_paddr);
+                    // Clear the PDPT entry
+                    pdpt_table.clear_entry(vaddr.pdpt_index());
+
+                    // Check to see if the PDPT table is empty
+                    if pdpt_table.entries.iter().all(|entry| *entry == 0) {
+                        // Deallocate the PDPT table
+                        PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(pdpt_paddr);
+                        // Clear the PML4 entry
+                        pml4_table.clear_entry(vaddr.pml4_index());
+                    }
+                }
+            }
+        }
+
+        // TODO: Implement a function (in assembly) to clear the TLB entry for the unmapped page
+
+        Ok(frame)
     }
     fn map_large_page(
         &mut self,
@@ -316,10 +355,57 @@ impl MemoryMap for PageMap {
         paddr: PhysicalAddress,
         flags: u64,
     ) -> Result<(), Error> {
-        todo!("Implement map_large_page")
+        let pml4_paddr = PhysicalAddress::from((self.cr3 & !0xFFF) as usize);
+        let pml4_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pml4_paddr.bits())) };
+        let pdpt_paddr = pml4_table.get_paddr(vaddr.pml4_index());
+        let pdpt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pdpt_paddr.bits())) };
+        let pd_paddr = pdpt_table.get_paddr(vaddr.pdpt_index());
+        let pd_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pd_paddr.bits())) };
+
+        if pd_table.is_present(vaddr.pd_index()) {
+            return Err(Error::VAddrRangeUnavailable);
+        }
+
+        let table_flags = if flags & PteFlags::User as u64 != 0 {
+            DEFAULT_USER_TABLE_FLAGS
+        } else {
+            DEFAULT_KERNEL_TABLE_FLAGS
+        };
+
+        pd_table.map(vaddr.pd_index(), paddr, table_flags | PteFlags::PageSize as u64)
     }
     fn unmap_large_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Error> {
-        todo!("Implement unmap_large_page")
+        let pml4_paddr = PhysicalAddress::from((self.cr3 & !0xFFF) as usize);
+        let pml4_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pml4_paddr.bits())) };
+        let pdpt_paddr = pml4_table.get_paddr(vaddr.pml4_index());
+        let pdpt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pdpt_paddr.bits())) };
+        let pd_paddr = pdpt_table.get_paddr(vaddr.pdpt_index());
+        let pd_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pd_paddr.bits())) };
+
+        if pd_table.is_present(vaddr.pd_index()) == false {
+            return Err(Error::VAddrRangeUnavailable);
+        }
+
+        let frame = pd_table.unmap(vaddr.pd_index());
+
+        unsafe {
+            // Check to see if the PD table is empty
+            if pd_table.entries.iter().all(|entry| *entry == 0) {
+                // Deallocate the PD table
+                PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(pd_paddr);
+                // Clear the PDPT entry
+                pdpt_table.clear_entry(vaddr.pdpt_index());
+
+                // Check to see if the PDPT table is empty
+                if pdpt_table.entries.iter().all(|entry| *entry == 0) {
+                    // Deallocate the PDPT table
+                    PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(pdpt_paddr);
+                    // Clear the PML4 entry
+                    pml4_table.clear_entry(vaddr.pml4_index());
+                }
+            }
+        }
+        Ok(frame)
     }
     fn map_huge_page(
         &mut self,
@@ -327,10 +413,46 @@ impl MemoryMap for PageMap {
         paddr: PhysicalAddress,
         flags: u64,
     ) -> Result<(), Error> {
-        todo!("Implement map_huge_page")
+        let pml4_paddr = PhysicalAddress::from((self.cr3 & !0xFFF) as usize);
+        let pml4_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pml4_paddr.bits())) };
+        let pdpt_paddr = pml4_table.get_paddr(vaddr.pml4_index());
+        let pdpt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pdpt_paddr.bits())) };
+
+        if pdpt_table.is_present(vaddr.pdpt_index()) {
+            return Err(Error::VAddrRangeUnavailable);
+        }
+
+        let table_flags = if flags & PteFlags::User as u64 != 0 {
+            DEFAULT_USER_TABLE_FLAGS
+        } else {
+            DEFAULT_KERNEL_TABLE_FLAGS
+        };
+
+        pdpt_table.map(vaddr.pdpt_index(), paddr, table_flags | PteFlags::PageSize as u64)
     }
     fn unmap_huge_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Error> {
-        todo!("Implement unmap_huge_page")
+        let pml4_paddr = PhysicalAddress::from((self.cr3 & !0xFFF) as usize);
+        let pml4_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pml4_paddr.bits())) };
+        let pdpt_paddr = pml4_table.get_paddr(vaddr.pml4_index());
+        let pdpt_table = unsafe { &mut *(<*mut PageTable>::from(*DIRECT_MAP + pdpt_paddr.bits())) };
+
+        if pdpt_table.is_present(vaddr.pdpt_index()) {
+            return Err(Error::VAddrRangeUnavailable);
+        }
+
+        let frame = pdpt_table.unmap(vaddr.pdpt_index());
+
+        unsafe {
+            // Check to see if the PDPT table is empty
+            if pdpt_table.entries.iter().all(|entry| *entry == 0) {
+                // Deallocate the PDPT table
+                PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(pdpt_paddr);
+                // Clear the PML4 entry
+                pml4_table.clear_entry(vaddr.pml4_index());
+            }
+        }
+
+        Ok(frame)
     }
 }
 
