@@ -5,7 +5,9 @@ mod cpu;
 mod exceptions;
 mod gdt;
 mod idt;
+mod interrupts;
 mod serial;
+mod timers;
 
 use core::fmt::Write;
 use core::{
@@ -26,10 +28,14 @@ use serial::{ComPort, SerialPort};
 
 use idt::*;
 
+use crate::acpi::AcpiTables;
+use crate::arch::x86_64::timers::lapic::{check_apic_is_present, list_apics};
 use crate::logln;
 
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
-pub struct Api;
+pub struct Api {
+    pub tables: Option<AcpiTables>,
+}
 
 static BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
 static BSP_TSS: Lazy<Tss> = Lazy::new(|| Tss::new(addr_of!(BSP_RING0_INT_STACK) as u64));
@@ -38,8 +44,13 @@ static BSP_IDT: SpinMutex<Idt> = SpinMutex::new(Idt::new());
 
 /// Provide the implementation of the Api trait for the Api struct
 impl crate::arch::Api for Api {
+    type Api = Api;
     /// Define the logger type
     type DebugLogger = SerialPort;
+
+    fn new_arch_api() -> Self {
+        Self { tables: None }
+    }
 
     /// Get a new logger instance
     fn get_logger() -> Self::DebugLogger {
@@ -98,5 +109,26 @@ impl crate::arch::Api for Api {
     ///  Initialize the application processors (APs)
     fn init_ap() {
         //! This routine is run by each application processor to initialize itself prior to being handed off to the scheduler.
+    }
+
+    fn init_timers(&self) {
+        unimplemented!()
+    }
+
+    fn init_interrupts(&self) {
+        if let Some(tables) = self.tables {
+            logln!("Initializing interrupt controllers");
+            let apic_presence = check_apic_is_present();
+            logln!("apic_presence {}", apic_presence);
+            let lapic_list = list_apics(tables.madt());
+            logln!("LapicList {:?}", lapic_list);
+        } else {
+            panic!("Interrupts intialization without initializing ACPI tables");
+        }
+    }
+
+    fn init_acpi_tables(&mut self, tbls: &AcpiTables) {
+        // Copy the tables passed in to the API
+        self.tables = Some(tbls.clone());
     }
 }
