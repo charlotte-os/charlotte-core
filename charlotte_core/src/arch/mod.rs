@@ -42,7 +42,7 @@ pub trait Api {
     fn init_interrupts(&self);
 
     /// Sets the acpi tables that can be used by the impl to find needed information
-    fn init_acpi_tables(&mut self, tbls: &'static AcpiTables);
+    fn init_acpi_tables(&mut self, tbls: &AcpiTables);
 }
 
 /// A logger that writes to both the framebuffer console and the serial port.

@@ -29,12 +29,12 @@ use serial::{ComPort, SerialPort};
 use idt::*;
 
 use crate::acpi::AcpiTables;
-use crate::arch::x86_64::timers::lapic::{check_apic_is_present, list_apics};
+use crate::arch::x86_64::interrupts::lapic::{check_apic_is_present, list_apics};
 use crate::logln;
 
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api {
-    pub tables: Option<&'static AcpiTables>,
+    pub tables: Option<AcpiTables>,
 }
 
 static BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
@@ -127,8 +127,8 @@ impl crate::arch::Api for Api {
         }
     }
 
-    fn init_acpi_tables(&mut self, tbls: &'static AcpiTables) {
+    fn init_acpi_tables(&mut self, tbls: &AcpiTables) {
         // Copy the tables passed in to the API
-        self.tables = Some(tbls);
+        self.tables = Some(tbls.clone());
     }
 }
