@@ -34,7 +34,7 @@ use crate::logln;
 
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api {
-    pub tables: Option<AcpiTables>,
+    pub tables: Option<&'static AcpiTables>,
 }
 
 static BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
@@ -127,8 +127,8 @@ impl crate::arch::Api for Api {
         }
     }
 
-    fn init_acpi_tables(&mut self, tbls: &AcpiTables) {
+    fn init_acpi_tables(&mut self, tbls: &'static AcpiTables) {
         // Copy the tables passed in to the API
-        self.tables = Some(tbls.clone());
+        self.tables = Some(tbls);
     }
 }
