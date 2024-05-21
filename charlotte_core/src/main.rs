@@ -21,6 +21,8 @@ use memory::pmm::*;
 
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
+    let mut arch_api = ArchApi::new_arch_api();
+
     FRAMEBUFFER.lock().clear_screen(Color::BLACK);
     println!("Hello, world!");
 
@@ -29,9 +31,12 @@ unsafe extern "C" fn main() -> ! {
     logln!("BSP Initialized");
 
     logln!("Initializing ACPI");
-    acpi::init_acpi();
-
+    let acpi_static_tables = acpi::init_acpi();
     logln!("ACPI Initialized");
+    arch_api.init_acpi_tables(&acpi_static_tables);
+
+    logln!("Initialize interrupts");
+    arch_api.init_interrupts();
 
     logln!("All tests in main passed.");
 

@@ -14,7 +14,7 @@ use core::fmt::{Result, Write};
 
 use spin::{lazy::Lazy, mutex::TicketMutex};
 
-use crate::framebuffer::console::CONSOLE;
+use crate::{acpi::AcpiTables, framebuffer::console::CONSOLE};
 
 pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
     TicketMutex::new(Logger {
@@ -23,7 +23,10 @@ pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
 });
 
 pub trait Api {
+    type Api: Api;
     type DebugLogger: Write;
+
+    fn new_arch_api() -> Self;
 
     fn get_logger() -> Self::DebugLogger;
     fn get_paddr_width() -> u8;
@@ -35,6 +38,11 @@ pub trait Api {
     fn init_bsp();
     #[allow(unused)]
     fn init_ap();
+    fn init_timers(&self);
+    fn init_interrupts(&self);
+
+    /// Sets the acpi tables that can be used by the impl to find needed information
+    fn init_acpi_tables(&mut self, tbls: &AcpiTables);
 }
 
 /// A logger that writes to both the framebuffer console and the serial port.

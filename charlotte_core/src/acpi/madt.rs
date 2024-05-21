@@ -3,6 +3,7 @@ use crate::acpi::tables::{get_table, SDTHeader};
 use core::mem;
 
 /// The MADT
+#[derive(Debug, Clone, Copy)]
 pub struct Madt {
     header: SDTHeader,
     local_apic_addr: u32,
