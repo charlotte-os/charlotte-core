@@ -32,6 +32,9 @@ build-x86_64-debug: limine
 run-x86_64-debug: ovmf-x86_64 build-x86_64-debug
 	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial stdio
 
+run-x86_64-debug-multicore: ovmf-x86_64 build-x86_64-debug
+	qemu-system-x86_64 -enable-kvm -M q35 -smp 8 -cpu host -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial stdio
+
 run-x86_64-extdb: ovmf-x86_64 build-x86_64-debug
 	qemu-system-x86_64 -s -S -M q35 -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d
 
