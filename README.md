@@ -39,11 +39,26 @@ this is because it's waiting for gdb to connect, on linux this can be achieved b
 ```bash
 gdb charlotte_core/target/x86_64-unknown-none/debug/charlotte_core
 ```
+
 and once gdb is open:
 ```
 (gdb) target remote localhost:1234
 make sure to set some breakpoints or the code will just go straight to the halt at the end of main currently
 (gdb) c
+```
+*OR*
+Use the .gdbinit file present in the repo, to do this you need to allow gdb to load the .gdbinit file,
+this can be accomplished by adding `add-auto-load-safe-path [path to the repo here]/.gdbinit` to `$HOME/.config/gdb/gdbinit`, wit this done you just need to run:
+```bash
+# in terminal 1
+make run-x86_64-debugprobe
+# in another terminal
+gdb
+```
+
+if you are currently in the repo main folder you may use the snippet bellow to add the loading allow to gdbinit
+```bash
+mkdir -p $HOME/.config/gdb/;echo "$(pwd)/.gdbinit" >> $HOME/.config/gdb/gdbinit
 ```
 
 further reference [Qemu GDB docs](https://qemu-project.gitlab.io/qemu/system/gdb.html)
