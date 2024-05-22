@@ -33,6 +33,21 @@ make run-x86_64-release  # For testing a release build in qemu
 
 The `x86_64` portion of any of the previous commands can be replaced with `aarch64` or `riscv64` to build the kernel for the Arm and RISC-V architectures respectively however it should be noted that support for these ISAs is much less complete than for x86_64 for the time being.
 
+#### GDB debug probe
+Follow the steps in the `Building` section above, replacing `make run-x86_64-debug` for `run-x86_64-debugprobe`, this will start qemu, but it will appear unresponsive
+this is because it's waiting for gdb to connect, on linux this can be achieved by in another terminal running:
+```bash
+gdb charlotte_core/target/x86_64-unknown-none/debug/charlotte_core
+```
+and once gdb is open:
+```
+(gdb) target remote localhost:1234
+make sure to set some breakpoints or the code will just go straight to the halt at the end of main currently
+(gdb) c
+```
+
+further reference [Qemu GDB docs](https://qemu-project.gitlab.io/qemu/system/gdb.html)
+
 ### Documentation
 
 Detailed documentation will eventually be available on the project's wiki and website.
