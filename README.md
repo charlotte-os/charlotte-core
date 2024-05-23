@@ -58,7 +58,7 @@ gdb
 
 if you are currently in the repo main folder you may use the snippet bellow to add the loading allow to gdbinit
 ```bash
-mkdir -p $HOME/.config/gdb/;echo "$(pwd)/.gdbinit" >> $HOME/.config/gdb/gdbinit
+mkdir -p $HOME/.config/gdb/;echo "add-auto-load-safe-path $(pwd)/.gdbinit" >> $HOME/.config/gdb/gdbinit
 ```
 
 further reference [Qemu GDB docs](https://qemu-project.gitlab.io/qemu/system/gdb.html)
