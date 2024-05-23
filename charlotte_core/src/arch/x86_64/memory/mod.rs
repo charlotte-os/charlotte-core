@@ -372,7 +372,11 @@ impl MemoryMap for PageMap {
             DEFAULT_KERNEL_TABLE_FLAGS
         };
 
-        pd_table.map(vaddr.pd_index(), paddr, table_flags | PteFlags::PageSize as u64)
+        pd_table.map(
+            vaddr.pd_index(),
+            paddr,
+            table_flags | PteFlags::PageSize as u64,
+        )
     }
     fn unmap_large_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Error> {
         let pml4_paddr = PhysicalAddress::from((self.cr3 & !0xFFF) as usize);
@@ -428,7 +432,11 @@ impl MemoryMap for PageMap {
             DEFAULT_KERNEL_TABLE_FLAGS
         };
 
-        pdpt_table.map(vaddr.pdpt_index(), paddr, table_flags | PteFlags::PageSize as u64)
+        pdpt_table.map(
+            vaddr.pdpt_index(),
+            paddr,
+            table_flags | PteFlags::PageSize as u64,
+        )
     }
     fn unmap_huge_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Error> {
         let pml4_paddr = PhysicalAddress::from((self.cr3 & !0xFFF) as usize);
