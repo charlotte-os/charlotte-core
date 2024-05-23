@@ -29,7 +29,9 @@ use serial::{ComPort, SerialPort};
 use idt::*;
 
 use crate::acpi::AcpiTables;
-use crate::arch::x86_64::interrupts::lapic::{check_apic_is_present, list_apics};
+use crate::arch::x86_64::interrupts::apic::{
+    check_apic_is_present, get_apic_base, list_apics, read_apic_reg, set_apic_base, write_apic_reg,
+};
 use crate::logln;
 
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
@@ -82,7 +84,7 @@ impl crate::arch::Api for Api {
     }
     /// Initialize the bootstrap processor (BSP)
     fn init_bsp() {
-        //! This routine is run by the bootsrap processor to initilize itself priot to bringing up the kernel.
+        //! This routine is run by the bootstrap processor to initialize itself prior to bringing up the kernel.
 
         logln!("Initializing the bootstrap processor...");
 
@@ -118,12 +120,23 @@ impl crate::arch::Api for Api {
     fn init_interrupts(&self) {
         if let Some(tables) = self.tables {
             logln!("Initializing interrupt controllers");
-            let apic_presence = check_apic_is_present();
-            logln!("apic_presence {}", apic_presence);
-            let lapic_list = list_apics(tables.madt());
-            logln!("LapicList {:?}", lapic_list);
+            if !check_apic_is_present() {
+                panic!("APIC is not present according to CPUID");
+            }
+            // enable the lapic
+            logln!("Enable LAPIC");
+            set_apic_base(get_apic_base());
+            logln!(
+                "Spurious Interrupt vector register {:X}",
+                read_apic_reg(tables.madt(), 0xF0)
+            );
+            write_apic_reg(
+                tables.madt(),
+                0xF0,
+                read_apic_reg(tables.madt(), 0xF0) | (1 << 8),
+            );
         } else {
-            panic!("Interrupts intialization without initializing ACPI tables");
+            panic!("Interrupts initialization without initializing ACPI tables");
         }
     }
 
