@@ -19,5 +19,11 @@ ignore-result = "*"
 limine = "0.2.0"
 spin = {version = "*", features = ["ticket_mutex"]}
 
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "9.4.0"

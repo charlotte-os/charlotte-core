@@ -284,7 +284,7 @@ impl MemoryMap for PageMap {
         // Check the appropriate index in the PML4 table to get the address of the PDPT table
         // If the PDPT table is not present then allocate a frame for it and set the PML4 entry to point to it
         let pdpt_paddr = match pml4_table.is_present(vaddr.pml4_index()) {
-            true => pml4_table.get_table_paddr(vaddr.pml4_index()),
+            true => pml4_table.get_table_paddr(vaddr.pml4_index()).unwrap(),
             false => {
                 let pdpt_paddr = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().unwrap();
                 pml4_table.map(vaddr.pml4_index(), pdpt_paddr, table_flags);
@@ -302,7 +302,7 @@ impl MemoryMap for PageMap {
                 if pdpt_table.is_size_bit_set(vaddr.pdpt_index()) {
                     return Err(Error::VAddrRangeUnavailable);
                 }
-                pdpt_table.get_paddr(vaddr.pdpt_index())
+                pdpt_table.get_table_paddr(vaddr.pdpt_index()).unwrap()
             }
             false => {
                 let pd_paddr = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().unwrap();
@@ -321,7 +321,7 @@ impl MemoryMap for PageMap {
                 if pd_table.is_size_bit_set(vaddr.pd_index()) {
                     return Err(Error::VAddrRangeUnavailable);
                 }
-                pd_table.get_paddr(vaddr.pd_index())
+                pd_table.get_table_paddr(vaddr.pd_index()).unwrap()
             }
             false => {
                 let pt_paddr = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().unwrap();
