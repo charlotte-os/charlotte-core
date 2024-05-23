@@ -49,6 +49,14 @@ impl PhysicalAddress {
             .step_by(PAGE_SIZE.get())
             .map(PhysicalAddress::new)
     }
+
+    pub unsafe fn as_ref<T>(&self) -> &T {
+        unsafe { &*(self.bits() as *const T) }
+    }
+
+    pub unsafe fn as_mut<T>(&self) -> &mut T {
+        unsafe { &mut *(self.bits() as *mut T) }
+    }
 }
 
 impl From<usize> for PhysicalAddress {
