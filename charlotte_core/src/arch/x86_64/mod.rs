@@ -121,7 +121,7 @@ impl crate::arch::Api for Api {
         let msb = (raw & (1 << (Self::get_vaddr_width() - 1))) > 0;
         match msb {
             false => raw & unused_bitmask == 0,
-            true => raw & unused_bitmask == unused_bitmask
+            true => raw & unused_bitmask == unused_bitmask,
         }
     }
     /// Halt the calling LP
