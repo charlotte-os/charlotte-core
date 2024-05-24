@@ -118,7 +118,11 @@ impl crate::arch::Api for Api {
     fn validate_vaddr(raw: u64) -> bool {
         // Canonical form check
         let unused_bitmask = 1 << Self::get_vaddr_width() - 1;
-        (raw & unused_bitmask) == 0 || (raw & unused_bitmask) == unused_bitmask
+        let msb = (raw & (1 << (Self::get_vaddr_width() - 1))) > 0;
+        match msb {
+            false => raw & unused_bitmask == 0,
+            true => raw & unused_bitmask == unused_bitmask
+        }
     }
     /// Halt the calling LP
     #[inline]
