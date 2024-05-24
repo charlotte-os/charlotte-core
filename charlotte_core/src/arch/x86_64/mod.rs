@@ -57,7 +57,7 @@ impl crate::arch::Api for Api {
     type Api = Api;
     /// Define the logger type
     type DebugLogger = SerialPort;
-    type MemMap = memory::PageMap;
+    type MemMap = memory::page_map::PageMap;
 
     fn isa_init() -> Self {
         FRAMEBUFFER.lock().clear_screen(Color::BLACK);
@@ -207,7 +207,7 @@ impl Api {
         logln!("Loaded IDT");
 
         let mut vendor_string = [0u8; 12];
-        unsafe { asm_get_vendor_string(&mut vendor_string) }
+        cpu::get_vendor_string(&mut vendor_string);
         logln!("CPU Vendor ID: {}", str::from_utf8(&vendor_string).unwrap());
     }
     /// Initialize the application processors (APs)

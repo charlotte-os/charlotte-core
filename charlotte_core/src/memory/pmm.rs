@@ -72,14 +72,11 @@ impl MemoryMap {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-#[allow(unused)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
-    OutOfMemory,
     InsufficientMemoryAvailable,
     InsufficientContiguousMemoryAvailable,
     MemoryOvercommitted,
-    AddressMisaligned,
     AddressOutOfRange,
     InvalidSize,
     InvalidAlignment,
@@ -161,12 +158,12 @@ impl PhysicalFrameAllocator {
                 return Ok(self.index_to_address(byte_index, bit_index));
             }
         }
-        Err(Error::OutOfMemory)
+        Err(Error::InsufficientMemoryAvailable)
     }
 
     pub fn deallocate(&mut self, frame: PhysicalAddress) -> Result<(), Error> {
         if !frame.is_page_aligned() {
-            return Err(Error::AddressMisaligned);
+            return Err(Error::InvalidAlignment);
         }
         if frame.pfn() >= self.frame_capacity() {
             return Err(Error::AddressOutOfRange);
@@ -185,7 +182,7 @@ impl PhysicalFrameAllocator {
             return Err(Error::InvalidSize);
         }
         if !alignment.is_power_of_two() {
-            return Err(Error::AddressMisaligned);
+            return Err(Error::InvalidAlignment);
         }
 
         // if the requested alignment is less than the frame size, then the alignment is the frame size
@@ -221,7 +218,7 @@ impl PhysicalFrameAllocator {
             return Err(Error::InvalidSize);
         }
         if !base.is_page_aligned() {
-            return Err(Error::AddressMisaligned);
+            return Err(Error::InvalidAlignment);
         }
         if base.pfn() >= self.frame_capacity() || base.pfn() + n_frames >= self.frame_capacity() {
             return Err(Error::AddressOutOfRange);

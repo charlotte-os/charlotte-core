@@ -4,27 +4,10 @@ use spin::lazy::Lazy;
 
 use crate::logln;
 
-/// The number of significant bits in a physical address on the current CPU.
-pub static PADDR_SIG_BITS: Lazy<u8> = Lazy::new(|| {
-    let cpuid = unsafe { __cpuid_count(0x80000008, 0) };
-    // 0x80000008 is the highest cpuid leaf that returns the physical address width in EAX[7:0]
-    let psig_bits = cpuid.eax & 0xFF;
-    psig_bits as u8
-});
-
-/// The number of significant bits in a virtual address on the current CPU.
-pub static VADDR_SIG_BITS: Lazy<u8> = Lazy::new(|| {
-    let cpuid = unsafe { __cpuid_count(0x80000008, 0) };
-    // 0x80000008 is the highest cpuid leaf that returns the virtual address width in EAX[15:8]
-    let vsig_bits = (cpuid.eax >> 8) & 0xFF;
-    vsig_bits as u8
-});
-
 extern "C" {
     pub fn asm_halt() -> !;
     pub fn asm_inb(port: u16) -> u8;
     pub fn asm_outb(port: u16, val: u8);
-    pub fn asm_get_vendor_string(dest: &mut [u8; 12]);
     pub fn asm_read_msr(msr: u32, lo: &mut u32, hi: &mut u32);
     pub fn asm_write_msr(msr: u32, eax: u32, edx: u32);
     pub fn asm_get_privilege_level() -> u8;
@@ -95,4 +78,19 @@ pub fn asm_irq_disable() -> u64 {
 #[allow(unused)]
 pub fn asm_irq_restore(flags: u64) {
     unsafe { asm!("push {}\n\tpopf", in(reg) flags) };
+}
+
+pub fn get_vendor_string(dest: &mut [u8; 12]) {
+    let cpuid_result = unsafe { __cpuid_count(0, 0) };
+    dest[0..4].copy_from_slice(&cpuid_result.ebx.to_le_bytes());
+    dest[4..8].copy_from_slice(&cpuid_result.edx.to_le_bytes());
+    dest[8..12].copy_from_slice(&cpuid_result.ecx.to_le_bytes());
+}
+
+/// Determines whether the current LP supports huge pages.
+/// Returns `true` if huge pages are supported, `false` otherwise.
+pub fn huge_pages_supported() -> bool {
+    let cpuid_result = unsafe { __cpuid_count(0x80000001, 0) };
+    let edx = cpuid_result.edx;
+    edx & (1 << 26) != 0
 }
