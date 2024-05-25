@@ -28,12 +28,19 @@ pub struct AcpiTables {
     madt: Madt,
     fadt: Fadt,
     bgrt: Bgrt,
-    srat: Srat,
+    srat: Option<Srat>,
 }
 
 impl AcpiTables {
     /// Creates a new AcpiTables.
-    pub fn new(rsdp: Rsdp, sdt: Sdt, madt: Madt, fadt: Fadt, bgrt: Bgrt, srat: Srat) -> Self {
+    pub fn new(
+        rsdp: Rsdp,
+        sdt: Sdt,
+        madt: Madt,
+        fadt: Fadt,
+        bgrt: Bgrt,
+        srat: Option<Srat>,
+    ) -> Self {
         Self {
             rsdp,
             sdt,
@@ -65,14 +72,13 @@ pub fn init_acpi() -> AcpiTables {
     if let Some(response) = RSDP_REQUEST.get_response() {
         let rsdp = Rsdp::new_from_address(response.address() as usize);
         let sdt = sdt::Sdt::new(&rsdp).unwrap();
-       
+
         let madt = Madt::new(sdt.get_table(*b"APIC").unwrap());
         let fadt = Fadt::new(sdt.get_table(*b"FACP").unwrap()).unwrap();
 
         logln!("RSDP oem ID: {:?}", rsdp.oem_id());
         logln!("Parsed FADT");
-        let mut bgrt = Bgrt::new(sdt.get_table(*b"BGRT").unwrap()).unwrap();
-
+        let bgrt = Bgrt::new(sdt.get_table(*b"BGRT").unwrap()).unwrap();
 
         if let Some(length) = bgrt.length() {
             logln!("Length: {}", length);
@@ -80,9 +86,11 @@ pub fn init_acpi() -> AcpiTables {
             logln!("Length: None");
         }
         logln!("Parsed BGRT");
-        let mut srat = Srat::new(sdt.get_table(*b"SRAT").unwrap()).unwrap();
-        for entry in srat.iter() {
-            logln!("SRAT Entry: {:?}", entry);
+        let srat = Srat::new(sdt.get_table(*b"SRAT").unwrap());
+        if let Some(srat) = srat {
+            for entry in srat.iter() {
+                logln!("SRAT Entry: {:?}", entry);
+            }
         }
         AcpiTables::new(rsdp, sdt, madt, fadt, bgrt, srat)
     } else {
