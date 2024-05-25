@@ -2,13 +2,13 @@ use core::{mem, str};
 
 use super::tables::get_table;
 use super::sdt::Sdt;
-use crate::bootinfo::RSDP_REQUEST;
+use crate::{bootinfo::RSDP_REQUEST, logln};
 use super::Rsdp;
 
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
-pub struct Srat {
+pub struct SratHeader {
     signature: [u8; 4],
     length: u32,
     revision: u8,
@@ -21,51 +21,34 @@ pub struct Srat {
     reserved: [u8; 12],
 }
 
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+pub struct Srat {
+  header: SratHeader,
+  length: u32, // set this to SratHeader.length
+  addr: usize,
+}
+
 impl Srat {
     pub fn new(addr: usize) -> Option<Self> {
         let header = get_table(addr, *b"SRAT");
         if let Some(_header) = header {
-            let srat = unsafe { &*(addr as *const Srat) };
-            Some(*srat)
+            let srat = unsafe { *(addr as *const SratHeader) };
+            Some(Srat {
+                header: srat,
+                length: srat.length,
+                addr,
+            })
         } else {
             None
         }
     }
-
-    pub fn signature(&self) -> &str {
-        str::from_utf8(&self.signature).unwrap()
-    }
-
-    pub fn checksum(&self) -> u8 {
-        self.checksum
-    }
-
-    pub fn oem_id(&self) -> &str {
-        str::from_utf8(&self.oem_id).unwrap()
-    }
-
-    pub fn oem_table_id(&self) -> &str {
-        str::from_utf8(&self.oem_table_id).unwrap()
-    }
-
-    pub fn revision(&self) -> u8 {
-        self.revision
-    }
-
-    pub fn creator_id(&self) -> u32 {
-        self.creator_id
-    }
-
-    pub fn creator_revision(&self) -> u8 {
-        {
-            self.creator_revision
-        }
-    }
-    
     pub fn iter(&self) -> SratIter {
         SratIter {
-            offset: mem::size_of::<Srat>(),
-            addr: 0,
+            addr: self.addr + mem::size_of::<SratHeader>(),
+            length: self.header.length as u32 - mem::size_of::<SratHeader>() as u32,
+            offset: 0,
         }
     }
 }
@@ -74,16 +57,10 @@ impl Iterator for SratIter {
     type Item = SratEntry;
     
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(response) = RSDP_REQUEST.get_response() {
-        if self.addr == 0 {
-            let rsdp = Rsdp::new_from_address(response.address() as usize);
-            let sdt = Sdt::new(&rsdp).unwrap();
-            self.addr = Sdt::get_table(&sdt, *b"SRAT").unwrap();
-        }
-        
-        let mut header = unsafe { &*((self.addr + self.offset) as *const SratEntryHeader) };
+        if self.offset < self.length as usize {
+        let next_type =  unsafe {*((self.addr+self.offset) as *const u8)};
         let mut new_offset: usize = 0;
-        let entry = match header.entry_type {
+        let entry = match next_type {
             0 => {
                 new_offset= mem::size_of::<ProcessorLocalApic>();
                 
@@ -108,20 +85,29 @@ impl Iterator for SratIter {
                 })
             }
             
-            _=> SratEntry::Unknown(header.entry_type)
+            _=> SratEntry::Unknown(next_type)
         };
         
         self.offset += new_offset;
         Some(entry)
+        } else {
+            None
+        }
         
-    } else {
-        panic!("Failed to obtain SRAT entries.");
-    }
 }
 }
 pub struct SratIter {
-    offset: usize,
     addr: usize,
+    length: u32,
+    offset: usize,
+}
+
+
+#[repr(C, packed)]
+#[derive(Copy, Clone, Debug)]
+struct SratEntryHeader {
+    entry_type: u8,
+    length: u8,
 }
 
 
