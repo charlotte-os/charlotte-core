@@ -58,7 +58,6 @@ impl crate::arch::Api for Api {
             tables: None,
             irq_flags: 0,
         }
-        Self { tables: None }
     }
 
     /// Get a new logger instance
