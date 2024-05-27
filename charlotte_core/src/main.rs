@@ -6,21 +6,19 @@ mod acpi;
 mod arch;
 mod bootinfo;
 mod framebuffer;
+mod logging;
 mod memory;
 
-use core::fmt::Write;
-
 use arch::{Api, ArchApi};
-
 use framebuffer::colors::Color;
-use framebuffer::console::CONSOLE;
-
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
-
 use memory::pmm::*;
+use logging::logger::Logger;
 
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
+    Logger::init();
+
     let mut arch_api = ArchApi::new_arch_api();
 
     FRAMEBUFFER.lock().clear_screen(Color::BLACK);
