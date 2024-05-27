@@ -1,4 +1,4 @@
-use super::Level;
+use super::{PageSize, PageTableLevel};
 
 use crate::arch::x86_64::memory::*;
 use crate::memory::address::*;
@@ -64,7 +64,7 @@ impl PageTableEntry {
         }
     }
 
-    pub fn map_table(&mut self, paddr:PhysicalAddress, flags: u64) -> Result<(), Error> {
+    pub fn map_table(&mut self, paddr: PhysicalAddress, flags: u64) -> Result<(), Error> {
         if self.is_present() {
             Err(Error::VAddrRangeUnavailable)
         } else if paddr.is_page_aligned() == false {
@@ -75,16 +75,21 @@ impl PageTableEntry {
         }
     }
 
-    pub fn map_page(&mut self, paddr: PhysicalAddress, flags: u64, level: u8) -> Result<(), Error> {
+    pub fn map_page(
+        &mut self,
+        paddr: PhysicalAddress,
+        flags: u64,
+        size: PageSize,
+    ) -> Result<(), Error> {
         if self.is_present() {
             Err(Error::VAddrRangeUnavailable)
         } else if paddr.is_page_aligned() == false {
             Err(Error::InvalidPAddrAlignment)
         } else {
-            let flag_mask = if level == Level::PDPT as u8 || level == Level::PD as u8 {
-                HUGE_AND_LARGE_PAGE_FLAG_MASK
-            } else {
+            let flag_mask = if size == PageSize::Standard {
                 FLAG_MASK
+            } else {
+                HUGE_AND_LARGE_PAGE_FLAG_MASK
             };
             self.entry = (paddr.bits() as u64 & *ADDR_MASK) | (flags & flag_mask);
             Ok(())

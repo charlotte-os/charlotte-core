@@ -1,10 +1,10 @@
-mod page_map;
+pub mod page_map;
 
 use core::arch::x86_64::__cpuid_count;
 
-use spin::lazy::Lazy;
 use crate::memory::address::{PhysicalAddress, VirtualAddress};
 use crate::memory::pmm::Error as PmmError;
+use spin::lazy::Lazy;
 
 /// The number of significant binary digits in a physical address
 pub static PADDR_SIGBITS: Lazy<u8> = Lazy::new(|| {
@@ -37,6 +37,8 @@ pub enum Error {
     EntryNotTable,
     NoSizeBit,
     OpNotSupportedAtThisLevel,
+    AlredyHasPcid,
+    InvalidPcid,
     PmmError(PmmError),
 }
 

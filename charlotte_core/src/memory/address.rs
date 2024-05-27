@@ -4,7 +4,7 @@ use core::ops::Add;
 use crate::arch::{Api, ArchApi};
 use crate::memory::pmm::DIRECT_MAP;
 
-const PAGE_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(4096) };
+const PageSize: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(4096) };
 const PAGE_SHIFT: usize = 12;
 const PAGE_MASK: u64 = !0xfffu64;
 
@@ -40,13 +40,13 @@ impl PhysicalAddress {
 
     #[inline]
     pub const fn is_page_aligned(&self) -> bool {
-        self.is_aligned_to(PAGE_SIZE)
+        self.is_aligned_to(PageSize)
     }
 
     #[inline]
     pub fn iter_frames(&self, n_frames: usize) -> impl DoubleEndedIterator<Item = PhysicalAddress> {
-        (self.bits()..(self.bits() + n_frames * PAGE_SIZE.get()))
-            .step_by(PAGE_SIZE.get())
+        (self.bits()..(self.bits() + n_frames * PageSize.get()))
+            .step_by(PageSize.get())
             .map(PhysicalAddress::new)
     }
 

@@ -109,6 +109,7 @@ impl crate::arch::Api for Api {
         *memory::VADDR_SIGBITS
     }
     /// Validates a physical address in accordance with the x86_64 architecture
+    #[inline]
     fn validate_paddr(raw: usize) -> bool {
         // Non-significant bits must be zero
         let unused_bitmask = !(1 << Self::get_paddr_width() - 1);
@@ -217,7 +218,7 @@ impl Api {
     }
 
     fn init_timers(&self) {
-        unimplemented!()
+        todo!()
     }
 
     fn init_interrupts(&self) {
