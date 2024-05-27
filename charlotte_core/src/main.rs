@@ -2,28 +2,25 @@
 #![no_main]
 #![warn(missing_copy_implementations)]
 
-mod acpi;
+//mod acpi;
 mod arch;
 mod bootinfo;
 mod framebuffer;
 mod logging;
-mod memory;
+//mod memory;
 
 use arch::{Api, ArchApi};
 use framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
-use memory::pmm::*;
-use logging::logger::Logger;
+//use memory::pmm::*;
 
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
-    Logger::init();
-
     let mut arch_api = ArchApi::new_arch_api();
 
     FRAMEBUFFER.lock().clear_screen(Color::BLACK);
     println!("Hello, world!");
-
+    /*
     logln!("Initializing BSP");
     ArchApi::init_bsp();
     logln!("BSP Initialized");
@@ -98,12 +95,12 @@ unsafe extern "C" fn main() -> ! {
     logln!("Physical Memory Manager test suite finished.");
 
     logln!("Halting BSP");
+    */
     ArchApi::halt()
 }
 
 #[panic_handler]
 fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
-    logln!("A kernel panic has occurred due to a Rust runtime panic.");
-    logln!("PanicInfo: {:?}", _info);
+    log_panic!(_info);
     ArchApi::panic()
 }

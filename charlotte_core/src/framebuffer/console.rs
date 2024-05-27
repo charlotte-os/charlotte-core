@@ -174,6 +174,10 @@ impl Console {
     pub fn clear_inner_styling(&self) {
         INNER_STYLE_SETTINGS.lock().clear();
     }
+
+    pub fn get_width(&self) -> usize {
+        CONSOLE_WIDTH
+    }
 }
 
 static INNER_STYLE_SETTINGS: TicketMutex<InnerPrintStyle> =

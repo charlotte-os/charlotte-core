@@ -1,7 +1,7 @@
 use core::{arch::x86_64::__cpuid_count, fmt::Write};
 use spin::lazy::Lazy;
 
-use crate::logln;
+use crate::info;
 
 /// The number of significant bits in a physical address on the current CPU.
 pub static PADDR_SIG_BITS: Lazy<u8> = Lazy::new(|| {
@@ -56,12 +56,12 @@ pub fn read_msr(msr: u32) -> MSRResponse {
 
 pub fn write_msr(msr: u32, eax: u32, edx: u32) {
     if get_privilege_level() != 0 {
-        logln!("Privilege level is not 0, is {}", get_privilege_level());
+        info!("Privilege level is not 0, is {}", get_privilege_level());
         return;
     }
     if !assert_msr_presence() {
         panic!("Processor lacks msr support and write_msr was called!");
     }
-    logln!("Writing {:X}, {:X} to MSR[{:X}]", eax, edx, msr);
+    info!("Writing {:X}, {:X} to MSR[{:X}]", eax, edx, msr);
     unsafe { asm_write_msr(msr, eax, edx) };
 }
