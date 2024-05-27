@@ -22,6 +22,7 @@ enum PageTableLevel {
 }
 
 #[repr(align(4096))]
+#[derive(Debug)]
 struct PageTable {
     table: [PageTableEntry; 512],
 }

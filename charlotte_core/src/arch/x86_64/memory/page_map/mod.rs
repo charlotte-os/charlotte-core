@@ -9,6 +9,7 @@ use crate::arch::{Api, ArchApi};
 use crate::{memory::address::PhysicalAddress, memory::pmm::PHYSICAL_FRAME_ALLOCATOR};
 
 #[repr(transparent)]
+#[derive(Debug)]
 pub struct PageMap {
     cr3: u64,
 }
