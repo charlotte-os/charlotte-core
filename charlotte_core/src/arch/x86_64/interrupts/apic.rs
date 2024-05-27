@@ -1,9 +1,8 @@
-use core::{arch::x86_64::__cpuid_count, fmt::Write, ptr, usize};
+use core::{arch::x86_64::__cpuid_count, ptr};
 
 use crate::{
     acpi::madt::{Madt, MadtEntry, ProcessorLocalApic},
     arch::x86_64::{read_msr, write_msr},
-    logln,
 };
 
 const FEAT_EDX_APIC: u32 = 1 << 9;
@@ -17,7 +16,6 @@ pub fn check_apic_is_present() -> bool {
 
 // TODO: Make this code more reasonable
 pub fn list_apics(madt: &Madt) -> [Option<ProcessorLocalApic>; 256] {
-    logln!("local_apic_addr {:X?}", madt.local_apic_addr());
     let mut list = [None; 256];
     let mut i = 0;
     for entry in madt.iter() {

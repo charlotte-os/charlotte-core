@@ -100,8 +100,8 @@ unsafe extern "C" fn main() -> ! {
     logln!("Contiguous frame allocation and deallocation test complete.");
     logln!("Physical Memory Manager test suite finished.");
 
-    logln!("Halting BSP");
-    ArchApi::halt()
+    logln!("Infinite loop at end");
+    loop {}
 }
 
 #[panic_handler]
