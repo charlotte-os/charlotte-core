@@ -43,6 +43,7 @@ pub trait Api {
     fn interrupts_enabled(&self) -> bool;
     fn disable_interrupts(&mut self);
     fn restore_interrupts(&mut self);
+    fn register_interrupt_dispatcher(&mut self);
     fn end_of_interrupt(&self);
 
     /// Sets the acpi tables that can be used by the impl to find needed information

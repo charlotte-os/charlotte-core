@@ -28,9 +28,10 @@ use serial::{ComPort, SerialPort};
 
 use idt::*;
 
+use crate::acpi::madt::{IoApic, MadtEntry};
 use crate::acpi::AcpiTables;
 use crate::arch::x86_64::interrupts::apic::{
-    check_apic_is_present, get_apic_base, list_apics, read_apic_reg, set_apic_base, write_apic_reg,
+    check_apic_is_present, get_apic_base, read_apic_reg, set_apic_base, write_apic_reg,
 };
 use crate::logln;
 
@@ -39,6 +40,7 @@ use self::interrupts::apic_consts::APIC_REG_EOI;
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api {
     pub tables: Option<AcpiTables>,
+    io_apics: [Option<IoApic>; 64],
     irq_flags: u64,
 }
 
@@ -56,6 +58,7 @@ impl crate::arch::Api for Api {
     fn new_arch_api() -> Self {
         Self {
             tables: None,
+            io_apics: [None; 64],
             irq_flags: 0,
         }
     }
@@ -125,17 +128,11 @@ impl crate::arch::Api for Api {
 
     fn init_interrupts(&self) {
         if let Some(tables) = self.tables {
-            logln!("Initializing interrupt controllers");
             if !check_apic_is_present() {
                 panic!("APIC is not present according to CPUID");
             }
             // enable the lapic
-            logln!("Enable LAPIC");
             set_apic_base(get_apic_base());
-            logln!(
-                "Spurious Interrupt vector register {:X}",
-                read_apic_reg(tables.madt(), 0xF0)
-            );
             write_apic_reg(
                 tables.madt(),
                 0xF0,
@@ -156,7 +153,11 @@ impl crate::arch::Api for Api {
         self.irq_flags = asm_irq_disable();
     }
 
-    fn restore_interrupts(&mut self) {}
+    fn restore_interrupts(&mut self) {
+        asm_irq_restore(self.irq_flags);
+    }
+
+    fn register_interrupt_dispatcher(&mut self) {}
 
     fn end_of_interrupt(&self) {
         if let Some(tables) = self.tables {
@@ -173,5 +174,19 @@ impl crate::arch::Api for Api {
     fn init_acpi_tables(&mut self, tbls: &AcpiTables) {
         // Copy the tables passed in to the API
         self.tables = Some(tbls.clone());
+        if let Some(tables) = self.tables {
+            let mut idx = 0;
+            let mut madt = tables.madt().iter();
+            while let Some(madt_entry) = madt.next() {
+                match madt_entry {
+                    MadtEntry::IOApic(entry) => {
+                        self.io_apics[idx] = Some(entry);
+                        idx += 1;
+                    }
+                    _ => continue,
+                }
+            }
+        }
+        logln!("{:?}", self.io_apics);
     }
 }
