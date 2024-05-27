@@ -3,16 +3,28 @@ use spin::Mutex;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
 use crate::framebuffer::colors::Color;
 
-pub struct Logger;
+#[derive(Debug, Clone, Copy)]
+pub enum LogLevel {
+    Error,
+    Warn,
+    Info,
+    Debug,
+}
+
+pub struct Logger {
+    level: LogLevel,
+}
 
 impl Logger {
-    pub fn init() {
-        // Initialization code if needed. For now, there's nothing specific to initialize.
+    pub fn init(level: LogLevel) {
+        *LOGGER.lock() = Logger { level };
     }
 
-    pub fn log(&self, message: &str) {
-        let mut framebuffer = FRAMEBUFFER.lock();
-        writeln!(framebuffer, "{}", message).unwrap();
+    pub fn log(&self, level: LogLevel, message: &str) {
+        if level as u8 <= self.level as u8 {
+            let mut framebuffer = FRAMEBUFFER.lock();
+            writeln!(framebuffer, "[{:?}] {}", level, message).unwrap();
+        }
     }
 }
 
@@ -23,15 +35,15 @@ impl Write for Logger {
     }
 }
 
-static LOGGER: Mutex<Logger> = Mutex::new(Logger {});
+static LOGGER: Mutex<Logger> = Mutex::new(Logger { level: LogLevel::Info });
 
-pub fn log(message: &str) {
-    LOGGER.lock().log(message);
+pub fn log(level: LogLevel, message: &str) {
+    LOGGER.lock().log(level, message);
 }
 
 #[macro_export]
 macro_rules! logln {
-    ($($arg:tt)*) => ({
-        $crate::logging::logger::log(&format!($($arg)*));
+    ($level:expr, $($arg:tt)*) => ({
+        $crate::logging::logger::log($level, &format!($($arg)*));
     })
 }
