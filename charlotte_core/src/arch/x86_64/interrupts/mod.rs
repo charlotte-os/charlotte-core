@@ -2,3 +2,4 @@
 //!
 
 pub mod apic;
+pub mod apic_consts;

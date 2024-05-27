@@ -86,12 +86,11 @@ pub fn init_acpi() -> AcpiTables {
             logln!("Length: None");
         }
         logln!("Parsed BGRT");
-        let srat = Srat::new(sdt.get_table(*b"SRAT").unwrap());
-        if let Some(srat) = srat {
-            for entry in srat.iter() {
-                logln!("SRAT Entry: {:?}", entry);
-            }
-        }
+        let srat = if let Some(srat_addr) = sdt.get_table(*b"SRAT") {
+            Srat::new(srat_addr)
+        } else {
+            None
+        };
         AcpiTables::new(rsdp, sdt, madt, fadt, bgrt, srat)
     } else {
         panic!("Failed to obtain RSDP response.");
