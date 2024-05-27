@@ -6,6 +6,7 @@ pub mod fadt;
 pub mod madt;
 pub mod rsdp;
 pub mod sdt;
+pub mod srat;
 pub mod tables;
 
 use crate::{bootinfo::RSDP_REQUEST, logln};
@@ -17,6 +18,7 @@ use self::bgrt::Bgrt;
 use self::fadt::Fadt;
 use self::madt::Madt;
 use self::sdt::Sdt;
+use self::srat::Srat;
 
 /// Stores the data for all the ACPI tables.
 #[derive(Clone, Copy)]
@@ -26,17 +28,26 @@ pub struct AcpiTables {
     madt: Madt,
     fadt: Fadt,
     bgrt: Bgrt,
+    srat: Option<Srat>,
 }
 
 impl AcpiTables {
     /// Creates a new AcpiTables.
-    pub fn new(rsdp: Rsdp, sdt: Sdt, madt: Madt, fadt: Fadt, bgrt: Bgrt) -> Self {
+    pub fn new(
+        rsdp: Rsdp,
+        sdt: Sdt,
+        madt: Madt,
+        fadt: Fadt,
+        bgrt: Bgrt,
+        srat: Option<Srat>,
+    ) -> Self {
         Self {
             rsdp,
             sdt,
             madt,
             fadt,
             bgrt,
+            srat,
         }
     }
 
@@ -61,51 +72,13 @@ pub fn init_acpi() -> AcpiTables {
     if let Some(response) = RSDP_REQUEST.get_response() {
         let rsdp = Rsdp::new_from_address(response.address() as usize);
         let sdt = sdt::Sdt::new(&rsdp).unwrap();
-        logln!("RSDP Signature: {}", rsdp.signature());
-        logln!("RSDP Checksum: {}", rsdp.checksum());
-        logln!("RSDP OEM ID: {}", rsdp.oem_id());
-        logln!("RSDP Revision: {}", rsdp.revision());
-        logln!("RSDP RSDT Address: {:#X}", rsdp.rsdt_address());
-        if let Some(length) = rsdp.length() {
-            logln!("RSDP Length: {}", length);
-        }
-        if let Some(xsdt_address) = rsdp.xsdt_address() {
-            logln!("RSDP XSDT Address: {:#X}", xsdt_address);
-        }
-        if let Some(extended_checksum) = rsdp.extended_checksum() {
-            logln!("RSDP Extended Checksum: {}", extended_checksum);
-        }
-        logln!("SDT Signature: {}", sdt.header().signature());
-        logln!("SDT Length: {}", sdt.header().length());
-        logln!("SDT Revision: {}", sdt.header().revision());
-        logln!("SDT entry count: {}", sdt.n_entries());
-        logln!("SDT address width: {}", sdt.addr_width());
+
         let madt = Madt::new(sdt.get_table(*b"APIC").unwrap());
-        logln!("MADT Local APIC Address: {:#X}", madt.local_apic_addr());
-        for entry in madt.iter() {
-            logln!("MADT Entry: {:?}", entry);
-        }
         let fadt = Fadt::new(sdt.get_table(*b"FACP").unwrap()).unwrap();
 
         logln!("RSDP oem ID: {:?}", rsdp.oem_id());
         logln!("Parsed FADT");
-        let mut bgrt = Bgrt::new(sdt.get_table(*b"BGRT").unwrap()).unwrap();
-        logln!("BGRT  Signature: {}", bgrt.signature());
-        logln!("BGRT  Checksum: {}", bgrt.checksum());
-        logln!("BGRT  OEM ID: {}", bgrt.oem_id());
-        logln!("BGRT  OEM Table ID: {}", bgrt.oem_table_id());
-        logln!("BGRT  Revision: {}", bgrt.revision());
-        logln!("BGRT  Creator ID: {}", bgrt.creator_id());
-        logln!("BGRT  Creator Revision: {}", bgrt.creator_revision());
-
-        bgrt.set_version();
-        logln!("BGRT  Version: {}", bgrt.version());
-
-        logln!("BGRT  Status: {}", bgrt.status());
-        logln!("BGRT  Image Type: {}", bgrt.image_type());
-        logln!("BGRT  Image Address: {}", bgrt.image_address());
-        logln!("BGRT  X Offset: {}", bgrt.x_offset());
-        logln!("BGRT  Y Offset: {}", bgrt.y_offset());
+        let bgrt = Bgrt::new(sdt.get_table(*b"BGRT").unwrap()).unwrap();
 
         if let Some(length) = bgrt.length() {
             logln!("Length: {}", length);
@@ -113,7 +86,12 @@ pub fn init_acpi() -> AcpiTables {
             logln!("Length: None");
         }
         logln!("Parsed BGRT");
-        AcpiTables::new(rsdp, sdt, madt, fadt, bgrt)
+        let srat = if let Some(srat_addr) = sdt.get_table(*b"SRAT") {
+            Srat::new(srat_addr)
+        } else {
+            None
+        };
+        AcpiTables::new(rsdp, sdt, madt, fadt, bgrt, srat)
     } else {
         panic!("Failed to obtain RSDP response.");
     }

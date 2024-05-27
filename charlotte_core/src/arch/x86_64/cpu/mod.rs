@@ -1,3 +1,4 @@
+use core::arch::asm;
 use core::{arch::x86_64::__cpuid_count, fmt::Write};
 use spin::lazy::Lazy;
 
@@ -64,4 +65,29 @@ pub fn write_msr(msr: u32, eax: u32, edx: u32) {
     }
     logln!("Writing {:X}, {:X} to MSR[{:X}]", eax, edx, msr);
     unsafe { asm_write_msr(msr, eax, edx) };
+}
+
+/// Test the flags of the processor to determine if the interrupts are enabled
+pub fn asm_are_interrupts_enabled() -> bool {
+    let mut flags: u64;
+    unsafe { asm!("pushf\n\tpop {}", out(reg) flags) };
+    flags & 1 << 9 != 0
+}
+
+pub fn asm_irq_enable() {
+    // Get the status flags of the processor
+    let mut flags: u64;
+    unsafe { asm!("pushf\n\tpop {}", out(reg) flags) };
+    flags |= 1 << 9;
+    unsafe { asm!("push {}\n\tpopf", in(reg) flags) };
+}
+
+pub fn asm_irq_disable() -> u64 {
+    let mut flags: u64;
+    unsafe { asm!("pushf\n\tcli\n\tpop {}", out(reg) flags) };
+    flags
+}
+
+pub fn asm_irq_restore(flags: u64) {
+    unsafe { asm!("push {}\n\tpopf", in(reg) flags) };
 }

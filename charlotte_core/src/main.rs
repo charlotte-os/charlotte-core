@@ -37,6 +37,7 @@ unsafe extern "C" fn main() -> ! {
 
     logln!("Initialize interrupts");
     arch_api.init_interrupts();
+    logln!("Interrupts enabled: {}", arch_api.interrupts_enabled());
 
     logln!("All tests in main passed.");
 

@@ -34,9 +34,12 @@ use crate::arch::x86_64::interrupts::apic::{
 };
 use crate::logln;
 
+use self::interrupts::apic_consts::APIC_REG_EOI;
+
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api {
     pub tables: Option<AcpiTables>,
+    irq_flags: u64,
 }
 
 static BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
@@ -51,7 +54,10 @@ impl crate::arch::Api for Api {
     type DebugLogger = SerialPort;
 
     fn new_arch_api() -> Self {
-        Self { tables: None }
+        Self {
+            tables: None,
+            irq_flags: 0,
+        }
     }
 
     /// Get a new logger instance
@@ -135,8 +141,32 @@ impl crate::arch::Api for Api {
                 0xF0,
                 read_apic_reg(tables.madt(), 0xF0) | (1 << 8),
             );
+            // enable irqs
+            asm_irq_enable();
         } else {
             panic!("Interrupts initialization without initializing ACPI tables");
+        }
+    }
+
+    fn interrupts_enabled(&self) -> bool {
+        asm_are_interrupts_enabled()
+    }
+
+    fn disable_interrupts(&mut self) {
+        self.irq_flags = asm_irq_disable();
+    }
+
+    fn restore_interrupts(&mut self) {}
+
+    fn end_of_interrupt(&self) {
+        if let Some(tables) = self.tables {
+            if self.interrupts_enabled() {
+                write_apic_reg(tables.madt(), APIC_REG_EOI, 0);
+            } else {
+                logln!("Attempt to signal end of interrupt with interrupts disabled");
+            }
+        } else {
+            panic!("Tried to signal end of interrupt without initializing ACPI tables");
         }
     }
 
