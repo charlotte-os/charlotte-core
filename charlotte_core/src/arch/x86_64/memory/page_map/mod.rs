@@ -9,7 +9,7 @@ use core::num::NonZeroUsize;
 use core::ptr::addr_of_mut;
 
 use crate::arch::x86_64::cpu::ARE_HUGE_PAGES_SUPPORTED;
-use crate::arch::{Api, ArchApi};
+use crate::arch::{Api, ArchApi, MemoryMap};
 use crate::memory::address::VirtualAddress;
 use crate::memory::{address::PhysicalAddress, pmm::PHYSICAL_FRAME_ALLOCATOR};
 
@@ -140,7 +140,36 @@ impl PageMap {
             Ok(())
         }
     }
-    pub fn load(&self) -> Result<(), Error> {
+    fn invalidate_pcid(&self) {
+        let mut pcid = [0u64; 2];
+        pcid[0] = self.get_pcid() as u64;
+        unsafe {
+            asm! {
+                "invpcid 1, [{pcid}]",
+                pcid = in(reg) pcid.as_ptr(),
+            }
+        }
+    }
+}
+
+impl Clone for PageMap {
+    fn clone(&self) -> Self {
+        todo!()
+    }
+}
+
+impl Drop for PageMap {
+    fn drop(&mut self) {
+        todo!()
+    }
+}
+
+impl MemoryMap for PageMap {
+    type Error = Error;
+    type Flags = u64;
+
+    /// Loads the page map into the logical processor.
+    unsafe fn load(&self) -> Result<(), Self::Error> {
         if self.get_pcid() != 0 {
             unsafe {
                 asm! {
@@ -153,22 +182,18 @@ impl PageMap {
             Err(Error::InvalidPcid)
         }
     }
-    fn invalidate_pcid(&self) {
-        let mut pcid = [0u64; 2];
-        pcid[0] = self.get_pcid() as u64;
-        unsafe {
-            asm! {
-                "invpcid 1, [{pcid}]",
-                pcid = in(reg) pcid.as_ptr(),
-            }
-        }
-    }
-    pub fn map_page(
+
+    /// Maps a page at the given virtual address.
+    /// # Arguments
+    /// * `vaddr` - The virtual address to map the page to
+    /// * `paddr` - The physical base address of the page frame to be mapped
+    /// * `flags` - The flags to apply to the page table entry
+    fn map_page(
         &mut self,
         vaddr: VirtualAddress,
         paddr: PhysicalAddress,
-        flags: u64,
-    ) -> Result<(), Error> {
+        flags: Self::Flags,
+    ) -> Result<(), Self::Error> {
         if vaddr.is_aligned_to(4096) == false {
             Err(Error::InvalidVAddrAlignment)
         } else if paddr.is_aligned_to(NonZeroUsize::new(4096).unwrap()) == false {
@@ -185,5 +210,67 @@ impl PageMap {
 
             Ok(())
         }
+    }
+
+    /// Unmaps a page from the given page map at the given virtual address.
+    /// # Arguments
+    /// * `vaddr` - The virtual address to unmap.
+    /// # Returns
+    /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
+    /// previously mapped to the given virtual address if successful.
+    fn unmap_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error> {
+        todo!()
+    }
+
+    /// Maps a large page (2 MiB) at the given virtual address.
+    /// # Arguments
+    /// * `vaddr` - The virtual address to map.
+    /// * `paddr` - The physical address to map.
+    /// * `flags` - The flags to apply to the page table entry.
+    /// # Returns
+    /// Returns an error of type `Self::Error` if mapping fails.
+    fn map_large_page(
+        &mut self,
+        vaddr: VirtualAddress,
+        paddr: PhysicalAddress,
+        flags: Self::Flags,
+    ) -> Result<(), Self::Error> {
+        todo!()
+    }
+
+    /// Unmaps a large page from the given page map at the given virtual address.
+    /// # Arguments
+    /// * `vaddr` - The virtual address to unmap.
+    /// # Returns
+    /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
+    /// previously mapped to the given virtual address if successful.
+    fn unmap_large_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error> {
+        todo!()
+    }
+
+    /// Maps a huge page (1 GiB) at the given virtual address.
+    /// # Arguments
+    /// * `vaddr` - The virtual address to map.
+    /// * `paddr` - The physical address to map.
+    /// * `flags` - The flags to apply to the page table entry.
+    /// # Returns
+    /// Returns an error of type `Self::Error` if mapping fails.
+    fn map_huge_page(
+        &mut self,
+        vaddr: VirtualAddress,
+        paddr: PhysicalAddress,
+        flags: Self::Flags,
+    ) -> Result<(), Self::Error> {
+        todo!()
+    }
+
+    /// Unmaps a huge page from the given page map at the given virtual address.
+    /// # Arguments
+    /// * `vaddr` - The virtual address to unmap.
+    /// # Returns
+    /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
+    /// previously mapped to the given virtual address if successful.
+    fn unmap_huge_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error> {
+        todo!()
     }
 }

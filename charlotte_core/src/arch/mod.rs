@@ -37,7 +37,7 @@ pub trait MemoryMap: Clone + Drop {
     type Flags;
 
     /// Loads the page map into the logical processor.
-    unsafe fn load(&self);
+    unsafe fn load(&self) -> Result<(), Self::Error>;
 
     /// Maps a page at the given virtual address.
     /// # Arguments
