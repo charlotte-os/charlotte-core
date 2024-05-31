@@ -4,9 +4,9 @@ use super::Error;
 
 use core::arch::asm;
 
-use crate::arch::x86_64::cpu::huge_pages_supported;
 use crate::arch::{Api, ArchApi};
-use crate::{memory::address::PhysicalAddress, memory::pmm::PHYSICAL_FRAME_ALLOCATOR};
+use crate::arch::x86_64::cpu::huge_pages_supported;
+use crate::memory::{address::PhysicalAddress, pmm::PHYSICAL_FRAME_ALLOCATOR};
 
 #[repr(transparent)]
 #[derive(Debug)]
