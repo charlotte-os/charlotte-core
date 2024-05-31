@@ -7,14 +7,14 @@ use crate::memory::address::*;
 use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
 
 #[derive(Debug, PartialEq, Eq)]
-enum PageSize {
+pub enum PageSize {
     Standard = 0,
     Large = 1,
     Huge = 2,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-enum PageTableLevel {
+pub enum PageTableLevel {
     PML4 = 4,
     PDPT = 3,
     PD = 2,
@@ -23,24 +23,24 @@ enum PageTableLevel {
 
 #[repr(align(4096))]
 #[derive(Debug)]
-struct PageTable {
+pub struct PageTable {
     table: [PageTableEntry; 512],
 }
 
 impl PageTable {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             table: [PageTableEntry::new(); 512],
         }
     }
 
-    fn map_table(&mut self, index: usize, flags: u64) -> Result<PhysicalAddress, Error> {
+    pub fn map_table(&mut self, index: usize, flags: u64) -> Result<PhysicalAddress, Error> {
         let table_paddr = PHYSICAL_FRAME_ALLOCATOR.lock().allocate()?;
         self.table[index].map_table(table_paddr, flags)?;
         Ok(PHYSICAL_FRAME_ALLOCATOR.lock().allocate().unwrap())
     }
 
-    unsafe fn unmap_table(&mut self, index: usize) -> Result<(), Error> {
+    pub unsafe fn unmap_table(&mut self, index: usize) -> Result<(), Error> {
         if self.table[index].is_present() {
             if self.table[index].is_size_bit_set() == false {
                 let table_paddr = self.table[index].unmap()?;
@@ -54,7 +54,7 @@ impl PageTable {
         }
     }
 
-    fn map_page(&mut self, size: PageSize, index: usize, flags: u64) -> Result<(), Error> {
+    pub fn map_page(&mut self, size: PageSize, index: usize, flags: u64) -> Result<(), Error> {
         let page_paddr = match size {
             PageSize::Standard => PHYSICAL_FRAME_ALLOCATOR.lock().allocate()?,
             PageSize::Large => PHYSICAL_FRAME_ALLOCATOR
@@ -68,7 +68,7 @@ impl PageTable {
         Ok(())
     }
 
-    unsafe fn unmap_page(&mut self, size: PageSize, index: usize) -> Result<(), Error> {
+    pub unsafe fn unmap_page(&mut self, size: PageSize, index: usize) -> Result<(), Error> {
         let page_paddr = self.table[index].unmap()?;
         match size {
             PageSize::Standard => PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(page_paddr)?,
@@ -80,5 +80,32 @@ impl PageTable {
                 .deallocate_contiguous(page_paddr, 512 * 512)?,
         }
         Ok(())
+    }
+
+    pub fn get_or_map_table(
+        &mut self,
+        vaddr: VirtualAddress,
+        level: PageTableLevel,
+        flags: u64,
+    ) -> Result<*mut PageTable, Error> {
+        let index = match level {
+            PageTableLevel::PML4 => vaddr.pml4_index(),
+            PageTableLevel::PDPT => vaddr.pdpt_index(),
+            PageTableLevel::PD => vaddr.pd_index(),
+            PageTableLevel::PT => vaddr.pt_index(),
+        };
+        if self.table[index].is_present() {
+            match level {
+                PageTableLevel::PDPT | PageTableLevel::PD => {
+                    if self.table[index].is_size_bit_set() {
+                        return Err(Error::VAddrRangeUnavailable);
+                    }
+                },
+                _ => {}
+            }
+            Ok(<*mut PageTable>::from(self.table[index].addr().unwrap()))
+        } else {
+            Ok(<*mut PageTable>::from(self.map_table(index, flags)?))
+        }
     }
 }

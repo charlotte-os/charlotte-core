@@ -13,6 +13,8 @@ extern "C" {
     pub fn asm_get_privilege_level() -> u8;
 }
 
+pub static ARE_HUGE_PAGES_SUPPORTED: Lazy<bool> = Lazy::new(|| huge_pages_supported());
+
 pub struct MSRResponse {
     pub eax: u32,
     pub edx: u32,
@@ -89,7 +91,7 @@ pub fn get_vendor_string(dest: &mut [u8; 12]) {
 
 /// Determines whether the current LP supports huge pages.
 /// Returns `true` if huge pages are supported, `false` otherwise.
-pub fn huge_pages_supported() -> bool {
+fn huge_pages_supported() -> bool {
     let cpuid_result = unsafe { __cpuid_count(0x80000001, 0) };
     let edx = cpuid_result.edx;
     edx & (1 << 26) != 0
