@@ -1,7 +1,7 @@
 # Charlotte Core
 ### The Kernel of CharlotteOS
 
-Charlotte Core is the kernel of CharlotteOS. It will be a modular monolithic kernel that maps hardware devices to a set of paravirtualized hardware
+Charlotte Core is the kernel of CharlotteOS. It will be a hybrid kernel that maps hardware devices to a set of paravirtualized hardware
 interfaces exposed to userspace applications. Higher level abstractions will be provided by system libraries as with an exokernel.
 
 ### Status
