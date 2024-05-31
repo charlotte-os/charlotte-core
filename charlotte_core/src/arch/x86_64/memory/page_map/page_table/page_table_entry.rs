@@ -43,8 +43,6 @@ static FLAG_MASK: u64 = PteFlags::Present as u64
 
 static HUGE_AND_LARGE_PAGE_FLAG_MASK: u64 = FLAG_MASK | PteFlags::HugeAndLargePat as u64;
 
-
-
 #[derive(Debug, Clone, Copy)]
 #[repr(transparent)]
 pub struct PageTableEntry {

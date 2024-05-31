@@ -100,7 +100,7 @@ impl PageTable {
                     if self.table[index].is_size_bit_set() {
                         return Err(Error::VAddrRangeUnavailable);
                     }
-                },
+                }
                 _ => {}
             }
             Ok(<*mut PageTable>::from(self.table[index].addr().unwrap()))
