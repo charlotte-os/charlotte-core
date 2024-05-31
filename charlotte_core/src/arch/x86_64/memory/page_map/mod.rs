@@ -261,7 +261,11 @@ impl MemoryMap for PageMap {
         paddr: PhysicalAddress,
         flags: Self::Flags,
     ) -> Result<(), Self::Error> {
-        todo!()
+        if *ARE_HUGE_PAGES_SUPPORTED == false {
+            Err(Error::UnsupportedOperation)
+        } else {
+            todo!()
+        }
     }
 
     /// Unmaps a huge page from the given page map at the given virtual address.
