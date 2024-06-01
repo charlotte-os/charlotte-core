@@ -196,8 +196,6 @@ impl MemoryMap for PageMap {
     ) -> Result<(), Self::Error> {
         if vaddr.is_aligned_to(4096) == false {
             Err(Error::InvalidVAddrAlignment)
-        } else if paddr.is_aligned_to(NonZeroUsize::new(4096).unwrap()) == false {
-            Err(Error::InvalidPAddrAlignment)
         } else if vaddr.is_null() {
             Err(Error::InvalidAddress)
         } else {
@@ -206,7 +204,7 @@ impl MemoryMap for PageMap {
             walker
                 .pt
                 .unwrap()
-                .map_page(page_table::PageSize::Standard, vaddr.pt_index(), flags)?;
+                .map_page(page_table::PageSize::Standard, vaddr.pt_index(), paddr, flags)?;
 
             Ok(())
         }
@@ -219,7 +217,14 @@ impl MemoryMap for PageMap {
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
     fn unmap_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error> {
-        todo!()
+        let mut walker = Walker::new(self);
+        walker.walk_pd(vaddr, 0)?;
+        unsafe {
+            walker
+                .pt
+                .unwrap()
+                .unmap_page(page_table::PageSize::Standard, vaddr.pt_index())
+        }
     }
 
     /// Maps a large page (2 MiB) at the given virtual address.
@@ -235,7 +240,12 @@ impl MemoryMap for PageMap {
         paddr: PhysicalAddress,
         flags: Self::Flags,
     ) -> Result<(), Self::Error> {
-        todo!()
+        let mut walker = Walker::new(self);
+        walker.walk_pdpt(vaddr, flags)?;
+        walker
+            .pd
+            .unwrap()
+            .map_page(page_table::PageSize::Large, vaddr.pd_index(), paddr, flags)
     }
 
     /// Unmaps a large page from the given page map at the given virtual address.
@@ -245,7 +255,14 @@ impl MemoryMap for PageMap {
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
     fn unmap_large_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error> {
-        todo!()
+        let mut walker = Walker::new(self);
+        walker.walk_pdpt(vaddr, 0)?;
+        unsafe {
+            walker
+                .pd
+                .unwrap()
+                .unmap_page(page_table::PageSize::Large, vaddr.pd_index())
+        }
     }
 
     /// Maps a huge page (1 GiB) at the given virtual address.
@@ -264,7 +281,12 @@ impl MemoryMap for PageMap {
         if *ARE_HUGE_PAGES_SUPPORTED == false {
             Err(Error::UnsupportedOperation)
         } else {
-            todo!()
+            let mut walker = Walker::new(self);
+            walker.walk_pml4(vaddr, flags)?;
+            walker
+                .pdpt
+                .unwrap()
+                .map_page(page_table::PageSize::Huge, vaddr.pdpt_index(), paddr, flags)
         }
     }
 
@@ -275,6 +297,17 @@ impl MemoryMap for PageMap {
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
     fn unmap_huge_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error> {
-        todo!()
+        if *ARE_HUGE_PAGES_SUPPORTED == false {
+            Err(Error::UnsupportedOperation)
+        } else {
+            let mut walker = Walker::new(self);
+            walker.walk_pml4(vaddr, 0)?;
+            unsafe {
+                walker
+                    .pdpt
+                    .unwrap()
+                    .unmap_page(page_table::PageSize::Huge, vaddr.pdpt_index())
+            }
+        }
     }
 }

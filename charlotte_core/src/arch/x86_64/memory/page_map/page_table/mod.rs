@@ -1,5 +1,7 @@
 mod page_table_entry;
 
+use core::num::NonZeroUsize;
+
 use page_table_entry::*;
 
 use crate::arch::x86_64::memory::*;
@@ -54,21 +56,29 @@ impl PageTable {
         }
     }
 
-    pub fn map_page(&mut self, size: PageSize, index: usize, flags: u64) -> Result<(), Error> {
-        let page_paddr = match size {
-            PageSize::Standard => PHYSICAL_FRAME_ALLOCATOR.lock().allocate()?,
-            PageSize::Large => PHYSICAL_FRAME_ALLOCATOR
-                .lock()
-                .allocate_contiguous(512, 512 * 4096)?,
-            PageSize::Huge => PHYSICAL_FRAME_ALLOCATOR
-                .lock()
-                .allocate_contiguous(512 * 512, 512 * 512 * 4096)?,
-        };
-        self.table[index].map_page(page_paddr, flags, size)?;
+    pub fn map_page(&mut self, size: PageSize, index: usize, paddr: PhysicalAddress, flags: u64) -> Result<(), Error> {
+        match size {
+            PageSize::Standard => {
+                if paddr.is_page_aligned() == false {
+                    return Err(Error::InvalidPAddrAlignment);
+                }
+            }
+            PageSize::Large => {
+                if paddr.is_aligned_to(NonZeroUsize::new(4096 * 512).unwrap()) == false {
+                    return Err(Error::InvalidPAddrAlignment);
+                }
+            }
+            PageSize::Huge => {
+                if paddr.is_aligned_to(NonZeroUsize::new(4096 * 512 * 512).unwrap()) == false {
+                    return Err(Error::InvalidPAddrAlignment);
+                }
+            }
+        }
+        self.table[index].map_page(paddr, flags, size)?;
         Ok(())
     }
 
-    pub unsafe fn unmap_page(&mut self, size: PageSize, index: usize) -> Result<(), Error> {
+    pub unsafe fn unmap_page(&mut self, size: PageSize, index: usize) -> Result<PhysicalAddress, Error> {
         let page_paddr = self.table[index].unmap()?;
         match size {
             PageSize::Standard => PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(page_paddr)?,
@@ -79,7 +89,7 @@ impl PageTable {
                 .lock()
                 .deallocate_contiguous(page_paddr, 512 * 512)?,
         }
-        Ok(())
+        Ok(page_paddr)
     }
 
     pub fn get_or_map_table(
