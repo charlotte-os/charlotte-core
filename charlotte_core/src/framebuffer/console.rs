@@ -7,10 +7,8 @@ use crate::framebuffer::{
     framebuffer::FRAMEBUFFER,
 };
 
-use super::framebuffer::SCALE;
-
-const CONSOLE_WIDTH: usize = 80;
-const CONSOLE_HEIGHT: usize = 25;
+pub const CONSOLE_WIDTH: usize = 80;
+pub const CONSOLE_HEIGHT: usize = 25;
 
 pub static CONSOLE: TicketMutex<Console> = TicketMutex::new(Console::new());
 
@@ -159,12 +157,15 @@ impl Console {
 
     /// Flush the console to the framebuffer
     fn flush(&self) {
+        let scale: usize = FRAMEBUFFER.lock().get_scale();
         for y in 0..CONSOLE_HEIGHT {
             for x in 0..CONSOLE_WIDTH {
                 // Draw the character to the framebuffer
                 FRAMEBUFFER.lock().draw_char(
-                    x * FONT_WIDTH * SCALE + 1,  // Add a 1 pixel margin between characters
-                    y * FONT_HEIGHT * SCALE + 1, // Add a 1 pixel margin between lines
+                    /* Add a 1 pixel margin between characters */
+                    x * FONT_WIDTH * scale + 1,
+                    /* Add a 1 pixel margin between lines */
+                    y * FONT_HEIGHT * scale + 1,
                     self.buffer.chars[y][x].character,
                     self.buffer.chars[y][x].color,
                     self.buffer.chars[y][x].background_color,
