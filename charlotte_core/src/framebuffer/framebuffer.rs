@@ -12,6 +12,8 @@ use spin::mutex::TicketMutex;
 pub static FRAMEBUFFER: Lazy<TicketMutex<FrameBufferInfo>> =
     Lazy::new(|| TicketMutex::new(init_framebuffer().unwrap()));
 
+pub static SCALE: usize = 3;
+
 /// A struct representing the framebuffer information,
 /// including its memory address, dimensions, pixel format, etc.
 pub struct FrameBufferInfo {
@@ -139,12 +141,12 @@ impl FrameBufferInfo {
         for c in text.chars() {
             match c {
                 '\n' => {
-                    y += FONT_HEIGHT + 1;
+                    y += FONT_HEIGHT * SCALE + 1;
                     x = start_x;
                 }
                 _ => {
                     self.draw_char(x, y, c, color, background_color);
-                    x += FONT_WIDTH;
+                    x += FONT_WIDTH * SCALE;
                 }
             }
         }
@@ -162,10 +164,12 @@ impl FrameBufferInfo {
         let bitmap = get_char_bitmap(chracter);
         for (row, &bits) in bitmap.iter().enumerate() {
             for col in 0..FONT_WIDTH {
-                if (bits >> (FONT_WIDTH - 1 - col)) & 1 == 1 {
-                    self.draw_pixel(x + col, y + row, color);
-                } else {
-                    self.draw_pixel(x + col, y + row, background_color);
+                let is_set = (bits >> (FONT_WIDTH - 1 - col)) & 1 == 1;
+                let pixel_color = if is_set { color } else { background_color };
+                for dy in 0..SCALE {
+                    for dx in 0..SCALE {
+                        self.draw_pixel(x + col * SCALE + dx, y + row * SCALE + dy, pixel_color);
+                    }
                 }
             }
         }

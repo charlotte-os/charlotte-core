@@ -7,6 +7,8 @@ use crate::framebuffer::{
     framebuffer::FRAMEBUFFER,
 };
 
+use super::framebuffer::SCALE;
+
 const CONSOLE_WIDTH: usize = 80;
 const CONSOLE_HEIGHT: usize = 25;
 
@@ -161,8 +163,8 @@ impl Console {
             for x in 0..CONSOLE_WIDTH {
                 // Draw the character to the framebuffer
                 FRAMEBUFFER.lock().draw_char(
-                    x * FONT_WIDTH + 1,  // Add a 1 pixel margin between characters
-                    y * FONT_HEIGHT + 1, // Add a 1 pixel margin between lines
+                    x * FONT_WIDTH * SCALE + 1,  // Add a 1 pixel margin between characters
+                    y * FONT_HEIGHT * SCALE + 1, // Add a 1 pixel margin between lines
                     self.buffer.chars[y][x].character,
                     self.buffer.chars[y][x].color,
                     self.buffer.chars[y][x].background_color,
