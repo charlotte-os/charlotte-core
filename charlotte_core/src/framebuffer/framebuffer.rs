@@ -14,7 +14,6 @@ use super::console::{CONSOLE_HEIGHT, CONSOLE_WIDTH};
 pub static FRAMEBUFFER: Lazy<TicketMutex<FrameBufferInfo>> =
     Lazy::new(|| TicketMutex::new(init_framebuffer().unwrap()));
 
-
 /// A struct representing the framebuffer information,
 /// including its memory address, dimensions, pixel format, etc.
 pub struct FrameBufferInfo {
@@ -47,7 +46,7 @@ impl FrameBufferInfo {
             height: framebuffer.height() as usize,
             pitch: framebuffer.pitch() as usize,
             bpp: framebuffer.bpp() as usize,
-            scale: 1
+            scale: 1,
         };
 
         /* Initialize framebuffer scale automatically */
@@ -173,9 +172,14 @@ impl FrameBufferInfo {
             for col in 0..FONT_WIDTH {
                 let is_set = (bits >> (FONT_WIDTH - 1 - col)) & 1 == 1;
                 let pixel_color = if is_set { color } else { background_color };
+                /* Instead of a pixel, create a square with sides that are the size of self.scale */
                 for dy in 0..self.scale {
                     for dx in 0..self.scale {
-                        self.draw_pixel(x + col * self.scale + dx, y + row * self.scale + dy, pixel_color);
+                        self.draw_pixel(
+                            x + col * self.scale + dx,
+                            y + row * self.scale + dy,
+                            pixel_color,
+                        );
                     }
                 }
             }
@@ -261,10 +265,15 @@ impl FrameBufferInfo {
     }
 
     /// Automatically select scaling based on resolution
+    /// Call this whenever resolution of the monitor changes!
     pub fn calc_scale(&mut self) {
         let scale_width = self.width / (CONSOLE_WIDTH * FONT_WIDTH);
         let scale_height = self.height / (CONSOLE_HEIGHT * FONT_HEIGHT);
-        self.scale = if (scale_height > scale_width) {scale_width} else {scale_height};
+        self.scale = if (scale_height > scale_width) {
+            scale_width
+        } else {
+            scale_height
+        };
     }
 }
 
