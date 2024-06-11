@@ -3,6 +3,7 @@
 
 pub use limine::memory_map;
 pub use limine::request::*;
+#[allow(unused)]
 pub use limine::response::*;
 use limine::BaseRevision;
 
