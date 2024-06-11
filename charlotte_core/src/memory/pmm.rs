@@ -34,7 +34,6 @@ impl MemoryMap {
     pub fn total_memory(&self) -> usize {
         self.entries
             .iter()
-            .filter(|entry| entry.entry_type != bootinfo::memory_map::EntryType::BAD_MEMORY)
             .map(|entry| entry.length)
             .sum::<u64>() as usize
     }
@@ -116,14 +115,25 @@ impl PhysicalFrameAllocator {
 
         // clear the bits corresponding to available frames
         for entry in MemoryMap::get().iter() {
-            if entry.entry_type == bootinfo::memory_map::EntryType::USABLE {
-                let start = PhysicalAddress::new(entry.base as usize);
-                let n_frames = entry.length as usize / FRAME_SIZE;
-                for addr in start.iter_frames(n_frames) {
-                    pfa.clear_by_address(addr);
+            match entry.entry_type {
+                bootinfo::memory_map::EntryType::USABLE => {
+                    let start = PhysicalAddress::new(entry.base as usize);
+                    let n_frames = entry.length as usize / FRAME_SIZE;
+                    for addr in start.iter_frames(n_frames) {
+                        pfa.clear_by_address(addr);
+                    }
+                }
+                _ => {
+                    // for unusable regions (like BAD_MEMORY), ensure the bits are set to 1 (unavailable)
+                    let start = PhysicalAddress::new(entry.base as usize);
+                    let n_frames = entry.length as usize / FRAME_SIZE;
+                    for addr in start.iter_frames(n_frames) {
+                        pfa.set_by_address(addr);
+                    }
                 }
             }
         }
+
         // set the bits corresponding to the bitmap as unavailable
         let bitmap_start = PhysicalAddress::new(region.base as usize);
         let bitmap_frames = (region.length as usize).div_ceil(FRAME_SIZE);
@@ -149,6 +159,7 @@ impl PhysicalFrameAllocator {
         }
         Err(Error::OutOfMemory)
     }
+    
     pub fn deallocate(&mut self, frame: PhysicalAddress) -> Result<(), Error> {
         if !frame.is_page_aligned() {
             return Err(Error::AddressMisaligned);
@@ -159,6 +170,7 @@ impl PhysicalFrameAllocator {
         self.clear_by_address(frame);
         Ok(())
     }
+
     pub fn allocate_contiguous(
         &mut self,
         n_frames: usize,
