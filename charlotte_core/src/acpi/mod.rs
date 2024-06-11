@@ -26,10 +26,10 @@ pub struct AcpiTables {
     rsdp: Rsdp,
     sdt: Sdt,
     madt: Madt,
-    #[allow(dead_code)]
+    #[allow(unused)]
     fadt: Fadt,
     bgrt: Bgrt,
-    #[allow(dead_code)]
+    #[allow(unused)]
     srat: Option<Srat>,
 }
 

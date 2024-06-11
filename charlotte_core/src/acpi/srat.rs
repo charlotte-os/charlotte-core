@@ -83,18 +83,18 @@ pub struct SratIter {
 
 #[derive(Debug)]
 pub enum SratEntry {
-    #[allow(dead_code)]
+    #[allow(unused)]
     ProcessorLocalApic(ProcessorLocalApic),
-    #[allow(dead_code)]
+    #[allow(unused)]
     MemoryAffinityStructure(MemoryAffinityStructure),
-    #[allow(dead_code)]
+    #[allow(unused)]
     ProcessorLocalApicX2(ProcessorLocalApicX2),
-    #[allow(dead_code)]
+    #[allow(unused)]
     Unknown(u8),
 }
 
 #[derive(Copy, Clone, Debug)]
-#[allow(dead_code)]
+#[allow(unused)]
 pub struct ProcessorLocalApic {
     // Changed to pub
     entry_type: u8,
@@ -108,7 +108,7 @@ pub struct ProcessorLocalApic {
 }
 
 #[derive(Copy, Clone, Debug)]
-#[allow(dead_code)]
+#[allow(unused)]
 pub struct MemoryAffinityStructure {
     // Changed to pub
     entry_type: u8,
@@ -125,7 +125,7 @@ pub struct MemoryAffinityStructure {
 }
 
 #[derive(Copy, Clone, Debug)]
-#[allow(dead_code)]
+#[allow(unused)]
 pub struct ProcessorLocalApicX2 {
     // Changed to pub
     entry_type: u8,

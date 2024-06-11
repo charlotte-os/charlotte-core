@@ -31,7 +31,7 @@ pub trait Api {
     fn get_logger() -> Self::DebugLogger;
     fn get_paddr_width() -> u8;
     fn get_vaddr_width() -> u8;
-    #[allow(dead_code)]
+    #[allow(unused)]
     fn halt() -> !;
     fn panic() -> !;
     fn inb(port: u16) -> u8;
@@ -39,17 +39,17 @@ pub trait Api {
     fn init_bsp();
     #[allow(unused)]
     fn init_ap();
-    #[allow(dead_code)]
+    #[allow(unused)]
     fn init_timers(&self);
     fn init_interrupts(&self);
     fn interrupts_enabled(&self) -> bool;
-    #[allow(dead_code)]
+    #[allow(unused)]
     fn disable_interrupts(&mut self);
-    #[allow(dead_code)]
+    #[allow(unused)]
     fn restore_interrupts(&mut self);
-    #[allow(dead_code)]
+    #[allow(unused)]
     fn register_interrupt_dispatcher(&mut self);
-    #[allow(dead_code)]
+    #[allow(unused)]
     fn end_of_interrupt(&self);
 
     /// Sets the acpi tables that can be used by the impl to find needed information

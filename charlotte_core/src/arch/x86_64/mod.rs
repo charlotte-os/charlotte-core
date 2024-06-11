@@ -41,7 +41,7 @@ use self::interrupts::apic_consts::APIC_REG_EOI;
 pub struct Api {
     pub tables: Option<AcpiTables>,
     io_apics: [Option<IoApic>; 64],
-    #[allow(dead_code)]
+    #[allow(unused)]
     irq_flags: u64,
 }
 
