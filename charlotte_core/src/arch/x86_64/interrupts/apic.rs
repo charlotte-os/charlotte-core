@@ -15,7 +15,7 @@ pub fn check_apic_is_present() -> bool {
 }
 
 // TODO: Make this code more reasonable
-#[allow(dead_code)]
+#[allow(unused)]
 pub fn list_apics(madt: &Madt) -> [Option<ProcessorLocalApic>; 256] {
     let mut list = [None; 256];
     let mut i = 0;

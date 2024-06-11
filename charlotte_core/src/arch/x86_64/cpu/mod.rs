@@ -82,14 +82,14 @@ pub fn asm_irq_enable() {
     unsafe { asm!("push {}\n\tpopf", in(reg) flags) };
 }
 
-#[allow(dead_code)]
+#[allow(unused)]
 pub fn asm_irq_disable() -> u64 {
     let mut flags: u64;
     unsafe { asm!("pushf\n\tcli\n\tpop {}", out(reg) flags) };
     flags
 }
 
-#[allow(dead_code)]
+#[allow(unused)]
 pub fn asm_irq_restore(flags: u64) {
     unsafe { asm!("push {}\n\tpopf", in(reg) flags) };
 }
