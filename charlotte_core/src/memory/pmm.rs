@@ -32,10 +32,7 @@ impl MemoryMap {
     }
 
     pub fn total_memory(&self) -> usize {
-        self.entries
-            .iter()
-            .map(|entry| entry.length)
-            .sum::<u64>() as usize
+        self.entries.iter().map(|entry| entry.length).sum::<u64>() as usize
     }
 
     pub fn usable_memory(&self) -> usize {
@@ -159,7 +156,7 @@ impl PhysicalFrameAllocator {
         }
         Err(Error::OutOfMemory)
     }
-    
+
     pub fn deallocate(&mut self, frame: PhysicalAddress) -> Result<(), Error> {
         if !frame.is_page_aligned() {
             return Err(Error::AddressMisaligned);
