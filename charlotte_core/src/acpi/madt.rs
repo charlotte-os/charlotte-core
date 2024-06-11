@@ -89,12 +89,18 @@ impl Iterator for MadtIter {
 /// MADT Entries
 #[derive(Debug)]
 pub enum MadtEntry {
+    #[allow(dead_code)]
     ProcessorLocalApic(ProcessorLocalApic),
     IOApic(IoApic),
+    #[allow(dead_code)]
     InterruptSourceOverride(InterruptSourceOverride),
+    #[allow(dead_code)]
     NonMaskableInterruptSource(NonMaskableInterruptSource),
+    #[allow(dead_code)]
     LocalApicNmi(LocalApicNmi),
+    #[allow(dead_code)]
     LocalApicAddressOverride(LocalApicAddressOverride),
+    #[allow(dead_code)]
     Unknown(u8),
 }
 

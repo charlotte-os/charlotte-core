@@ -71,6 +71,7 @@ impl MemoryMap {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub enum Error {
     OutOfMemory,
     InsufficientMemoryAvailable,
