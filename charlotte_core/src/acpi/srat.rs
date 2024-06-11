@@ -95,7 +95,8 @@ pub enum SratEntry {
 
 #[derive(Copy, Clone, Debug)]
 #[allow(dead_code)]
-pub struct ProcessorLocalApic {  // Changed to pub
+pub struct ProcessorLocalApic {
+    // Changed to pub
     entry_type: u8,
     length: u8,
     p_domain: u8,
@@ -108,7 +109,8 @@ pub struct ProcessorLocalApic {  // Changed to pub
 
 #[derive(Copy, Clone, Debug)]
 #[allow(dead_code)]
-pub struct MemoryAffinityStructure {  // Changed to pub
+pub struct MemoryAffinityStructure {
+    // Changed to pub
     entry_type: u8,
     length: u8,
     p_domain: u8,
@@ -124,7 +126,8 @@ pub struct MemoryAffinityStructure {  // Changed to pub
 
 #[derive(Copy, Clone, Debug)]
 #[allow(dead_code)]
-pub struct ProcessorLocalApicX2 {  // Changed to pub
+pub struct ProcessorLocalApicX2 {
+    // Changed to pub
     entry_type: u8,
     length: u8,
     reserved: [u8; 2],
