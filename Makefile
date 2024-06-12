@@ -1,5 +1,7 @@
 #x86_64
 
+default: run-x86_64-debug
+
 install-requirements:
 	chmod +x ./tools/install-requirements.sh
 	./tools/install-requirements.sh
