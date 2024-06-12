@@ -1,5 +1,8 @@
 #!/bin/sh
 
+## Functions and constants
+## -----------------------
+
 # POSIX ONLY - This script is supposed to run on nearly any distros
 # (well at least popular ones)
 
@@ -50,6 +53,21 @@ install_rust_nightly() {
     fi
     cd .. || exit 1
 }
+
+
+## Main execution
+#----------------
+
+CONTINUE="n"
+echo "This script is gonna do the following:"
+echo "  Check if you have rust nightly installed and if not install it."
+echo "  Install the packages you need to build and run the project. [will use sudo]"
+printf "Continue?[y/N]:"
+read -r CONTINUE
+
+if [ "$CONTINUE" != "${CONTINUE,,}" ]; then
+  exit 1
+fi
 
 
 # Detect OS and distribution
