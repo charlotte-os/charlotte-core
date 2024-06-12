@@ -5,3 +5,4 @@ ovmf-x86_64
 charlotte_core/target/**
 log.txt
 limine
+.idea
