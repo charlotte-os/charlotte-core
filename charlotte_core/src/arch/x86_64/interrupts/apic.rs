@@ -16,8 +16,8 @@ pub fn check_apic_is_present() -> bool {
 
 // TODO: Make this code more reasonable
 #[allow(unused)]
-pub fn list_apics(madt: &Madt) -> [Option<ProcessorLocalApic>; 256] {
-    let mut list = [None; 256];
+pub fn list_apics(madt: &Madt) -> [Option<ProcessorLocalApic>; 64] {
+    let mut list = [None; 64];
     let mut i = 0;
     for entry in madt.iter() {
         if let MadtEntry::ProcessorLocalApic(lapic) = entry {
@@ -30,17 +30,17 @@ pub fn list_apics(madt: &Madt) -> [Option<ProcessorLocalApic>; 256] {
 
 pub fn write_apic_reg(madt: &Madt, offset: u32, value: u32) {
     let addr = (madt.local_apic_addr() + offset) as *mut u32;
-    unsafe { ptr::write(addr, value) }
+    unsafe { ptr::write_volatile(addr, value) }
 }
 
 pub fn read_apic_reg(madt: &Madt, offset: u32) -> u32 {
     let addr = (madt.local_apic_addr() + offset) as *const u32;
-    unsafe { ptr::read(addr) }
+    unsafe { ptr::read_volatile(addr) }
 }
 
 pub fn get_apic_base() -> usize {
     let msr = read_msr(APIC_BASE_MSR_BSP);
-    (((msr.eax as u64) & 0xFFFFF0000 as u64) | (((msr.edx as u64) & 0x0F) << 32 as u64) as u64)
+    (((msr.eax as u64) & 0xFFFFF0000u64) | (((msr.edx as u64) & 0x0F) << 32u64) as u64)
         as usize
 }
 

@@ -33,9 +33,9 @@ use crate::acpi::AcpiTables;
 use crate::arch::x86_64::interrupts::apic::{
     check_apic_is_present, get_apic_base, read_apic_reg, set_apic_base, write_apic_reg,
 };
+use crate::arch::x86_64::interrupts::apic_consts::{EOI_REGISTER, SPURIOUS_INTERRUPT_VECTOR};
 use crate::logln;
 
-use self::interrupts::apic_consts::APIC_REG_EOI;
 
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api {
@@ -114,7 +114,7 @@ impl crate::arch::Api for Api {
         logln!("Loaded IDT");
 
         let mut vendor_string = [0u8; 12];
-        unsafe { cpu::asm_get_vendor_string(&mut vendor_string) }
+        unsafe { asm_get_vendor_string(&mut vendor_string) }
         logln!("CPU Vendor ID: {}", str::from_utf8(&vendor_string).unwrap());
     }
     ///
@@ -129,6 +129,8 @@ impl crate::arch::Api for Api {
 
     fn init_interrupts(&self) {
         if let Some(tables) = self.tables {
+            // Make sure irqs are disabled before handling the lapic
+            asm_irq_disable();
             if !check_apic_is_present() {
                 panic!("APIC is not present according to CPUID");
             }
@@ -137,7 +139,7 @@ impl crate::arch::Api for Api {
             write_apic_reg(
                 tables.madt(),
                 0xF0,
-                read_apic_reg(tables.madt(), 0xF0) | (1 << 8),
+                read_apic_reg(tables.madt(), SPURIOUS_INTERRUPT_VECTOR) | (1 << 8),
             );
             // enable irqs
             asm_irq_enable();
@@ -163,7 +165,7 @@ impl crate::arch::Api for Api {
     fn end_of_interrupt(&self) {
         if let Some(tables) = self.tables {
             if self.interrupts_enabled() {
-                write_apic_reg(tables.madt(), APIC_REG_EOI, 0);
+                write_apic_reg(tables.madt(), EOI_REGISTER, 0);
             } else {
                 logln!("Attempt to signal end of interrupt with interrupts disabled");
             }
