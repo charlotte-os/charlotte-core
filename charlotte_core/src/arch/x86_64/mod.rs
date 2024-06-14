@@ -36,7 +36,6 @@ use crate::arch::x86_64::interrupts::apic::{
 use crate::arch::x86_64::interrupts::apic_consts::{EOI_REGISTER, SPURIOUS_INTERRUPT_VECTOR};
 use crate::logln;
 
-
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api {
     pub tables: Option<AcpiTables>,

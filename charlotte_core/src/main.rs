@@ -15,8 +15,8 @@ mod acpi;
 mod arch;
 mod bootinfo;
 mod framebuffer;
-mod memory;
 mod kmon;
+mod memory;
 
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
