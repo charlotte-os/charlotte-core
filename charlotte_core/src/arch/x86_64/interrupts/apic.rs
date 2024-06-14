@@ -40,8 +40,7 @@ pub fn read_apic_reg(madt: &Madt, offset: u32) -> u32 {
 
 pub fn get_apic_base() -> usize {
     let msr = read_msr(APIC_BASE_MSR_BSP);
-    (((msr.eax as u64) & 0xFFFFF0000u64) | (((msr.edx as u64) & 0x0F) << 32u64) as u64)
-        as usize
+    (((msr.eax as u64) & 0xFFFFF0000u64) | (((msr.edx as u64) & 0x0F) << 32u64) as u64) as usize
 }
 
 pub fn set_apic_base(base: usize) {
