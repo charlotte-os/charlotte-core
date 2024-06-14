@@ -1,6 +1,6 @@
 use core::fmt::{self, Write};
 
-use crate::arch::{Api, ArchApi};
+use crate::arch::{Api, ArchApi, Serial};
 
 #[allow(unused)]
 pub enum ComPort {
@@ -43,16 +43,19 @@ impl SerialPort {
     fn is_transmit_empty(&self) -> i32 {
         (ArchApi::inb(self.io_port + 5) & 0x20).into()
     }
+    fn received(&self) -> bool {
+        (ArchApi::inb(self.io_port + 5) & 1) != 0
+    }
 }
 
 impl Write for SerialPort {
-    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
         for c in s.chars() {
             self.write_char(c)?
         }
         Ok(())
     }
-    fn write_char(&mut self, c: char) -> core::fmt::Result {
+    fn write_char(&mut self, c: char) -> fmt::Result {
         while self.is_transmit_empty() == 0 {}
         if c.is_ascii() {
             if c == '\n' {
@@ -65,5 +68,15 @@ impl Write for SerialPort {
         } else {
             Err(fmt::Error)
         }
+    }
+}
+
+impl Serial for SerialPort {
+    fn read_char(&mut self) -> char {
+        while !self.received() {}
+        ArchApi::inb(self.io_port) as char
+    }
+    fn put_char(&mut self, c: char) {
+        self.write_char(c).unwrap()
     }
 }

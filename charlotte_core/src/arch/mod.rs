@@ -56,6 +56,11 @@ pub trait Api {
     fn init_acpi_tables(&mut self, tbls: &AcpiTables);
 }
 
+pub trait Serial {
+    fn read_char(&mut self) -> char;
+    fn put_char(&mut self, c: char);
+}
+
 /// A logger that writes to both the framebuffer console and the serial port.
 pub struct Logger {
     logger: <ArchApi as Api>::DebugLogger,

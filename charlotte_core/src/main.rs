@@ -2,44 +2,40 @@
 #![no_main]
 #![warn(missing_copy_implementations)]
 
+use core::fmt::Write;
+
+use arch::{Api, ArchApi};
+use framebuffer::colors::Color;
+use memory::pmm::*;
+
+use crate::framebuffer::framebuffer::FRAMEBUFFER;
+use crate::kmon::Kmon;
+
 mod acpi;
 mod arch;
 mod bootinfo;
 mod framebuffer;
 mod memory;
-
-use core::fmt::Write;
-
-use arch::{Api, ArchApi};
-
-use framebuffer::colors::Color;
-use framebuffer::console::CONSOLE;
-
-use crate::framebuffer::framebuffer::FRAMEBUFFER;
-
-use memory::pmm::*;
+mod kmon;
 
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
     let mut arch_api = ArchApi::new_arch_api();
 
     FRAMEBUFFER.lock().clear_screen(Color::BLACK);
-    println!("Hello, world!");
 
     logln!("Initializing BSP");
     ArchApi::init_bsp();
     logln!("BSP Initialized");
 
-    logln!("Initializing ACPI");
+    logln!("Initializing System Configuration from ACPI tables");
     let acpi_static_tables = acpi::init_acpi();
-    logln!("ACPI Initialized");
+    logln!("ACPI derived configuration complete");
     arch_api.init_acpi_tables(&acpi_static_tables);
 
-    logln!("Initialize interrupts");
+    logln!("Enable the interrupts");
     arch_api.init_interrupts();
-    logln!("Interrupts enabled: {}", arch_api.interrupts_enabled());
-
-    logln!("All tests in main passed.");
+    logln!("Interrupts initialized and enabled");
 
     logln!(
         "Number of Significant Physical Address Bits Supported: {}",
@@ -100,7 +96,12 @@ unsafe extern "C" fn main() -> ! {
     logln!("Contiguous frame allocation and deallocation test complete.");
     logln!("Physical Memory Manager test suite finished.");
 
-    logln!("Infinite loop at end");
+    logln!("All sanity checks passed, initializing kernel Main Loop");
+
+    logln!("Bring up finished, starting kernel interactive prompt");
+    let port = ArchApi::get_logger();
+    let mut mon = Kmon::new(port);
+    mon.repl_loop();
     loop {}
 }
 
