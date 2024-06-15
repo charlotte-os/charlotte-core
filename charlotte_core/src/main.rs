@@ -3,6 +3,7 @@
 #![warn(missing_copy_implementations)]
 
 use core::fmt::Write;
+use core::panic::PanicInfo;
 
 use arch::{Api, ArchApi};
 
@@ -31,7 +32,7 @@ unsafe extern "C" fn main() -> ! {
 }
 
 #[panic_handler]
-fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
+fn rust_panic(_info: &PanicInfo) -> ! {
     logln!("A kernel panic has occurred due to a Rust runtime panic.");
     logln!("PanicInfo: {:?}", _info);
     ArchApi::panic()

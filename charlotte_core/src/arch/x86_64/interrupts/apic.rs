@@ -1,5 +1,6 @@
 use core::{arch::x86_64::__cpuid_count, ptr};
 
+use crate::arch::x86_64::cpu::asm_sti;
 use crate::arch::x86_64::interrupts::apic_consts::SPURIOUS_INTERRUPT_VECTOR;
 use crate::{
     acpi::madt::{Madt, MadtEntry},
@@ -77,5 +78,6 @@ impl Apic {
         self.set_apic_base(base);
         // Enable spurious interrupt vector
         self.write_apic_reg(SPURIOUS_INTERRUPT_VECTOR, 0x100);
+        asm_sti();
     }
 }
