@@ -3,18 +3,18 @@
 //! instruction set architecture (ISA). It provides a set of traits and types that can be used to interact
 //! with ISA specific code in a consistent and platform independent manner.
 
+use core::fmt::{Result, Write};
+
+use spin::{lazy::Lazy, mutex::TicketMutex};
+
+use crate::framebuffer::console::CONSOLE;
+
 #[cfg(target_arch = "aarch64")]
 pub mod aarch64;
 #[cfg(target_arch = "riscv64")]
 pub mod riscv64;
 #[cfg(target_arch = "x86_64")]
 pub mod x86_64;
-
-use core::fmt::{Result, Write};
-
-use spin::{lazy::Lazy, mutex::TicketMutex};
-
-use crate::{acpi::AcpiInfo, framebuffer::console::CONSOLE};
 
 pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
     TicketMutex::new(Logger {
