@@ -28,8 +28,8 @@ pub trait Api {
     type Serial: Serial;
 
     /// Each ISA implementation does something specific within this function,
-    /// you should check the relevant implementation under each ISA folder
-    /// * [X86_64](src/arch/x86_64)
+    /// you should check the relevant implementation under each ISA folder linked bellow:
+    /// * [X86_64](x86_64::Api::isa_init)
     fn isa_init() -> Self;
 
     fn get_logger() -> Self::DebugLogger;
