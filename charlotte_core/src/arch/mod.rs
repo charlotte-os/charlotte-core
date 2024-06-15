@@ -14,7 +14,7 @@ use core::fmt::{Result, Write};
 
 use spin::{lazy::Lazy, mutex::TicketMutex};
 
-use crate::{acpi::AcpiTables, framebuffer::console::CONSOLE};
+use crate::{acpi::AcpiInfo, framebuffer::console::CONSOLE};
 
 pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
     TicketMutex::new(Logger {
@@ -25,10 +25,14 @@ pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
 pub trait Api {
     type Api: Api;
     type DebugLogger: Write;
+    type Serial: Serial;
 
-    fn new_arch_api() -> Self;
+    /// This function will do any of the ISA specific tasks required
+    /// to put the boostrap processor in a state where the kernel can be brought up
+    fn isa_init() -> Self;
 
     fn get_logger() -> Self::DebugLogger;
+    fn get_serial(&self) -> Self::Serial;
     fn get_paddr_width() -> u8;
     fn get_vaddr_width() -> u8;
     #[allow(unused)]
@@ -36,24 +40,18 @@ pub trait Api {
     fn panic() -> !;
     fn inb(port: u16) -> u8;
     fn outb(port: u16, val: u8);
-    fn init_bsp();
     #[allow(unused)]
-    fn init_ap();
+    fn init_ap(&mut self);
     #[allow(unused)]
     fn init_timers(&self);
-    fn init_interrupts(&self);
+    fn init_interrupts(&mut self);
     fn interrupts_enabled(&self) -> bool;
     #[allow(unused)]
     fn disable_interrupts(&mut self);
     #[allow(unused)]
     fn restore_interrupts(&mut self);
     #[allow(unused)]
-    fn register_interrupt_dispatcher(&mut self);
-    #[allow(unused)]
     fn end_of_interrupt(&self);
-
-    /// Sets the acpi tables that can be used by the impl to find needed information
-    fn init_acpi_tables(&mut self, tbls: &AcpiTables);
 }
 
 pub trait Serial {

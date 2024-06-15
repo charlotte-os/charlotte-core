@@ -1,6 +1,28 @@
 //! # x86_64 Architecture Module
 //! This module implements the Arch interface for the x86_64 instruction set architecture (ISA).
 
+use core::{
+    borrow::{Borrow, BorrowMut},
+    ptr::addr_of,
+};
+use core::fmt::Write;
+use core::str;
+
+use spin::lazy::Lazy;
+use spin::mutex::spin::SpinMutex;
+
+use cpu::*;
+use gdt::{Gdt, tss::Tss};
+use idt::*;
+use serial::{ComPort, SerialPort};
+
+use crate::acpi::{AcpiInfo, parse};
+use crate::arch::x86_64::interrupts::apic::Apic;
+use crate::framebuffer::colors::Color;
+use crate::framebuffer::framebuffer::FRAMEBUFFER;
+use crate::logln;
+use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
+
 mod cpu;
 mod exceptions;
 mod gdt;
@@ -9,38 +31,10 @@ mod interrupts;
 mod serial;
 mod timers;
 
-use core::fmt::Write;
-use core::{
-    borrow::{Borrow, BorrowMut},
-    ptr::addr_of,
-};
-
-use core::str;
-
-use cpu::*;
-
-use spin::lazy::Lazy;
-use spin::mutex::spin::SpinMutex;
-
-use gdt::{tss::Tss, Gdt};
-
-use serial::{ComPort, SerialPort};
-
-use idt::*;
-
-use crate::acpi::madt::{IoApic, MadtEntry};
-use crate::acpi::AcpiTables;
-use crate::arch::x86_64::interrupts::apic::{
-    check_apic_is_present, get_apic_base, read_apic_reg, set_apic_base, write_apic_reg,
-};
-use crate::arch::x86_64::interrupts::apic_consts::{EOI_REGISTER, SPURIOUS_INTERRUPT_VECTOR};
-use crate::logln;
-
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api {
-    pub tables: Option<AcpiTables>,
-    io_apics: [Option<IoApic>; 64],
-    #[allow(unused)]
+    acpi_info: AcpiInfo,
+    bsp_apic: Apic,
     irq_flags: u64,
 }
 
@@ -54,49 +48,118 @@ impl crate::arch::Api for Api {
     type Api = Api;
     /// Define the logger type
     type DebugLogger = SerialPort;
+    type Serial = SerialPort;
 
-    fn new_arch_api() -> Self {
-        Self {
-            tables: None,
-            io_apics: [None; 64],
+    fn isa_init() -> Self {
+        FRAMEBUFFER.lock().clear_screen(Color::BLACK);
+
+        logln!("Initializing the bootstrap processor");
+        Api::init_bsp();
+        logln!("============================================================\n");
+        logln!("Parsing ACPI information");
+        let tbls = parse();
+        logln!("============================================================\n");
+        let mut api = Api {
+            acpi_info: tbls,
+            bsp_apic: Apic::new(tbls.madt()),
             irq_flags: 0,
-        }
+        };
+        logln!("============================================================\n");
+        logln!("Enable the interrupts");
+        api.init_interrupts();
+        logln!("============================================================\n");
+
+        logln!("Memory self test");
+        Self::pmm_self_test();
+        logln!("============================================================\n");
+
+        logln!("All x86_64 sanity checks passed, kernel main has control now");
+        logln!("============================================================\n");
+
+        api
     }
 
     /// Get a new logger instance
     fn get_logger() -> Self::DebugLogger {
         SerialPort::try_new(ComPort::COM1).unwrap()
     }
+
+    fn get_serial(&self) -> Self::Serial {
+        SerialPort::try_new(ComPort::COM1).unwrap()
+    }
+
     /// Get the number of significant physical address bits supported by the current CPU
     fn get_paddr_width() -> u8 {
-        *cpu::PADDR_SIG_BITS
+        *PADDR_SIG_BITS
     }
     /// Get the number of significant virtual address bits supported by the current CPU
     fn get_vaddr_width() -> u8 {
-        *cpu::VADDR_SIG_BITS
+        *VADDR_SIG_BITS
     }
+
     /// Halt the calling LP
     fn halt() -> ! {
         unsafe { asm_halt() }
     }
+
     /// Kernel Panic
     fn panic() -> ! {
         unsafe { asm_halt() }
     }
+
     /// Read a byte from the specified port
     fn inb(port: u16) -> u8 {
         unsafe { asm_inb(port) }
     }
+
     /// Write a byte to the specified port
     fn outb(port: u16, val: u8) {
         unsafe { asm_outb(port, val) }
     }
+
     /// Initialize the bootstrap processor (BSP)
+    ///
+    ///  Initialize the application processors (APs)
+    fn init_ap(&mut self) {
+        //! This routine is run by each application processor to initialize itself prior to being handed off to the scheduler.
+    }
+
+    fn init_timers(&self) {
+        unimplemented!()
+    }
+
+    fn init_interrupts(&mut self) {
+        self.bsp_apic.init()
+    }
+
+    fn interrupts_enabled(&self) -> bool {
+        asm_are_interrupts_enabled()
+    }
+
+    fn disable_interrupts(&mut self) {
+        self.irq_flags = asm_irq_disable();
+    }
+
+    fn restore_interrupts(&mut self) {
+        asm_irq_restore(self.irq_flags);
+    }
+
+    fn end_of_interrupt(&self) {}
+}
+
+impl Api {
+    /// Get the number of significant physical address bits supported by the current CPU
+    fn get_paddr_width() -> u8 {
+        *PADDR_SIG_BITS
+    }
+    /// Get the number of significant virtual address bits supported by the current CPU
+    fn get_vaddr_width() -> u8 {
+        *VADDR_SIG_BITS
+    }
+
     fn init_bsp() {
         //! This routine is run by the bootstrap processor to initialize itself prior to bringing up the kernel.
-
-        logln!("Initializing the bootstrap processor...");
-
+        logln!("Processor information:");
         BSP_GDT.load();
         logln!("Loaded GDT");
         Gdt::reload_segment_regs();
@@ -116,79 +179,55 @@ impl crate::arch::Api for Api {
         unsafe { asm_get_vendor_string(&mut vendor_string) }
         logln!("CPU Vendor ID: {}", str::from_utf8(&vendor_string).unwrap());
     }
-    ///
-    ///  Initialize the application processors (APs)
-    fn init_ap() {
-        //! This routine is run by each application processor to initialize itself prior to being handed off to the scheduler.
-    }
 
-    fn init_timers(&self) {
-        unimplemented!()
-    }
+    fn pmm_self_test() {
+        logln!(
+            "Number of Significant Physical Address Bits Supported: {}",
+            Api::get_paddr_width()
+        );
+        logln!(
+            "Number of Significant Virtual Address Bits Supported: {}",
+            Api::get_vaddr_width()
+        );
 
-    fn init_interrupts(&self) {
-        if let Some(tables) = self.tables {
-            // Make sure irqs are disabled before handling the lapic
-            asm_irq_disable();
-            if !check_apic_is_present() {
-                panic!("APIC is not present according to CPUID");
+        logln!("Testing Physical Memory Manager");
+        logln!("Performing single frame allocation and deallocation test.");
+        let alloc = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
+        let alloc2 = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
+        match alloc {
+            Ok(frame) => {
+                logln!("Allocated frame with physical base address: {:?}", frame);
+                let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
+                logln!("Deallocated frame with physical base address: {:?}", frame);
             }
-            // enable the lapic
-            set_apic_base(get_apic_base());
-            write_apic_reg(
-                tables.madt(),
-                0xF0,
-                read_apic_reg(tables.madt(), SPURIOUS_INTERRUPT_VECTOR) | (1 << 8),
+            Err(e) => {
+                logln!("Failed to allocate frame: {:?}", e);
+            }
+        }
+        let alloc3 = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
+        logln!("alloc2: {:?}, alloc3: {:?}", alloc2, alloc3);
+        let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc2.unwrap());
+        let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc3.unwrap());
+        logln!("Single frame allocation and deallocation test complete.");
+        logln!("Performing contiguous frame allocation and deallocation test.");
+        let contiguous_alloc = PHYSICAL_FRAME_ALLOCATOR.lock().allocate_contiguous(256, 64);
+        match contiguous_alloc {
+            Ok(frame) => {
+                logln!(
+                "Allocated physically contiguous region with physical base address: {:?}",
+                frame
             );
-            // enable irqs
-            asm_irq_enable();
-        } else {
-            panic!("Interrupts initialization without initializing ACPI tables");
-        }
-    }
-
-    fn interrupts_enabled(&self) -> bool {
-        asm_are_interrupts_enabled()
-    }
-
-    fn disable_interrupts(&mut self) {
-        self.irq_flags = asm_irq_disable();
-    }
-
-    fn restore_interrupts(&mut self) {
-        asm_irq_restore(self.irq_flags);
-    }
-
-    fn register_interrupt_dispatcher(&mut self) {}
-
-    fn end_of_interrupt(&self) {
-        if let Some(tables) = self.tables {
-            if self.interrupts_enabled() {
-                write_apic_reg(tables.madt(), EOI_REGISTER, 0);
-            } else {
-                logln!("Attempt to signal end of interrupt with interrupts disabled");
+                let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
+                logln!(
+                "Deallocated physically contiguous region with physical base address: {:?}",
+                frame
+            );
             }
-        } else {
-            panic!("Tried to signal end of interrupt without initializing ACPI tables");
-        }
-    }
-
-    fn init_acpi_tables(&mut self, tbls: &AcpiTables) {
-        // Copy the tables passed in to the API
-        self.tables = Some(tbls.clone());
-        if let Some(tables) = self.tables {
-            let mut idx = 0;
-            let mut madt = tables.madt().iter();
-            while let Some(madt_entry) = madt.next() {
-                match madt_entry {
-                    MadtEntry::IOApic(entry) => {
-                        self.io_apics[idx] = Some(entry);
-                        idx += 1;
-                    }
-                    _ => continue,
-                }
+            Err(e) => {
+                logln!("Failed to allocate contiguous frames: {:?}", e);
             }
         }
-        logln!("{:?}", self.io_apics);
+        logln!("Contiguous frame allocation and deallocation test complete.");
+        logln!("Physical Memory Manager test suite finished.");
     }
 }
