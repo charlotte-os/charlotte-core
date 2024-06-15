@@ -63,7 +63,6 @@ pub fn write_msr(msr: u32, eax: u32, edx: u32) {
     if !assert_msr_presence() {
         panic!("Processor lacks msr support and write_msr was called!");
     }
-    logln!("Writing {:X}, {:X} to MSR[{:X}]", eax, edx, msr);
     unsafe { asm_write_msr(msr, eax, edx) };
 }
 
@@ -72,6 +71,10 @@ pub fn asm_are_interrupts_enabled() -> bool {
     let mut flags: u64;
     unsafe { asm!("pushf\n\tpop {}", out(reg) flags) };
     flags & 1 << 9 != 0
+}
+
+pub fn asm_sti() {
+    unsafe { asm!("sti") };
 }
 
 pub fn asm_irq_enable() {

@@ -20,7 +20,7 @@ pub mod tables;
 
 /// Stores the data for all the ACPI tables.
 #[derive(Clone, Copy)]
-pub struct AcpiTables {
+pub struct AcpiInfo {
     rsdp: Rsdp,
     sdt: Sdt,
     madt: Madt,
@@ -31,7 +31,7 @@ pub struct AcpiTables {
     srat: Option<Srat>,
 }
 
-impl AcpiTables {
+impl AcpiInfo {
     /// Creates a new AcpiTables.
     pub fn new(
         rsdp: Rsdp,
@@ -68,7 +68,7 @@ impl AcpiTables {
     }
 }
 
-pub fn init_acpi() -> AcpiTables {
+pub fn parse() -> AcpiInfo {
     if let Some(response) = RSDP_REQUEST.get_response() {
         let rsdp = Rsdp::new_from_address(response.address() as usize);
         let sdt = sdt::Sdt::new(&rsdp).unwrap();
@@ -83,7 +83,7 @@ pub fn init_acpi() -> AcpiTables {
         } else {
             None
         };
-        AcpiTables::new(rsdp, sdt, madt, fadt, bgrt, srat)
+        AcpiInfo::new(rsdp, sdt, madt, fadt, bgrt, srat)
     } else {
         panic!("Failed to obtain RSDP response.");
     }

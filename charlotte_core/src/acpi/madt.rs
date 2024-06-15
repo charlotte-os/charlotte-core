@@ -117,9 +117,9 @@ struct MadtEntryHeader {
 #[derive(Debug, Copy, Clone)]
 pub struct ProcessorLocalApic {
     header: MadtEntryHeader,
-    processor_id: u8,
-    apic_id: u8,
-    flags: u32,
+    pub processor_id: u8,
+    pub apic_id: u8,
+    pub flags: u32,
 }
 
 /// IO APIC Structure
@@ -169,5 +169,5 @@ pub struct LocalApicNmi {
 pub struct LocalApicAddressOverride {
     header: MadtEntryHeader,
     reserved: u16,
-    local_apic_address: u64,
+    pub local_apic_address: u64,
 }

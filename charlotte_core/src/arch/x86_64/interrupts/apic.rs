@@ -1,51 +1,81 @@
 use core::{arch::x86_64::__cpuid_count, ptr};
 
 use crate::{
-    acpi::madt::{Madt, MadtEntry, ProcessorLocalApic},
+    acpi::madt::{Madt, MadtEntry},
     arch::x86_64::{read_msr, write_msr},
 };
+use crate::arch::x86_64::interrupts::apic_consts::SPURIOUS_INTERRUPT_VECTOR;
 
 const FEAT_EDX_APIC: u32 = 1 << 9;
 const APIC_BASE_MSR_BSP: u32 = 0x1B;
 const APIC_BASE_MSR_ENABLE: u32 = 0x800;
 
-pub fn check_apic_is_present() -> bool {
-    let cpuid = unsafe { __cpuid_count(0, 0) };
-    cpuid.edx & FEAT_EDX_APIC != 1
+pub struct Apic {
+    base_phys_addr: usize,
+    base_mapped_addr: Option<usize>,
 }
 
-// TODO: Make this code more reasonable
-#[allow(unused)]
-pub fn list_apics(madt: &Madt) -> [Option<ProcessorLocalApic>; 64] {
-    let mut list = [None; 64];
-    let mut i = 0;
-    for entry in madt.iter() {
-        if let MadtEntry::ProcessorLocalApic(lapic) = entry {
-            list[i] = Some(lapic);
+impl Apic {
+    pub fn new(madt: &Madt) -> Self {
+        let addr = Self::get_apic_addr(madt);
+
+        Apic {
+            base_phys_addr: addr,
+            base_mapped_addr: None,
         }
-        i += 1
     }
-    list
-}
 
-pub fn write_apic_reg(madt: &Madt, offset: u32, value: u32) {
-    let addr = (madt.local_apic_addr() + offset) as *mut u32;
-    unsafe { ptr::write_volatile(addr, value) }
-}
+    pub fn is_present() -> bool {
+        let cpuid = unsafe { __cpuid_count(0, 0) };
+        cpuid.edx & FEAT_EDX_APIC != 1
+    }
 
-pub fn read_apic_reg(madt: &Madt, offset: u32) -> u32 {
-    let addr = (madt.local_apic_addr() + offset) as *const u32;
-    unsafe { ptr::read_volatile(addr) }
-}
+    fn get_addr(&self) -> usize {
+        self.base_mapped_addr.unwrap_or(self.base_phys_addr)
+    }
 
-pub fn get_apic_base() -> usize {
-    let msr = read_msr(APIC_BASE_MSR_BSP);
-    (((msr.eax as u64) & 0xFFFFF0000u64) | (((msr.edx as u64) & 0x0F) << 32u64) as u64) as usize
-}
+    #[allow(unused)]
+    pub fn get_apic_addr(madt: &Madt) -> usize {
+        let mut addr = madt.local_apic_addr() as usize;
+        let mut itr = madt.iter();
+        while let Some(entry) = itr.next() {
+            match entry {
+                MadtEntry::LocalApicAddressOverride(addr_o) => {
+                    addr = addr_o.local_apic_address as usize;
+                }
+                _ => {}
+            }
+        }
 
-pub fn set_apic_base(base: usize) {
-    let eax = (base & 0xFFFFF0000) | APIC_BASE_MSR_ENABLE as usize;
-    let edx = (base >> 32) & 0x0F;
+        addr
+    }
 
-    write_msr(APIC_BASE_MSR_BSP, eax as u32, edx as u32);
+    pub fn write_apic_reg(&self, offset: u32, value: u32) {
+        let addr = (self.get_addr() + offset as usize) as *mut u32;
+        unsafe { ptr::write_volatile(addr, value) }
+    }
+
+    pub fn read_apic_reg(&self, offset: u32) -> u32 {
+        let addr = (self.get_addr() + offset as usize) as *const u32;
+        unsafe { ptr::read_volatile(addr) }
+    }
+
+    pub fn get_apic_base() -> usize {
+        let msr = read_msr(APIC_BASE_MSR_BSP);
+        (((msr.eax as u64) & 0xFFFFF0000u64) | (((msr.edx as u64) & 0x0F) << 32u64) as u64) as usize
+    }
+
+    pub fn set_apic_base(&mut self, base: usize) {
+        let eax = (base & 0xFFFFF0000) | APIC_BASE_MSR_ENABLE as usize;
+        let edx = (base >> 32) & 0x0F;
+
+        write_msr(APIC_BASE_MSR_BSP, eax as u32, edx as u32);
+    }
+
+    pub fn init(&mut self) {
+        let base = self.get_addr();
+        self.set_apic_base(base);
+        // Enable spurious interrupt vector
+        self.write_apic_reg(SPURIOUS_INTERRUPT_VECTOR, 0x100);
+    }
 }
