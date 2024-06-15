@@ -27,8 +27,9 @@ pub trait Api {
     type DebugLogger: Write;
     type Serial: Serial;
 
-    /// This function will do any of the ISA specific tasks required
-    /// to put the boostrap processor in a state where the kernel can be brought up
+    /// Each ISA implementation does something specific within this function,
+    /// you should check the relevant implementation under each ISA folder
+    /// * [X86_64](src/arch/x86_64)
     fn isa_init() -> Self;
 
     fn get_logger() -> Self::DebugLogger;

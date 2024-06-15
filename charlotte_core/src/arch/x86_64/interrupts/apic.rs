@@ -1,10 +1,10 @@
 use core::{arch::x86_64::__cpuid_count, ptr};
 
+use crate::arch::x86_64::interrupts::apic_consts::SPURIOUS_INTERRUPT_VECTOR;
 use crate::{
     acpi::madt::{Madt, MadtEntry},
     arch::x86_64::{read_msr, write_msr},
 };
-use crate::arch::x86_64::interrupts::apic_consts::SPURIOUS_INTERRUPT_VECTOR;
 
 const FEAT_EDX_APIC: u32 = 1 << 9;
 const APIC_BASE_MSR_BSP: u32 = 0x1B;
