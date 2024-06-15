@@ -1,22 +1,22 @@
 //! # x86_64 Architecture Module
 //! This module implements the Arch interface for the x86_64 instruction set architecture (ISA).
 
+use core::fmt::Write;
+use core::str;
 use core::{
     borrow::{Borrow, BorrowMut},
     ptr::addr_of,
 };
-use core::fmt::Write;
-use core::str;
 
 use spin::lazy::Lazy;
 use spin::mutex::spin::SpinMutex;
 
 use cpu::*;
-use gdt::{Gdt, tss::Tss};
+use gdt::{tss::Tss, Gdt};
 use idt::*;
 use serial::{ComPort, SerialPort};
 
-use crate::acpi::{AcpiInfo, parse};
+use crate::acpi::{parse, AcpiInfo};
 use crate::arch::x86_64::interrupts::apic::Apic;
 use crate::framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
@@ -214,14 +214,14 @@ impl Api {
         match contiguous_alloc {
             Ok(frame) => {
                 logln!(
-                "Allocated physically contiguous region with physical base address: {:?}",
-                frame
-            );
+                    "Allocated physically contiguous region with physical base address: {:?}",
+                    frame
+                );
                 let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
                 logln!(
-                "Deallocated physically contiguous region with physical base address: {:?}",
-                frame
-            );
+                    "Deallocated physically contiguous region with physical base address: {:?}",
+                    frame
+                );
             }
             Err(e) => {
                 logln!("Failed to allocate contiguous frames: {:?}", e);
