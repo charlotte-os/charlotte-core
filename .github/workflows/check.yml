@@ -7,19 +7,19 @@ jobs:
     strategy:
       matrix:
         target:
-          - x86_64-unknown-linux-gnu
-          - x86_64-apple-darwin
-          - x86_64-pc-windows-msvc
+          - x86_64-unknown-none
+          - aarch64-unknown-none
+          - riscv64gc-unknown-none-elf
       fail-fast: false
 
     steps:
       - uses: actions/checkout@v4
       - name: Install NASM
         uses: ilammy/setup-nasm@v1
-      - name: Install x86_64-unknown-none target
+      - name: Install ${{ matrix.target }} target
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          target: x86_64-unknown-none
+          target: ${{ matrix.target }}
           cache-workspaces: ./charlotte_core
       - name: Check code
         run:
