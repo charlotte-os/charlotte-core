@@ -26,6 +26,6 @@ aarch64-cpu = "9.4.0"
 [lints.clippy]
 # Groups
 suspicious = { level = "deny", priority = -1 }
-perf = { level = "warn", priority = -1 }
+perf = { level = "deny", priority = -1 }
 complexity = { level = "warn", priority = -1 }
 style = { level = "warn", priority = -1 }
