@@ -56,7 +56,13 @@ impl PageTable {
         }
     }
 
-    pub fn map_page(&mut self, size: PageSize, index: usize, paddr: PhysicalAddress, flags: u64) -> Result<(), Error> {
+    pub fn map_page(
+        &mut self,
+        size: PageSize,
+        index: usize,
+        paddr: PhysicalAddress,
+        flags: u64,
+    ) -> Result<(), Error> {
         match size {
             PageSize::Standard => {
                 if paddr.is_page_aligned() == false {
@@ -78,7 +84,11 @@ impl PageTable {
         Ok(())
     }
 
-    pub unsafe fn unmap_page(&mut self, size: PageSize, index: usize) -> Result<PhysicalAddress, Error> {
+    pub unsafe fn unmap_page(
+        &mut self,
+        size: PageSize,
+        index: usize,
+    ) -> Result<PhysicalAddress, Error> {
         let page_paddr = self.table[index].unmap()?;
         match size {
             PageSize::Standard => PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(page_paddr)?,

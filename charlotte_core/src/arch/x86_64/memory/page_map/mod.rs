@@ -201,10 +201,12 @@ impl MemoryMap for PageMap {
         } else {
             let mut walker = Walker::new(self);
             walker.walk_pd(vaddr, flags)?;
-            walker
-                .pt
-                .unwrap()
-                .map_page(page_table::PageSize::Standard, vaddr.pt_index(), paddr, flags)?;
+            walker.pt.unwrap().map_page(
+                page_table::PageSize::Standard,
+                vaddr.pt_index(),
+                paddr,
+                flags,
+            )?;
 
             Ok(())
         }
@@ -283,10 +285,12 @@ impl MemoryMap for PageMap {
         } else {
             let mut walker = Walker::new(self);
             walker.walk_pml4(vaddr, flags)?;
-            walker
-                .pdpt
-                .unwrap()
-                .map_page(page_table::PageSize::Huge, vaddr.pdpt_index(), paddr, flags)
+            walker.pdpt.unwrap().map_page(
+                page_table::PageSize::Huge,
+                vaddr.pdpt_index(),
+                paddr,
+                flags,
+            )
         }
     }
 
