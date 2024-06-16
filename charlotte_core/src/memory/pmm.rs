@@ -5,7 +5,7 @@ use core::slice::from_raw_parts_mut;
 
 use spin::{lazy::Lazy, mutex::Mutex};
 
-static DIRECT_MAP: Lazy<PhysicalAddress> = Lazy::new(|| {
+pub static DIRECT_MAP: Lazy<PhysicalAddress> = Lazy::new(|| {
     PhysicalAddress::new(
         bootinfo::HHDM_REQUEST
             .get_response()
@@ -66,7 +66,7 @@ impl MemoryMap {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(unused)]
 pub enum Error {
     OutOfMemory,
