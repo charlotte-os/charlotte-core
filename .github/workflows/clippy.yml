@@ -6,9 +6,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - name: Checkout submodules
+        run: git submodule update --init --recursive
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
       - name: Install NASM
         uses: ilammy/setup-nasm@v1
       - name: Install x86_64-unknown-none target
@@ -16,5 +19,5 @@ jobs:
         with:
           target: x86_64-unknown-none
       - name: Run Clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+        run: cargo clippy --all-targets --all-features -- -D warnings -Z build-std=core,alloc,std,panic_abort
         working-directory: ./charlotte_core
