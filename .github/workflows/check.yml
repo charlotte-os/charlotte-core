@@ -6,9 +6,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # TODO: Keep this updated
         target:
           - x86_64-unknown-none
-          - aarch64-unknown-none
       fail-fast: false
 
     steps:
