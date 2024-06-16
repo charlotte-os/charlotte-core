@@ -18,4 +18,4 @@ jobs:
           target: x86_64-unknown-none
       - name: Run Benchmarks
         run: cargo bench
-        working-directory: /charlotte_core
+        working-directory: ../../charlotte_core
