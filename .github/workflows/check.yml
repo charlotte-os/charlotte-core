@@ -20,10 +20,16 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: ${{ matrix.target }}
+          components: clippy, rustfmt
+          cache: true
           cache-workspaces: ./charlotte_core
       - name: Check code
-        run:
+        run: |
+          cargo clean
           cargo check --target ${{ matrix.target }} --manifest-path charlotte_core/Cargo.toml
-      - name: Check code style
+      - name: Check code style with "fmt"
         run:
           cargo fmt --check --manifest-path charlotte_core/Cargo.toml
+      - name: Check code style with "Clippy"
+        run:
+           cargo clippy --target ${{ matrix.target }} --manifest-path charlotte_core/Cargo.toml
