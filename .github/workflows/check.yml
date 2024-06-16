@@ -34,4 +34,4 @@ jobs:
           cargo clippy --target ${{ matrix.target }} --manifest-path charlotte_core/Cargo.toml
       - name: List of lint disables
         run:
-          grep -rn '#\[allow\([^)]*\)\]' ./charlotte_core/src/
+          grep -rn '#\[allow\(.*\)\]' ./charlotte_core/src/
