@@ -9,8 +9,6 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - name: Install NASM
-        uses: ilammy/setup-nasm@v1
       - name: Install x86_64-unknown-none target
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
