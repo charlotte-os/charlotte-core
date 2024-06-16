@@ -21,6 +21,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           components: clippy, rustfmt
+          rustflags: -A warnings
           cache: true
           cache-workspaces: ./charlotte_core
       - name: Check code style with "fmt"
