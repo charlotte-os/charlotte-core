@@ -28,6 +28,8 @@ unsafe extern "C" fn main() -> ! {
     let port = arch_api.get_serial();
     let mut mon = Kmon::new(port);
     mon.repl_loop();
+
+    #[allow(clippy::empty_loop)]
     loop {}
 }
 
