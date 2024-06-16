@@ -23,13 +23,9 @@ jobs:
           components: clippy, rustfmt
           cache: true
           cache-workspaces: ./charlotte_core
-      - name: Check code
-        run: |
-          cargo clean --manifest-path charlotte_core/Cargo.toml
-          cargo check --target ${{ matrix.target }} --manifest-path charlotte_core/Cargo.toml
       - name: Check code style with "fmt"
         run:
           cargo fmt --check --manifest-path charlotte_core/Cargo.toml
-      - name: Check code style with "Clippy"
+      - name: Check code with "Clippy"
         run:
-           cargo clippy --target ${{ matrix.target }} --manifest-path charlotte_core/Cargo.toml
+          cargo clippy --target ${{ matrix.target }} --manifest-path charlotte_core/Cargo.toml
