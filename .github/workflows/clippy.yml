@@ -12,6 +12,8 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
+      - name: Install Clippy
+        run: rustup component add --toolchain nightly-x86_64-unknown-linux-gnu clippy
       - name: Install NASM
         uses: ilammy/setup-nasm@v1
       - name: Install x86_64-unknown-none target
