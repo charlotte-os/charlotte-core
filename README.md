@@ -1,8 +1,7 @@
 # Charlotte Core
 ### The Kernel of CharlotteOS
 
-Charlotte Core is the kernel of CharlotteOS. It will be a hybrid kernel that maps hardware devices to a set of paravirtualized hardware
-interfaces exposed to userspace applications. Higher level abstractions will be provided by system libraries as with an exokernel.
+Charlotte Core is the kernel of CharlotteOS. It is a monolithic kernel that is designed to provide a flexible and low level interface to program running ontop of it.
 
 ### Status
 
@@ -15,8 +14,8 @@ Charlotte Core is written in Rust and Assembly language
 ### Target Platforms
 
 - x86-64 PCs with UEFI and ACPI (Under active development)
-- Aarch64 devices with UEFI and ACPI (Under limited development)
-- RISC-V devices with UEFI and ACPI (Not presently under development, maintainer wanted)
+- Aarch64 devices with UEFI and ACPI (Planned)
+- RISC-V64 devices with UEFI and ACPI (Planned)
 
 #### Building
 The following commands are used to build the debug and release versions of the kernel.
@@ -65,8 +64,8 @@ further reference [Qemu GDB docs](https://qemu-project.gitlab.io/qemu/system/gdb
 
 ### Documentation
 
-Detailed documentation will eventually be available on the project's wiki and website.
+Detailed documentation will eventually be available in this repository's GitHub wiki and at CharlotteOS's website: https://www.charlotte-os.org/
 
 ### Contributing
 
-Contributions are welcome and highly appreciated. Please create a new branch for your work and submit a pull request on GitHub. Make sure to rebase all your changes on master to maintain a linear commit history avoiding merge commits to the extent possible.
+Contributions are always welcome and highly appreciated. Please create a new branch for your work and submit a pull request on GitHub. Make sure to rebase all your changes on master to maintain a linear commit history avoiding merge commits to the extent possible. Feel free to grab any unassigned issues in the GitHub issue tracker for this repository.
