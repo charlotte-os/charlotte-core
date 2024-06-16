@@ -25,7 +25,7 @@ jobs:
           cache-workspaces: ./charlotte_core
       - name: Check code
         run: |
-          cargo clean
+          cargo clean --manifest-path charlotte_core/Cargo.toml
           cargo check --target ${{ matrix.target }} --manifest-path charlotte_core/Cargo.toml
       - name: Check code style with "fmt"
         run:
