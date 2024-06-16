@@ -20,6 +20,8 @@ pub static VADDR_SIG_BITS: Lazy<u8> = Lazy::new(|| {
     vsig_bits as u8
 });
 
+pub static ARE_HUGE_PAGES_SUPPORTED: Lazy<bool> = Lazy::new(huge_pages_supported);
+
 extern "C" {
     pub fn asm_halt() -> !;
     pub fn asm_inb(port: u16) -> u8;
@@ -95,4 +97,12 @@ pub fn asm_irq_disable() -> u64 {
 #[allow(unused)]
 pub fn asm_irq_restore(flags: u64) {
     unsafe { asm!("push {}\n\tpopf", in(reg) flags) };
+}
+
+/// Determines whether the current LP supports huge pages.
+/// Returns `true` if huge pages are supported, `false` otherwise.
+fn huge_pages_supported() -> bool {
+    let cpuid_result = unsafe { __cpuid_count(0x80000001, 0) };
+    let edx = cpuid_result.edx;
+    edx & (1 << 26) != 0
 }

@@ -28,6 +28,7 @@ mod exceptions;
 mod gdt;
 mod idt;
 mod interrupts;
+mod memory;
 mod serial;
 mod timers;
 
@@ -95,6 +96,25 @@ impl crate::arch::Api for Api {
     /// Get the number of significant virtual address bits supported by the current CPU
     fn get_vaddr_width() -> u8 {
         *VADDR_SIG_BITS
+    }
+
+    /// Validates a physical address in accordance with the x86_64 architecture
+    #[inline]
+    fn validate_paddr(raw: usize) -> bool {
+        // Non-significant bits must be zero
+        let unused_bitmask = !(1 << Self::get_paddr_width() - 1);
+        (raw & unused_bitmask) == 0
+    }
+
+    /// Validates a virtual address in accordance with the x86_64 architecture
+    fn validate_vaddr(raw: u64) -> bool {
+        // Canonical form check
+        let unused_bitmask = 1 << Self::get_vaddr_width() - 1;
+        let msb = (raw & (1 << (Self::get_vaddr_width() - 1))) > 0;
+        match msb {
+            false => raw & unused_bitmask == 0,
+            true => raw & unused_bitmask == unused_bitmask,
+        }
     }
 
     /// Halt the calling LP
