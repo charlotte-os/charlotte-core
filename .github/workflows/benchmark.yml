@@ -6,7 +6,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
       - name: Install NASM
@@ -17,3 +18,4 @@ jobs:
           target: x86_64-unknown-none
       - name: Run Benchmarks
         run: cargo bench
+        working-directory: /charlotte_core
