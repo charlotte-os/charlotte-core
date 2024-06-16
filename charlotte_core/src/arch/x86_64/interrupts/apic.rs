@@ -4,11 +4,11 @@ use crate::arch::x86_64::cpu::asm_sti;
 use crate::arch::x86_64::interrupts::apic_consts::SPURIOUS_INTERRUPT_VECTOR;
 use crate::{
     acpi::madt::{Madt, MadtEntry},
-    arch::x86_64::{read_msr, write_msr},
+    arch::x86_64::write_msr,
 };
 
-const FEAT_EDX_APIC: u32 = 1 << 9;
-const APIC_BASE_MSR_BSP: u32 = 0x1B;
+const FEAT_EDX_APIC: u32 = 0x00000200;
+const APIC_BASE_MSR: u32 = 0x1B;
 const APIC_BASE_MSR_ENABLE: u32 = 0x800;
 
 pub struct Apic {
@@ -28,7 +28,7 @@ impl Apic {
 
     pub fn is_present() -> bool {
         let cpuid = unsafe { __cpuid_count(0, 0) };
-        cpuid.edx & FEAT_EDX_APIC != 1
+        (cpuid.edx & FEAT_EDX_APIC) != 0
     }
 
     fn get_addr(&self) -> usize {
@@ -61,19 +61,19 @@ impl Apic {
         unsafe { ptr::read_volatile(addr) }
     }
 
-    pub fn get_apic_base() -> usize {
-        let msr = read_msr(APIC_BASE_MSR_BSP);
-        (((msr.eax as u64) & 0xFFFFF0000u64) | (((msr.edx as u64) & 0x0F) << 32u64) as u64) as usize
-    }
-
     pub fn set_apic_base(&mut self, base: usize) {
         let eax = (base & 0xFFFFF0000) | APIC_BASE_MSR_ENABLE as usize;
         let edx = (base >> 32) & 0x0F;
 
-        write_msr(APIC_BASE_MSR_BSP, eax as u32, edx as u32);
+        write_msr(APIC_BASE_MSR, eax as u32, edx as u32);
     }
 
     pub fn init(&mut self) {
+        // If the apic is not present according to cpuid
+        if !Apic::is_present() {
+            panic!("APIC is not present, and is required!")
+        }
+
         let base = self.get_addr();
         self.set_apic_base(base);
         // Enable spurious interrupt vector
