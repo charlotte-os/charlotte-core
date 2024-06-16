@@ -4,6 +4,14 @@ on: [push, pull_request]
 jobs:
   check:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - x86_64-apple-darwin
+          - x86_64-pc-windows-msvc
+      fail-fast: false
+
     steps:
       - uses: actions/checkout@v4
       - name: Install NASM
@@ -13,6 +21,9 @@ jobs:
         with:
           target: x86_64-unknown-none
           cache-workspaces: ./charlotte_core
-      - name: Code checks
+      - name: Check code
         run:
-          python3 ./codecheck.py
+          cargo check --target ${{ matrix.target }} --manifest-path charlotte_core/Cargo.toml
+      - name: Check code style
+        run:
+          cargo fmt --check --manifest-path charlotte_core/Cargo.toml
