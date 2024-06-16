@@ -19,3 +19,4 @@ jobs:
         run: cargo install cargo-audit
       - name: Run cargo audit
         run: cargo audit
+        working-directory: ./charlotte_core
