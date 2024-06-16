@@ -1,18 +1,18 @@
-name: check
+name: Check
 on: [push, pull_request]
 
 jobs:
-    check:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-            - name: Install NASM
-              uses: ilammy/setup-nasm@v1
-            - name: Install x86_64-unknown-none target
-              uses: actions-rust-lang/setup-rust-toolchain@v1
-              with:
-                target: x86_64-unknown-none
-                cache-workspaces: ./charlotte_core
-            - name: Code checks
-              run:
-                python3 ./codecheck.py
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install NASM
+        uses: ilammy/setup-nasm@v1
+      - name: Install x86_64-unknown-none target
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: x86_64-unknown-none
+          cache-workspaces: ./charlotte_core
+      - name: Code checks
+        run:
+          python3 ./codecheck.py
