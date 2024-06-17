@@ -1,78 +1,6 @@
 #![feature(asm, global_asm)]
 
-extern "C" {
-    fn ih_divide_by_zero();
-    fn ih_double_fault();
-    fn ih_general_protection_fault();
-    fn ih_page_fault();
-    fn ih_segment_not_present();
-    fn ih_debug();
-    fn ih_non_maskable_interrupt();
-    fn ih_breakpoint();
-    fn ih_overflow();
-    fn ih_bound_range_exceeded();
-    fn ih_invalid_opcode();
-    fn ih_device_not_available();
-    fn ih_invalid_tss();
-    fn ih_stack_segment_fault();
-    fn ih_reserved();
-    fn ih_x87_floating_point();
-    fn ih_alignment_check();
-    fn ih_machine_check();
-    fn ih_simd_floating_point();
-    fn ih_virtualization();
-    fn ih_control_protection();
-    fn ih_hypervisor_injection();
-    fn ih_vmm_communication();
-    fn ih_security_exception();
-}
-
-// Functions to save and restore registers
-#[inline(always)]
-pub unsafe fn save_regs() {
-    asm!(
-    "mov [rip + {0} + 0 * 8], rax",
-    "mov [rip + {0} + 1 * 8], rbx",
-    "mov [rip + {0} + 2 * 8], rcx",
-    "mov [rip + {0} + 3 * 8], rdx",
-    "mov [rip + {0} + 4 * 8], rsi",
-    "mov [rip + {0} + 5 * 8], rdi",
-    "mov [rip + {0} + 6 * 8], rbp",
-    "mov [rip + {0} + 7 * 8], r8",
-    "mov [rip + {0} + 8 * 8], r9",
-    "mov [rip + {0} + 9 * 8], r10",
-    "mov [rip + {0} + 10 * 8], r11",
-    "mov [rip + {0} + 11 * 8], r12",
-    "mov [rip + {0} + 12 * 8], r13",
-    "mov [rip + {0} + 13 * 8], r14",
-    "mov [rip + {0} + 14 * 8], r15",
-    in(reg) &BSP_REGS,
-    options(nostack, preserves_flags),
-    );
-}
-
-#[inline(always)]
-pub unsafe fn restore_regs() {
-    asm!(
-    "mov rax, [rip + {0} + 0 * 8]",
-    "mov rbx, [rip + {0} + 1 * 8]",
-    "mov rcx, [rip + {0} + 2 * 8]",
-    "mov rdx, [rip + {0} + 3 * 8]",
-    "mov rsi, [rip + {0} + 4 * 8]",
-    "mov rdi, [rip + {0} + 5 * 8]",
-    "mov rbp, [rip + {0} + 6 * 8]",
-    "mov r8, [rip + {0} + 7 * 8]",
-    "mov r9, [rip + {0} + 8 * 8]",
-    "mov r10, [rip + {0} + 9 * 8]",
-    "mov r11, [rip + {0} + 10 * 8]",
-    "mov r12, [rip + {0} + 11 * 8]",
-    "mov r13, [rip + {0} + 12 * 8]",
-    "mov r14, [rip + {0} + 13 * 8]",
-    "mov r15, [rip + {0} + 14 * 8]",
-    in(reg) &BSP_REGS,
-    options(nostack, preserves_flags),
-    );
-}
+static mut BSP_REGS: [u64; 16] = [0; 16];
 
 // ISR macro definition
 macro_rules! isr {
@@ -81,10 +9,42 @@ macro_rules! isr {
             concat!(
                 stringify!($name),
                 ":\n",
-                if $save_regs { "call save_regs\n" } else { "" },
+                if $save_regs {
+                    "mov [rip + ", stringify!(BSP_REGS), " + 0 * 8], rax\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 1 * 8], rbx\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 2 * 8], rcx\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 3 * 8], rdx\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 4 * 8], rsi\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 5 * 8], rdi\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 6 * 8], rbp\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 7 * 8], r8\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 8 * 8], r9\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 9 * 8], r10\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 10 * 8], r11\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 11 * 8], r12\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 12 * 8], r13\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 13 * 8], r14\n",
+                    "mov [rip + ", stringify!(BSP_REGS), " + 14 * 8], r15\n",
+                } else { "" },
                 if $pop_error_code { "pop rdi\n" } else { "" },
                 "call ", stringify!($handler), "\n",
-                if $restore_regs { "call restore_regs\n" } else { "" },
+                if $restore_regs {
+                    "mov rax, [rip + ", stringify!(BSP_REGS), " + 0 * 8]\n",
+                    "mov rbx, [rip + ", stringify!(BSP_REGS), " + 1 * 8]\n",
+                    "mov rcx, [rip + ", stringify!(BSP_REGS), " + 2 * 8]\n",
+                    "mov rdx, [rip + ", stringify!(BSP_REGS), " + 3 * 8]\n",
+                    "mov rsi, [rip + ", stringify!(BSP_REGS), " + 4 * 8]\n",
+                    "mov rdi, [rip + ", stringify!(BSP_REGS), " + 5 * 8]\n",
+                    "mov rbp, [rip + ", stringify!(BSP_REGS), " + 6 * 8]\n",
+                    "mov r8, [rip + ", stringify!(BSP_REGS), " + 7 * 8]\n",
+                    "mov r9, [rip + ", stringify!(BSP_REGS), " + 8 * 8]\n",
+                    "mov r10, [rip + ", stringify!(BSP_REGS), " + 9 * 8]\n",
+                    "mov r11, [rip + ", stringify!(BSP_REGS), " + 10 * 8]\n",
+                    "mov r12, [rip + ", stringify!(BSP_REGS), " + 11 * 8]\n",
+                    "mov r13, [rip + ", stringify!(BSP_REGS), " + 12 * 8]\n",
+                    "mov r14, [rip + ", stringify!(BSP_REGS), " + 13 * 8]\n",
+                    "mov r15, [rip + ", stringify!(BSP_REGS), " + 14 * 8]\n",
+                } else { "" },
                 if $pop_error_code && $restore_regs { "add rsp, 8\n" } else { "" },
                 if $halt { "hlt\n" } else { "iretq\n" },
             )
@@ -117,3 +77,31 @@ isr!(isr_control_protection, ih_control_protection, true, true, true, false);
 isr!(isr_hypervisor_injection, ih_hypervisor_injection, true, true, false, false);
 isr!(isr_vmm_communication, ih_vmm_communication, true, true, true, false);
 isr!(isr_security_exception, ih_security_exception, true, true, true, false);
+
+// Handlers
+extern "C" {
+    fn ih_divide_by_zero();
+    fn ih_double_fault();
+    fn ih_general_protection_fault();
+    fn ih_page_fault();
+    fn ih_segment_not_present();
+    fn ih_debug();
+    fn ih_non_maskable_interrupt();
+    fn ih_breakpoint();
+    fn ih_overflow();
+    fn ih_bound_range_exceeded();
+    fn ih_invalid_opcode();
+    fn ih_device_not_available();
+    fn ih_invalid_tss();
+    fn ih_stack_segment_fault();
+    fn ih_reserved();
+    fn ih_x87_floating_point();
+    fn ih_alignment_check();
+    fn ih_machine_check();
+    fn ih_simd_floating_point();
+    fn ih_virtualization();
+    fn ih_control_protection();
+    fn ih_hypervisor_injection();
+    fn ih_vmm_communication();
+    fn ih_security_exception();
+}
