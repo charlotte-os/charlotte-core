@@ -1,54 +1,5 @@
-#![feature(asm)]
+#![feature(asm, global_asm)]
 
-static mut BSP_REGS: [u64; 16] = [0; 16];
-
-pub fn save_regs() {
-    unsafe {
-        asm!(
-        "mov [rip + {0} + 0 * 8], rax",
-        "mov [rip + {0} + 1 * 8], rbx",
-        "mov [rip + {0} + 2 * 8], rcx",
-        "mov [rip + {0} + 3 * 8], rdx",
-        "mov [rip + {0} + 4 * 8], rsi",
-        "mov [rip + {0} + 5 * 8], rdi",
-        "mov [rip + {0} + 6 * 8], rbp",
-        "mov [rip + {0} + 7 * 8], r8",
-        "mov [rip + {0} + 8 * 8], r9",
-        "mov [rip + {0} + 9 * 8], r10",
-        "mov [rip + {0} + 10 * 8], r11",
-        "mov [rip + {0} + 11 * 8], r12",
-        "mov [rip + {0} + 12 * 8], r13",
-        "mov [rip + {0} + 13 * 8], r14",
-        "mov [rip + {0} + 14 * 8], r15",
-        sym BSP_REGS,
-        );
-    }
-}
-
-pub fn restore_regs() {
-    unsafe {
-        asm!(
-        "mov rax, [rip + {0} + 0 * 8]",
-        "mov rbx, [rip + {0} + 1 * 8]",
-        "mov rcx, [rip + {0} + 2 * 8]",
-        "mov rdx, [rip + {0} + 3 * 8]",
-        "mov rsi, [rip + {0} + 4 * 8]",
-        "mov rdi, [rip + {0} + 5 * 8]",
-        "mov rbp, [rip + {0} + 6 * 8]",
-        "mov r8, [rip + {0} + 7 * 8]",
-        "mov r9, [rip + {0} + 8 * 8]",
-        "mov r10, [rip + {0} + 9 * 8]",
-        "mov r11, [rip + {0} + 10 * 8]",
-        "mov r12, [rip + {0} + 11 * 8]",
-        "mov r13, [rip + {0} + 12 * 8]",
-        "mov r14, [rip + {0} + 13 * 8]",
-        "mov r15, [rip + {0} + 14 * 8]",
-        sym BSP_REGS,
-        );
-    }
-}
-
-// Handlers
 extern "C" {
     fn ih_divide_by_zero();
     fn ih_double_fault();
@@ -76,7 +27,54 @@ extern "C" {
     fn ih_security_exception();
 }
 
-// The actual ISRs
+// Functions to save and restore registers
+#[inline(always)]
+pub unsafe fn save_regs() {
+    asm!(
+    "mov [rip + {0} + 0 * 8], rax",
+    "mov [rip + {0} + 1 * 8], rbx",
+    "mov [rip + {0} + 2 * 8], rcx",
+    "mov [rip + {0} + 3 * 8], rdx",
+    "mov [rip + {0} + 4 * 8], rsi",
+    "mov [rip + {0} + 5 * 8], rdi",
+    "mov [rip + {0} + 6 * 8], rbp",
+    "mov [rip + {0} + 7 * 8], r8",
+    "mov [rip + {0} + 8 * 8], r9",
+    "mov [rip + {0} + 9 * 8], r10",
+    "mov [rip + {0} + 10 * 8], r11",
+    "mov [rip + {0} + 11 * 8], r12",
+    "mov [rip + {0} + 12 * 8], r13",
+    "mov [rip + {0} + 13 * 8], r14",
+    "mov [rip + {0} + 14 * 8], r15",
+    in(reg) &BSP_REGS,
+    options(nostack, preserves_flags),
+    );
+}
+
+#[inline(always)]
+pub unsafe fn restore_regs() {
+    asm!(
+    "mov rax, [rip + {0} + 0 * 8]",
+    "mov rbx, [rip + {0} + 1 * 8]",
+    "mov rcx, [rip + {0} + 2 * 8]",
+    "mov rdx, [rip + {0} + 3 * 8]",
+    "mov rsi, [rip + {0} + 4 * 8]",
+    "mov rdi, [rip + {0} + 5 * 8]",
+    "mov rbp, [rip + {0} + 6 * 8]",
+    "mov r8, [rip + {0} + 7 * 8]",
+    "mov r9, [rip + {0} + 8 * 8]",
+    "mov r10, [rip + {0} + 9 * 8]",
+    "mov r11, [rip + {0} + 10 * 8]",
+    "mov r12, [rip + {0} + 11 * 8]",
+    "mov r13, [rip + {0} + 12 * 8]",
+    "mov r14, [rip + {0} + 13 * 8]",
+    "mov r15, [rip + {0} + 14 * 8]",
+    in(reg) &BSP_REGS,
+    options(nostack, preserves_flags),
+    );
+}
+
+// ISR macro definition
 macro_rules! isr {
     ($name:ident, $handler:ident, $save_regs:expr, $restore_regs:expr, $pop_error_code:expr, $halt:expr) => {
         global_asm!(
@@ -94,6 +92,7 @@ macro_rules! isr {
     };
 }
 
+// Declare all ISRs
 isr!(isr_divide_by_zero, ih_divide_by_zero, true, true, false, false);
 isr!(isr_double_fault, ih_double_fault, false, false, true, true);
 isr!(isr_general_protection_fault, ih_general_protection_fault, true, false, true, true);
