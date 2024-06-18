@@ -1,3 +1,5 @@
+mod exceptions;
+
 use core::fmt::Write;
 
 use ignore_result::Ignore;
