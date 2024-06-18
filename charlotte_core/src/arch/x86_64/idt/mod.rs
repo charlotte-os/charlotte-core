@@ -1,3 +1,5 @@
+mod idt;
+
 use core::ptr::addr_of;
 
 #[derive(Debug)]

@@ -26,6 +26,7 @@ use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
 mod cpu;
 mod exceptions;
 mod gdt;
+mod global;
 mod idt;
 mod interrupts;
 mod serial;
