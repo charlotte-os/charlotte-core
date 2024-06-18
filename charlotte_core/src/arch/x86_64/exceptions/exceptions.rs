@@ -1,3 +1,8 @@
+//! X86_64 cpu exception handlers, this code is how it is by design,
+//! the calling convention for these is special, and needs to be naked in pure asm
+//! as a consequence.
+//!
+
 use core::arch::global_asm;
 
 #[no_mangle]
