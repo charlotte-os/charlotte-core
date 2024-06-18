@@ -1,17 +1,13 @@
-#![feature(asm)]
+use core::arch::global_asm;
 
-pub fn asm_load_idt(idt: &DescriptorTablePointer) {
-    unsafe {
-        asm!(
-            "lidt [{}]",
-            in(reg) idt,
-            options(nostack, preserves_flags),
-        );
-    }
-}
+global_asm! {
+    "
+.code64
 
-#[repr(C, packed)]
-pub struct DescriptorTablePointer {
-    limit: u16,
-    base: u64,
+.text
+.global asm_load_idt
+asm_load_idt:
+    lidt [rdi]
+    ret
+"
 }

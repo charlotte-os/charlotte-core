@@ -1,3 +1,5 @@
+mod cpu;
+
 use core::arch::asm;
 use core::{arch::x86_64::__cpuid_count, fmt::Write};
 use spin::lazy::Lazy;
