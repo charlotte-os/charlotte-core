@@ -126,7 +126,7 @@ impl PageMap {
         }
     }
     pub fn get_pml4_paddr(&self) -> PhysicalAddress {
-        PhysicalAddress::from((self.cr3 & !0xFFF) as usize)
+        PhysicalAddress::from(self.cr3 & !0xFFF)
     }
     pub fn get_pcid(&self) -> u16 {
         (self.cr3 & 0xFFF) as u16

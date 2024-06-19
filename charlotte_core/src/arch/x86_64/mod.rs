@@ -17,6 +17,7 @@ use idt::*;
 use serial::{ComPort, SerialPort};
 
 use crate::acpi::{parse, AcpiInfo};
+use crate::arch::MemoryParams;
 use crate::arch::x86_64::interrupts::apic::Apic;
 use crate::framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
@@ -44,6 +45,11 @@ static BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
 static BSP_TSS: Lazy<Tss> = Lazy::new(|| Tss::new(addr_of!(BSP_RING0_INT_STACK) as u64));
 static BSP_GDT: Lazy<Gdt> = Lazy::new(|| Gdt::new(&BSP_TSS));
 static BSP_IDT: SpinMutex<Idt> = SpinMutex::new(Idt::new());
+pub const ISA_MEMORY_PARAMS: MemoryParams = MemoryParams {
+    page_size: 0x1000,
+    page_shift: 0xC,
+    page_mask: !0xfff,
+};
 
 /// Provide the implementation of the Api trait for the Api struct
 impl crate::arch::Api for Api {

@@ -10,7 +10,7 @@ use core::result::Result;
 use spin::{lazy::Lazy, mutex::TicketMutex};
 
 use crate::framebuffer::console::CONSOLE;
-use crate::memory::address::{PhysicalAddress, VirtualAddress};
+use crate::memory::address::{PhysicalAddress, PointerSized, VirtualAddress};
 
 #[cfg(target_arch = "aarch64")]
 pub mod aarch64;
@@ -97,6 +97,13 @@ pub trait MemoryMap: Clone + Drop {
     fn unmap_huge_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
 }
 
+#[derive(Debug,Copy, Clone)]
+pub struct MemoryParams {
+    pub page_size: PointerSized,
+    pub page_shift: PointerSized,
+    pub page_mask: PointerSized,
+}
+
 pub trait Api {
     type Api: Api;
     type DebugLogger: Write;
@@ -171,3 +178,10 @@ pub type ArchApi = x86_64::Api;
 pub type ArchApi = aarch64::Api;
 #[cfg(target_arch = "riscv64")]
 pub type ArchApi = riscv64::Api;
+
+#[cfg(target_arch = "x86_64")]
+pub const MEMORY_PARAMS: MemoryParams = x86_64::ISA_MEMORY_PARAMS;
+#[cfg(target_arch = "aarch64")]
+pub static MEMORY_PARAMS: MemoryParams = aarch64::ISA_MEMORY_PARAMS;
+#[cfg(target_arch = "riscv64")]
+pub static MEMORY_PARAMS: MemoryParams = riscv64::ISA_MEMORY_PARAMS;
