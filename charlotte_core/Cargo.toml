@@ -25,7 +25,11 @@ aarch64-cpu = "9.4.0"
 # Linting
 [lints.clippy]
 # Groups
-suspicious = { level = "deny", priority = -1 }
-perf = { level = "deny", priority = -1 }
-complexity = { level = "warn", priority = -1 }
-style = { level = "warn", priority = -1 }
+suspicious = { level = "deny", priority = 2 }
+perf = { level = "deny", priority = 2 }
+complexity = { level = "warn", priority = 1 }
+style = { level = "warn", priority = 1 }
+pedantic = { level = "warn", priority = -1 }
+
+unreadable_literal = "allow"
+similar_names = "allow"

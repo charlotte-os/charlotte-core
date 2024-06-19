@@ -54,7 +54,7 @@ fn main() {
     }
 
     if arch.as_str() == "x86_64" {
-        let lib_path = format!("{}/libasm.a", out_dir);
+        let lib_path = format!("{out_dir}/libasm.a");
         let mut ar_command = Command::new("ar");
         ar_command.arg("crus");
         ar_command.arg(&lib_path);
@@ -65,7 +65,7 @@ fn main() {
         ar_command.status().expect("Failed to execute ar");
 
         println!("cargo:rustc-link-lib=static=asm");
-        println!("cargo:rustc-link-search=native={}", out_dir);
+        println!("cargo:rustc-link-search=native={out_dir}");
     }
 
     println!("cargo:rerun-if-changed=asm");

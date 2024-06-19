@@ -47,9 +47,7 @@ pub fn assert_msr_presence() -> bool {
 
 #[allow(unused)]
 pub fn read_msr(msr: u32) -> MSRResponse {
-    if !assert_msr_presence() {
-        panic!("Processor lacks msr support and read_msr was called!");
-    }
+    assert!(assert_msr_presence(), "Processor lacks msr support and read_msr was called!");
     let mut lo = 0;
     let mut hi = 0;
     unsafe { asm_read_msr(msr, &mut lo, &mut hi) }
@@ -62,9 +60,7 @@ pub fn write_msr(msr: u32, eax: u32, edx: u32) {
         logln!("Privilege level is not 0, is {}", get_privilege_level());
         return;
     }
-    if !assert_msr_presence() {
-        panic!("Processor lacks msr support and write_msr was called!");
-    }
+    assert!(assert_msr_presence(), "Processor lacks msr support and write_msr was called!");
     unsafe { asm_write_msr(msr, eax, edx) };
 }
 

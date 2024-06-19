@@ -69,7 +69,7 @@ impl Bgrt {
 
     pub fn set_version(&mut self) {
         // version must be set to 1
-        self.version_id = 1
+        self.version_id = 1;
     }
 
     pub fn version(&self) -> u16 {

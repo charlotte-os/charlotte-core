@@ -79,14 +79,10 @@ impl Rsdp {
     /// 3. Ensures the checksum is valid
     fn validate(&self) {
         // Ensure the signature is valid
-        if self.signature != RSDP_SIGNATURE {
-            panic!("Invalid RSDP signature");
-        }
+        assert!(self.signature == RSDP_SIGNATURE, "Invalid RSDP signature");
 
         // Ensure the OEM id is a valid string
-        if str::from_utf8(&self.oem_id).is_err() {
-            panic!("Invalid OEM ID");
-        }
+        assert!(str::from_utf8(&self.oem_id).is_ok(), "Invalid OEM ID");
 
         // Ensure the checksum is valid
         // Length only exists on revision 2.0 and later
@@ -97,11 +93,9 @@ impl Rsdp {
         };
 
         let bytes =
-            unsafe { core::slice::from_raw_parts(self as *const Rsdp as *const u8, length) };
+            unsafe { core::slice::from_raw_parts(core::ptr::from_ref::<Rsdp>(self).cast::<u8>(), length) };
         let sum = bytes.iter().fold(0u8, |sum, &byte| sum.wrapping_add(byte));
 
-        if sum != 0 {
-            panic!("Invalid RSDP checksum");
-        }
+        assert!(sum == 0, "Invalid RSDP checksum");
     }
 }

@@ -30,7 +30,7 @@ pub trait Api {
 
     /// Each ISA implementation does something specific within this function,
     /// you should check the relevant implementation under each ISA folder linked bellow:
-    /// * [X86_64](x86_64::Api::isa_init)
+    /// * [`X86_64`](x86_64::Api::isa_init)
     fn isa_init() -> Self;
 
     fn get_logger() -> Self::DebugLogger;
@@ -69,8 +69,8 @@ pub struct Logger {
 
 impl Write for Logger {
     fn write_str(&mut self, s: &str) -> Result {
-        write!(self.logger, "{}", s).unwrap();
-        write!(CONSOLE.lock(), "{}", s).unwrap();
+        write!(self.logger, "{s}").unwrap();
+        write!(CONSOLE.lock(), "{s}").unwrap();
         Ok(())
     }
 }

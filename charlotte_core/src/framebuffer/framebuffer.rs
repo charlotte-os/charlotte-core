@@ -41,7 +41,7 @@ impl FrameBufferInfo {
     /// * `framebuffer` - A reference to a limine `Framebuffer` struct.
     pub fn new(framebuffer: &Framebuffer) -> Self {
         let mut framebuffer = Self {
-            address: AtomicPtr::new(framebuffer.addr() as *mut u32),
+            address: AtomicPtr::new(framebuffer.addr().cast::<u32>()),
             width: framebuffer.width() as usize,
             height: framebuffer.height() as usize,
             pitch: framebuffer.pitch() as usize,
@@ -145,15 +145,12 @@ impl FrameBufferInfo {
     ) {
         let start_x = x; // Remember the starting x position to reset to it on new lines
         for c in text.chars() {
-            match c {
-                '\n' => {
-                    y += FONT_HEIGHT * self.scale + 1;
-                    x = start_x;
-                }
-                _ => {
-                    self.draw_char(x, y, c, color, background_color);
-                    x += FONT_WIDTH * self.scale;
-                }
+            if c == '\n' {
+                y += FONT_HEIGHT * self.scale + 1;
+                x = start_x;
+            } else {
+                self.draw_char(x, y, c, color, background_color);
+                x += FONT_WIDTH * self.scale;
             }
         }
     }
@@ -280,9 +277,7 @@ impl FrameBufferInfo {
 /// Initializes the framebuffer and returns a `FrameBufferInfo` instance if successful.
 pub fn init_framebuffer() -> Option<FrameBufferInfo> {
     if let Some(framebuffer_response) = FRAMEBUFFER_REQUEST.get_response() {
-        if framebuffer_response.framebuffers().count() < 1 {
-            panic!("No framebuffer returned from bootloader!");
-        }
+        assert!(framebuffer_response.framebuffers().count() >= 1, "No framebuffer returned from bootloader!");
 
         let framebuffer = &framebuffer_response.framebuffers().next().unwrap();
         Some(FrameBufferInfo::new(framebuffer))

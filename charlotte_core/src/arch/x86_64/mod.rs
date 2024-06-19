@@ -1,5 +1,5 @@
-//! # x86_64 Architecture Module
-//! This module implements the Arch interface for the x86_64 instruction set architecture (ISA).
+//! # `x86_64` Architecture Module
+//! This module implements the Arch interface for the `x86_64` instruction set architecture (ISA).
 
 use core::fmt::Write;
 use core::str;
@@ -11,9 +11,9 @@ use core::{
 use spin::lazy::Lazy;
 use spin::mutex::spin::SpinMutex;
 
-use cpu::*;
+use cpu::{PADDR_SIG_BITS, VADDR_SIG_BITS, asm_are_interrupts_enabled, asm_get_vendor_string, asm_halt, asm_inb, asm_irq_disable, asm_irq_restore, asm_outb, write_msr};
 use gdt::{tss::Tss, Gdt};
-use idt::*;
+use idt::Idt;
 use serial::{ComPort, SerialPort};
 
 use crate::acpi::{parse, AcpiInfo};
@@ -31,7 +31,7 @@ mod interrupts;
 mod serial;
 mod timers;
 
-/// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
+/// The Api struct is used to provide an implementation of the `ArchApi` trait for the `x86_64` architecture.
 #[allow(unused)]
 pub struct Api {
     acpi_info: AcpiInfo,
@@ -130,7 +130,7 @@ impl crate::arch::Api for Api {
     }
 
     fn init_interrupts(&mut self) {
-        self.bsp_apic.init()
+        self.bsp_apic.init();
     }
 
     fn interrupts_enabled(&self) -> bool {

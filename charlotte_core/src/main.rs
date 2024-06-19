@@ -17,7 +17,7 @@ mod kmon;
 mod memory;
 
 /// This is the kernel entrypoint function,
-/// the first thing it does is call: [isa_init](ArchApi::isa_init)
+/// the first thing it does is call: [`isa_init`](ArchApi::isa_init)
 /// you should check the documentation on that function for details,
 /// since that contains all the ISA specific initialization code.
 #[no_mangle]

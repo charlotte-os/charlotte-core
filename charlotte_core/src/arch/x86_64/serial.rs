@@ -51,7 +51,7 @@ impl SerialPort {
 impl Write for SerialPort {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         for c in s.chars() {
-            self.write_char(c)?
+            self.write_char(c)?;
         }
         Ok(())
     }
@@ -77,6 +77,6 @@ impl Serial for SerialPort {
         ArchApi::inb(self.io_port) as char
     }
     fn put_char(&mut self, c: char) {
-        self.write_char(c).unwrap()
+        self.write_char(c).unwrap();
     }
 }

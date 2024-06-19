@@ -32,7 +32,7 @@ pub struct AcpiInfo {
 
 #[allow(unused)]
 impl AcpiInfo {
-    /// Creates a new AcpiTables.
+    /// Creates a new `AcpiTables`.
     pub fn new(
         rsdp: Rsdp,
         sdt: Sdt,

@@ -3,7 +3,7 @@ use core::fmt::Write;
 use ignore_result::Ignore;
 
 use super::serial::{ComPort::COM1, SerialPort};
-use crate::arch::x86_64::idt::*;
+use crate::arch::x86_64::idt::Idt;
 
 pub fn load_exceptions(idt: &mut Idt) {
     idt.set_gate(0, isr_divide_by_zero, 1 << 3, true, true);
@@ -94,8 +94,7 @@ extern "C" fn ih_page_fault(error_code: u64) {
 
     writeln!(
         &mut logger,
-        "A page fault has occurred with error code {:x}",
-        error_code
+        "A page fault has occurred with error code {error_code:x}"
     )
     .ignore();
 }
@@ -106,8 +105,7 @@ extern "C" fn ih_segment_not_present(error_code: u64) {
 
     writeln!(
         &mut logger,
-        "Segment Not Present Fault: error code {:x}",
-        error_code
+        "Segment Not Present Fault: error code {error_code:x}"
     )
     .ignore();
 }
@@ -167,8 +165,7 @@ extern "C" fn ih_invalid_tss(error_code: u64) {
 
     writeln!(
         &mut logger,
-        "Invalid TSS Exception Occurred! Error code: {:x}",
-        error_code
+        "Invalid TSS Exception Occurred! Error code: {error_code:x}"
     )
     .ignore();
 }
@@ -179,8 +176,7 @@ extern "C" fn ih_stack_segment_fault(error_code: u64) {
 
     writeln!(
         &mut logger,
-        "Stack-Segment Fault Occurred! Error code: {:x}",
-        error_code
+        "Stack-Segment Fault Occurred! Error code: {error_code:x}"
     )
     .ignore();
 }
@@ -209,8 +205,7 @@ extern "C" fn ih_alignment_check(error_code: u64) {
 
     writeln!(
         &mut logger,
-        "Alignment Check Exception Occurred! Error code: {:x}",
-        error_code
+        "Alignment Check Exception Occurred! Error code: {error_code:x}"
     )
     .ignore();
 }
@@ -247,8 +242,7 @@ extern "C" fn ih_control_protection(error_code: u64) {
 
     writeln!(
         &mut logger,
-        "Control Protection Exception Occurred! Error code: {:x}",
-        error_code
+        "Control Protection Exception Occurred! Error code: {error_code:x}"
     )
     .ignore();
 }
@@ -266,8 +260,7 @@ extern "C" fn ih_vmm_communication(error_code: u64) {
 
     writeln!(
         &mut logger,
-        "VMM Communication Exception Occurred! Error code: {:x}",
-        error_code
+        "VMM Communication Exception Occurred! Error code: {error_code:x}"
     )
     .ignore();
 }
@@ -278,8 +271,7 @@ extern "C" fn ih_security_exception(error_code: u64) {
 
     writeln!(
         &mut logger,
-        "Security Exception Occurred! Error code: {:x}",
-        error_code
+        "Security Exception Occurred! Error code: {error_code:x}"
     )
     .ignore();
 }

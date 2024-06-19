@@ -33,7 +33,7 @@ impl Sdt {
         let sdt_address = if rsdp.xsdt_address().is_some() {
             rsdp.xsdt_address().unwrap()
         } else {
-            rsdp.rsdt_address() as u64
+            u64::from(rsdp.rsdt_address())
         };
         let sdt = tables::get_table(sdt_address as usize, *b"XSDT");
         if let Some(header) = sdt {
