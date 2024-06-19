@@ -1,12 +1,10 @@
-mod page_table_entry;
-
-use core::num::NonZeroUsize;
-
 use page_table_entry::*;
 
 use crate::arch::x86_64::memory::*;
 use crate::memory::address::*;
 use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
+
+mod page_table_entry;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum PageSize {
@@ -70,12 +68,12 @@ impl PageTable {
                 }
             }
             PageSize::Large => {
-                if paddr.is_aligned_to(NonZeroUsize::new(4096 * 512).unwrap()) == false {
+                if paddr.is_aligned_to(4096 * 512) == false {
                     return Err(Error::InvalidPAddrAlignment);
                 }
             }
             PageSize::Huge => {
-                if paddr.is_aligned_to(NonZeroUsize::new(4096 * 512 * 512).unwrap()) == false {
+                if paddr.is_aligned_to(4096 * 512 * 512) == false {
                     return Err(Error::InvalidPAddrAlignment);
                 }
             }

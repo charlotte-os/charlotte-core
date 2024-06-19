@@ -1,41 +1,65 @@
-use core::num::NonZeroUsize;
+use core::num::{NonZeroU64};
 use core::ops::Add;
 
-use crate::arch::{Api, ArchApi};
+use crate::arch::{Api, ArchApi, MEMORY_PARAMS};
+
 use crate::memory::pmm::DIRECT_MAP;
 
-const PAGE_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(4096) };
-const PAGE_SHIFT: usize = 12;
-const PAGE_MASK: u64 = !0xfffu64;
+pub const PAGE_SIZE: PointerSized = MEMORY_PARAMS.page_size;
+pub const PAGE_SHIFT: PointerSized = MEMORY_PARAMS.page_shift;
+pub const PAGE_MASK: PointerSized = MEMORY_PARAMS.page_mask;
+
+#[cfg(not(target_pointer_width = "64"))]
+compile_error!{"Unsupported ISA pointer width"}
+
+#[cfg(target_pointer_width = "64")]
+pub type NonZeroMemoryAddr = NonZeroU64;
+#[cfg(target_pointer_width = "64")]
+pub type PointerSized = u64;
+
+pub trait MemoryAddress {
+    type MemoryAddress: MemoryAddress;
+    fn is_aligned(&self, alignment: PointerSized) -> bool;
+    fn is_page_aligned(&self);
+}
 
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct PhysicalAddress(usize);
+pub struct PhysicalAddress(PointerSized);
 
 impl PhysicalAddress {
     #[inline]
-    pub const fn new(addr: usize) -> Self {
+    pub const fn new(addr: PointerSized) -> Self {
         Self(addr)
     }
 
+    pub const fn as_usize(&self) -> usize {
+        self.0 as usize
+    }
+
     #[inline]
-    pub const fn bits(&self) -> usize {
+    pub const fn bits(&self) -> PointerSized {
         self.0
     }
 
     #[inline]
-    pub const fn pfn(&self) -> usize {
+    pub const fn pfn(&self) -> PointerSized {
         self.bits() >> PAGE_SHIFT
     }
 
     #[inline]
-    pub const fn from_pfn(pfn: usize) -> Self {
+    pub const fn from_pfn(pfn: PointerSized) -> Self {
         Self::new(pfn << PAGE_SHIFT)
     }
 
     #[inline]
-    pub const fn is_aligned_to(&self, align: NonZeroUsize) -> bool {
-        self.bits() & (align.get() - 1) == 0
+    /// # Safety
+    /// This function will panic in case align == 0 or align - 1 == 0
+    pub const fn is_aligned_to(&self, align: PointerSized) -> bool {
+        if align - 1 <= 0 {
+            panic!("Tried to test alignment to 0")
+        }
+        self.bits() & (align - 1) == 0
     }
 
     #[inline]
@@ -44,9 +68,9 @@ impl PhysicalAddress {
     }
 
     #[inline]
-    pub fn iter_frames(&self, n_frames: usize) -> impl DoubleEndedIterator<Item = PhysicalAddress> {
-        (self.bits()..(self.bits() + n_frames * PAGE_SIZE.get()))
-            .step_by(PAGE_SIZE.get())
+    pub fn iter_frames(&self, n_frames: PointerSized) -> impl Iterator<Item = PhysicalAddress> {
+        (self.bits()..(self.bits() + n_frames * PAGE_SIZE))
+            .step_by(PAGE_SIZE as usize)
             .map(PhysicalAddress::new)
     }
 
@@ -59,9 +83,9 @@ impl PhysicalAddress {
     }
 }
 
-impl From<usize> for PhysicalAddress {
+impl From<PointerSized> for PhysicalAddress {
     #[inline]
-    fn from(val: usize) -> Self {
+    fn from(val: PointerSized) -> Self {
         Self::new(val)
     }
 }
@@ -69,36 +93,36 @@ impl From<usize> for PhysicalAddress {
 impl From<PhysicalAddress> for usize {
     #[inline]
     fn from(addr: PhysicalAddress) -> Self {
-        addr.bits()
+        addr.as_usize()
     }
 }
 
 impl<T> From<PhysicalAddress> for *const T {
     #[inline]
     fn from(addr: PhysicalAddress) -> *const T {
-        (*DIRECT_MAP + addr.bits()).into()
+        (*DIRECT_MAP + addr.0).into()
     }
 }
 
 impl<T> From<PhysicalAddress> for *mut T {
     #[inline]
     fn from(addr: PhysicalAddress) -> *mut T {
-        (*DIRECT_MAP + addr.bits()).into()
+        (*DIRECT_MAP + addr.0).into()
     }
 }
 
-impl Add<usize> for PhysicalAddress {
+impl Add<PointerSized> for PhysicalAddress {
     type Output = Self;
 
     #[inline]
-    fn add(self, val: usize) -> Self::Output {
-        Self::new(self.bits() + val)
+    fn add(self, val: PointerSized) -> Self::Output {
+        Self::new(self.0 + val)
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct VirtualAddress(u64);
+pub struct VirtualAddress(PointerSized);
 
 #[derive(Debug)]
 pub enum VAddrError {

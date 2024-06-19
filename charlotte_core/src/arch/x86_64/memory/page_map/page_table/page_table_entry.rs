@@ -60,7 +60,7 @@ impl PageTableEntry {
         if self.is_present() == false {
             Err(Error::EntryNotPresent)
         } else {
-            Ok(PhysicalAddress::from((self.entry & *ADDR_MASK) as usize))
+            Ok(PhysicalAddress::from(self.entry & *ADDR_MASK))
         }
     }
 
