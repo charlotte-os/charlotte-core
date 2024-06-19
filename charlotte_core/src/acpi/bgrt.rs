@@ -24,6 +24,7 @@ pub struct Bgrt {
     y_offset: u32,
 }
 
+#[allow(unused)]
 impl Bgrt {
     pub fn new(addr: usize) -> Option<Self> {
         let header = get_table(addr, *b"BGRT");

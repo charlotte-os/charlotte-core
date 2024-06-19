@@ -101,7 +101,7 @@ impl Gdt {
 
         dest_sd.access_byte = access_byte;
 
-        dest_sd.limit1_flags |= (flags & 0xFF) << 4; // The upper 4 bits of this field encodes flags
+        dest_sd.limit1_flags |= flags << 4; // The upper 4 bits of this field encodes flags
     }
     pub fn load(&self) {
         unsafe {

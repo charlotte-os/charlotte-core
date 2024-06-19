@@ -20,6 +20,7 @@ pub struct SDTHeader {
     creator_revision: u32,
 }
 
+#[allow(unused)]
 impl SDTHeader {
     pub fn signature(&self) -> &str {
         str::from_utf8(&self.signature).unwrap()

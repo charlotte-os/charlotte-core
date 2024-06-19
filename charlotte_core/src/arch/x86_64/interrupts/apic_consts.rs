@@ -1,4 +1,5 @@
 // src/arch/x86_64/interrupts/apic_consts.rs
+#![allow(unused)]
 
 /// Read/Write
 pub const LAPIC_ID: u32 = 0x020;

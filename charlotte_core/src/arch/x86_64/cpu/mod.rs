@@ -30,6 +30,7 @@ extern "C" {
     pub fn asm_get_privilege_level() -> u8;
 }
 
+#[allow(unused)]
 pub struct MSRResponse {
     pub eax: u32,
     pub edx: u32,
@@ -41,9 +42,10 @@ pub fn get_privilege_level() -> u8 {
 
 pub fn assert_msr_presence() -> bool {
     let cpuidresult = unsafe { __cpuid_count(0, 0) };
-    return cpuidresult.edx & 1 << 5 != 0;
+    cpuidresult.edx & 1 << 5 != 0
 }
 
+#[allow(unused)]
 pub fn read_msr(msr: u32) -> MSRResponse {
     if !assert_msr_presence() {
         panic!("Processor lacks msr support and read_msr was called!");
@@ -77,6 +79,7 @@ pub fn asm_sti() {
     unsafe { asm!("sti") };
 }
 
+#[allow(unused)]
 pub fn asm_irq_enable() {
     // Get the status flags of the processor
     let mut flags: u64;

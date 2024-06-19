@@ -20,17 +20,17 @@ pub mod tables;
 
 /// Stores the data for all the ACPI tables.
 #[derive(Clone, Copy)]
+#[allow(unused)]
 pub struct AcpiInfo {
     rsdp: Rsdp,
     sdt: Sdt,
     madt: Madt,
-    #[allow(unused)]
     fadt: Fadt,
     bgrt: Bgrt,
-    #[allow(unused)]
     srat: Option<Srat>,
 }
 
+#[allow(unused)]
 impl AcpiInfo {
     /// Creates a new AcpiTables.
     pub fn new(

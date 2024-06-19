@@ -1,7 +1,7 @@
 use crate::logln;
 
 use super::tables::{get_table, SDTHeader};
-use core::{fmt::Write, mem, usize};
+use core::{fmt::Write, mem};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -11,18 +11,15 @@ pub struct Srat {
     addr: usize,
 }
 
+#[allow(unused)]
 impl Srat {
     pub fn new(addr: usize) -> Option<Self> {
         let header = get_table(addr, *b"SRAT");
-        if let Some(header) = header {
-            Some(Srat {
+        header.map(|header| Srat {
                 header,
                 length: header.length() + 32,
                 addr,
             })
-        } else {
-            None
-        }
     }
 
     pub fn header(&self) -> SDTHeader {

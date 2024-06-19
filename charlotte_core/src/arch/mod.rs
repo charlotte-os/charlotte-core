@@ -22,6 +22,7 @@ pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
     })
 });
 
+#[allow(unused)]
 pub trait Api {
     type Api: Api;
     type DebugLogger: Write;
@@ -55,6 +56,7 @@ pub trait Api {
     fn end_of_interrupt(&self);
 }
 
+#[allow(unused)]
 pub trait Serial {
     fn read_char(&mut self) -> char;
     fn put_char(&mut self, c: char);

@@ -27,6 +27,7 @@ pub struct Sdt {
     addr_width: usize,
 }
 
+#[allow(unused)]
 impl Sdt {
     pub fn new(rsdp: &Rsdp) -> Option<Self> {
         let sdt_address = if rsdp.xsdt_address().is_some() {
@@ -73,7 +74,7 @@ impl Sdt {
     }
 
     /// Get the address of a table from the XSDT or RSDT
-    pub fn get_table(&self, signature: [u8; 4]) -> Option<usize> {
+    pub fn get_table(&self, signature: [u8; 4]) -> Option<usize> {    
         for i in 0..self.n_entries {
             if self.sub_tables[i].is_some() && self.sub_tables[i].unwrap().signature == signature {
                 return Some(self.sub_tables[i].unwrap().addr);
@@ -102,6 +103,7 @@ fn populate_sub_tables(
     addr_width: usize,
 ) -> [Option<SdtEntry>; 32] {
     let mut sub_tables: [Option<SdtEntry>; 32] = [None; 32];
+    #[allow(clippy::needless_range_loop)]
     for i in 0..n_entries {
         let mut ptr: usize = 0;
         // We need to grab each half independently since the XSDT uses 64-bit pointers

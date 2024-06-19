@@ -59,8 +59,8 @@ impl Write for SerialPort {
         while self.is_transmit_empty() == 0 {}
         if c.is_ascii() {
             if c == '\n' {
-                ArchApi::outb(self.io_port, '\r' as u8);
-                ArchApi::outb(self.io_port, '\n' as u8);
+                ArchApi::outb(self.io_port, b'\r');
+                ArchApi::outb(self.io_port, b'\n');
             } else {
                 ArchApi::outb(self.io_port, c as u8);
             }

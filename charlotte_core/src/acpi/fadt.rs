@@ -7,6 +7,8 @@ use super::tables::{get_table, SDTHeader};
 /// Address space types to make the meaning of the field more clear
 #[repr(C)]
 #[derive(Copy, Clone)]
+#[allow(clippy::upper_case_acronyms)]
+#[allow(unused)]
 pub enum AddressSpace {
     SystemMemory = 0,
     SystemIO = 1,
@@ -29,6 +31,7 @@ pub enum AddressSpace {
 /// Access size types to make the meaning of the field more clear
 #[repr(C)]
 #[derive(Copy, Clone)]
+#[allow(unused)]
 pub enum AccessSize {
     Undefined = 0,
     Byte = 1,
@@ -49,6 +52,7 @@ pub struct GenericAddress {
     address: u64,
 }
 
+#[allow(unused)]
 impl GenericAddress {
     pub fn address_space(&self) -> AddressSpace {
         match self.address_space {

@@ -20,6 +20,7 @@ pub struct Rsdp {
     reserved: [u8; 3],
 }
 
+#[allow(unused)]
 impl Rsdp {
     /// Creates a new RSDP from an address
     pub fn new_from_address(address: usize) -> Self {

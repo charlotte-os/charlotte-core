@@ -4,6 +4,7 @@ use core::mem;
 
 /// The MADT
 #[derive(Debug, Clone, Copy)]
+#[allow(unused)]
 pub struct Madt {
     header: SDTHeader,
     local_apic_addr: u32,
@@ -11,6 +12,7 @@ pub struct Madt {
     addr: usize,
 }
 
+#[allow(unused)]
 impl Madt {
     pub fn new(addr: usize) -> Madt {
         let header = get_table(addr, *b"APIC");
@@ -88,19 +90,14 @@ impl Iterator for MadtIter {
 
 /// MADT Entries
 #[derive(Debug)]
+#[allow(unused)]
 pub enum MadtEntry {
-    #[allow(unused)]
     ProcessorLocalApic(ProcessorLocalApic),
-    IOApic(IoApic),
-    #[allow(unused)]
+    IOApic((IoApic)),
     InterruptSourceOverride(InterruptSourceOverride),
-    #[allow(unused)]
     NonMaskableInterruptSource(NonMaskableInterruptSource),
-    #[allow(unused)]
     LocalApicNmi(LocalApicNmi),
-    #[allow(unused)]
     LocalApicAddressOverride(LocalApicAddressOverride),
-    #[allow(unused)]
     Unknown(u8),
 }
 

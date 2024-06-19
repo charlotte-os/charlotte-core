@@ -32,6 +32,7 @@ mod serial;
 mod timers;
 
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
+#[allow(unused)]
 pub struct Api {
     acpi_info: AcpiInfo,
     bsp_apic: Apic,

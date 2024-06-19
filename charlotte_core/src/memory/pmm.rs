@@ -21,6 +21,7 @@ pub struct MemoryMap {
     entries: &'static [&'static bootinfo::memory_map::Entry],
 }
 
+#[allow(unused)]
 impl MemoryMap {
     pub fn get() -> MemoryMap {
         MemoryMap {
@@ -204,6 +205,7 @@ impl PhysicalFrameAllocator {
         Err(Error::InsufficientContiguousMemoryAvailable)
     }
 
+    #[allow(unused)]
     pub fn deallocate_contiguous(
         &mut self,
         base: PhysicalAddress,

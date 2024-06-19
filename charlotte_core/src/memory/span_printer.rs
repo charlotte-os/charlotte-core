@@ -1,7 +1,7 @@
 //! Print a span of memory starting at some address with some width
 #![allow(clippy::collapsible_else_if)]
 
-use core::{fmt::Write, usize};
+use core::fmt::Write;
 
 use crate::{log, logln};
 
@@ -17,34 +17,26 @@ pub struct MemorySpanIter {
     offset: usize,
 }
 
+#[allow(unused)]
 impl MemorySpan {
     pub fn new(start: usize, width: usize) -> Self {
         MemorySpan { start, width }
     }
 
     pub fn print_span(&self, width: usize, raw_dump: bool) {
-        let mut iter = self.iter();
-        let mut idx = 0;
+        let iter = self.iter();
         logln!(
             "Printing span starting at {:X} {:X} wide",
             self.start,
             self.width
         );
-        while let Some(byte) = iter.next() {
+        for (idx, byte) in iter.enumerate() {
             if raw_dump {
                 if idx % width == 0 {
-                    if idx == 0 {
-                        if byte < 15 {
-                            log!("\n0{:X} ", byte);
-                        } else {
-                            log!("\n{:X} ", byte);
-                        }
+                    if byte < 15 {
+                        log!("\n0{:X} ", byte);
                     } else {
-                        if byte < 15 {
-                            log!("\n0{:X} ", byte);
-                        } else {
-                            log!("\n{:X} ", byte);
-                        }
+                        log!("\n{:X} ", byte);
                     }
                 } else {
                     if byte < 15 {
@@ -76,7 +68,6 @@ impl MemorySpan {
                     }
                 }
             }
-            idx += 1;
         }
         logln!("\nEND OF SPAN");
     }
