@@ -68,7 +68,9 @@ impl Apic {
 
     pub fn init(&mut self) {
         // If the apic is not present according to cpuid
-        assert!(Apic::is_present(), "APIC is not present, and is required!");
+        if !Apic::is_present() {
+            panic!("APIC is not present, and is required!")
+        }
 
         let base = self.get_addr();
         self.set_apic_base(base);
