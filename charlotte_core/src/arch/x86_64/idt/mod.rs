@@ -38,7 +38,7 @@ impl Idt {
             gate.flags &= !(0b1u8 << 7);
         }
         gate.addr1 = ((isr_addr & (0xFFFF << 16)) >> 16) as u16;
-        gate.addr2 = ((isr_addr & (0xFFFFFFFF << 32)) >> 32) as u32;
+        gate.addr2 = ((isr_addr & (0xFFFF_FFFF << 32)) >> 32) as u32;
         gate.reserved = 0u32;
     }
     #[allow(unused)]

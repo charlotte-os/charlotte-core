@@ -7,7 +7,7 @@ use crate::{
     arch::x86_64::write_msr,
 };
 
-const FEAT_EDX_APIC: u32 = 0x00000200;
+const FEAT_EDX_APIC: u32 = 0x0000_0200;
 const APIC_BASE_MSR: u32 = 0x1B;
 const APIC_BASE_MSR_ENABLE: u32 = 0x800;
 
@@ -60,7 +60,7 @@ impl Apic {
     }
 
     pub fn set_apic_base(&mut self, base: usize) {
-        let eax = (base & 0xFFFFF0000) | APIC_BASE_MSR_ENABLE as usize;
+        let eax = (base & 0x000F_FFFF_0000) | APIC_BASE_MSR_ENABLE as usize;
         let edx = (base >> 32) & 0x0F;
 
         write_msr(APIC_BASE_MSR, eax as u32, edx as u32);

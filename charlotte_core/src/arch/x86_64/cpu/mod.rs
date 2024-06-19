@@ -6,7 +6,7 @@ use crate::logln;
 
 /// The number of significant bits in a physical address on the current CPU.
 pub static PADDR_SIG_BITS: Lazy<u8> = Lazy::new(|| {
-    let cpuid = unsafe { __cpuid_count(0x80000008, 0) };
+    let cpuid = unsafe { __cpuid_count(0x8000_0008, 0) };
     // 0x80000008 is the highest cpuid leaf that returns the physical address width in EAX[7:0]
     let psig_bits = cpuid.eax & 0xFF;
     psig_bits as u8
@@ -14,7 +14,7 @@ pub static PADDR_SIG_BITS: Lazy<u8> = Lazy::new(|| {
 
 /// The number of significant bits in a virtual address on the current CPU.
 pub static VADDR_SIG_BITS: Lazy<u8> = Lazy::new(|| {
-    let cpuid = unsafe { __cpuid_count(0x80000008, 0) };
+    let cpuid = unsafe { __cpuid_count(0x8000_0008, 0) };
     // 0x80000008 is the highest cpuid leaf that returns the virtual address width in EAX[15:8]
     let vsig_bits = (cpuid.eax >> 8) & 0xFF;
     vsig_bits as u8

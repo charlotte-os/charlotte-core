@@ -74,8 +74,8 @@ impl Gdt {
         gdt
     }
     fn set_tss_desc(&mut self, base: u64, limit: u32) {
-        self.set_segment_desc(5, (base & 0xFFFFFFFF) as u32, limit, 0x89, 0x0);
-        self.tss_desc.base3 = ((base & 0xFFFFFFFF00000000) >> 32) as u32;
+        self.set_segment_desc(5, (base & 0xFFFF_FFFF) as u32, limit, 0x89, 0x0);
+        self.tss_desc.base3 = ((base & 0xFFFF_FFFF_0000_0000) >> 32) as u32;
         self.tss_desc.reserved = 0;
     }
     fn set_segment_desc(
@@ -93,11 +93,11 @@ impl Gdt {
         };
 
         dest_sd.limit0 = (limit & 0xFFFF) as u16;
-        dest_sd.limit1_flags = ((limit & 0xFF0000) >> 16) as u8; // Only the lower 4 bits of this field encodes limit bits
+        dest_sd.limit1_flags = ((limit & 0x00FF_0000) >> 16) as u8; // Only the lower 4 bits of this field encodes limit bits
 
         dest_sd.base0 = (base & 0xFFFF) as u16;
-        dest_sd.base1 = ((base & 0xFF0000) >> 16) as u8;
-        dest_sd.base2 = ((base & 0xFF000000) >> 24) as u8;
+        dest_sd.base1 = ((base & 0x00FF_0000) >> 16) as u8;
+        dest_sd.base2 = ((base & 0xFF00_0000) >> 24) as u8;
 
         dest_sd.access_byte = access_byte;
 
