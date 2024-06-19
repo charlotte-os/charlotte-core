@@ -1,0 +1,21 @@
+name: Rust Analyzer Check
+on: [push, pull_request]
+
+jobs:
+  rust-analyzer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install x86_64-unknown-none target
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: x86_64-unknown-none
+          cache-workspaces: ./charlotte_core
+      - name: Install rust-analyzer
+        run: rustup component add rust-analyzer
+      - name: Run rust-analyzer
+        run: cargo check
+        working-directory: ./charlotte_core
