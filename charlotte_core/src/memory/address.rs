@@ -1,4 +1,4 @@
-use core::num::{NonZeroU64};
+use core::num::NonZeroU64;
 use core::ops::Add;
 
 use crate::arch::{Api, ArchApi, MEMORY_PARAMS};

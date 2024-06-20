@@ -231,9 +231,9 @@ impl PhysicalFrameAllocator {
         // the address of the last frame in the gap is returned
         // this is useful for the allocate_contiguous method
         // if a gap is found, the method can continue searching from after the gap
-        for address in base.iter_frames(n_frames).rev() {
-            if self.get_by_address(address) {
-                return RegionAvailability::Unavailable(address);
+        for address in (base.bits()..(base + n_frames).bits()).rev() {
+            if self.get_by_address(PhysicalAddress::from(address)) {
+                return RegionAvailability::Unavailable(PhysicalAddress::from(address));
             }
         }
         RegionAvailability::Available
