@@ -163,9 +163,9 @@ impl Console {
                 // Draw the character to the framebuffer
                 FRAMEBUFFER.lock().draw_char(
                     /* Add a 1 pixel margin between characters */
-                    u64::try_from(x * FONT_WIDTH).expect("x * FONT_WIDTH > u64") * u64::from(scale) + 1,
+                    (x * FONT_WIDTH) as u64 * u64::from(scale) + 1,
                     /* Add a 1 pixel margin between lines */
-                    u64::try_from(y * FONT_HEIGHT).expect("x * FONT_WIDTH > u64") * u64::from(scale) + 1,
+                    (y * FONT_HEIGHT) as u64 * u64::from(scale) + 1,
                     self.buffer.chars[y][x].character,
                     self.buffer.chars[y][x].color,
                     self.buffer.chars[y][x].background_color,

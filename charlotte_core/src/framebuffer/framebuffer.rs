@@ -99,7 +99,7 @@ impl FrameBufferInfo {
     pub fn clear_screen(&self, color: u32) {
         for y in 0..self.height {
             for x in 0..self.width {
-                let pixel_offset = u64_to_usize(y * self.pitch / u64::from(self.bpp / 8) + x);
+                let pixel_offset = (y * self.pitch / u64::from(self.bpp / 8) + x) as usize;
                 unsafe {
                     *self.address.load(Ordering::Relaxed).add(pixel_offset) = color;
                 }
@@ -117,7 +117,7 @@ impl FrameBufferInfo {
 
     pub fn draw_pixel(&self, x: u64, y: u64, color: u32) {
         if x < self.width && y < self.height {
-            let pixel_offset = u64_to_usize(y * self.pitch / u64::from(self.bpp / 8) + x);
+            let pixel_offset = (y * self.pitch / u64::from(self.bpp / 8) + x) as usize;
             unsafe {
                 *self.address.load(Ordering::Relaxed).add(pixel_offset) = color;
             }
@@ -144,11 +144,11 @@ impl FrameBufferInfo {
         let start_x = x; // Remember the starting x position to reset to it on new lines
         for c in text.chars() {
             if c == '\n' {
-                y += u64::try_from(FONT_HEIGHT).expect("FONT_HEIGHT > u64") * u64::from(self.scale) + 1;
+                y += FONT_HEIGHT as u64 * u64::from(self.scale) + 1;
                 x = start_x;
             } else {
                 self.draw_char(x, y, c, color, background_color);
-                x += u64::try_from(FONT_WIDTH).expect("FONT_WIDTH > u64") * u64::from(self.scale);
+                x += FONT_WIDTH as u64 * u64::from(self.scale);
             }
         }
     }
@@ -164,15 +164,15 @@ impl FrameBufferInfo {
     pub fn draw_char(&self, x: u64, y: u64, chracter: char, color: u32, background_color: u32) {
         let bitmap = get_char_bitmap(chracter);
         for (row, &bits) in bitmap.iter().enumerate() {
-            for col in 0..u64::try_from(FONT_WIDTH).expect("FONT_WIDTH > u64") {
-                let is_set = (bits >> (u64::try_from(FONT_WIDTH).expect("FONT_WIDTH > u64") - 1 - col)) & 1 == 1;
+            for col in 0..FONT_WIDTH as u64 {
+                let is_set = (bits >> (FONT_WIDTH as u64 - 1 - col)) & 1 == 1;
                 let pixel_color = if is_set { color } else { background_color };
                 /* Instead of a pixel, create a square with sides that are the size of self.scale */
                 for dy in 0..self.scale {
                     for dx in 0..self.scale {
                         self.draw_pixel(
                             x + col * u64::from(self.scale) + u64::from(dx),
-                            y + u64::try_from(row).expect("row > u64") * u64::from(self.scale) + u64::from(dy),
+                            y + row as u64 * u64::from(self.scale) + u64::from(dy),
                             pixel_color,
                         );
                     }
@@ -262,13 +262,15 @@ impl FrameBufferInfo {
     /// Automatically select scaling based on resolution
     /// Call this whenever resolution of the monitor changes!
     pub fn calc_scale(&mut self) {
-        let scale_width = self.width / u64::try_from(CONSOLE_WIDTH * FONT_WIDTH).expect("CONSOLE_WIDTH * FONT_WIDTH exceeds u64");
-        let scale_height = self.height / u64::try_from(CONSOLE_HEIGHT * FONT_HEIGHT).expect("CONSOLE_HEIGHT * FONT_HEIGHT exceeds u64");
-        self.scale = if (scale_height > scale_width) {
-            u8::try_from(scale_width).expect("Framebuffer scale is bigger than 255")
-        } else {
-            u8::try_from(scale_height).expect("Framebuffer scale is bigger than 255")
-        };
+        let scale_width = self.width / (CONSOLE_WIDTH * FONT_WIDTH) as u64;
+        let scale_height = self.height / (CONSOLE_HEIGHT * FONT_HEIGHT) as u64;
+        self.scale = u8::try_from(
+            if (scale_height > scale_width) {
+                scale_width
+            } else {
+                scale_height
+            }
+        ).expect("Framebuffer scale > 255");
     }
 }
 
@@ -284,9 +286,4 @@ pub fn init_framebuffer() -> FrameBufferInfo {
     } else {
         panic!("No framebuffer returned from bootlaoder!");
     }
-}
-
-#[inline]
-fn u64_to_usize(data: u64) -> usize {
-    usize::try_from(data).expect("System architecture is not greater or equal than 64-bit")
 }
