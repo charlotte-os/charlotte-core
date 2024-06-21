@@ -18,6 +18,7 @@ use serial::{ComPort, SerialPort};
 
 use crate::acpi::{parse, AcpiInfo};
 use crate::arch::x86_64::interrupts::apic::Apic;
+use crate::arch::{IsaParams, PagingParams};
 use crate::framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
 use crate::logln;
@@ -44,6 +45,14 @@ static BSP_TSS: Lazy<Tss> = Lazy::new(|| Tss::new(addr_of!(BSP_RING0_INT_STACK) 
 static BSP_GDT: Lazy<Gdt> = Lazy::new(|| Gdt::new(&BSP_TSS));
 static BSP_IDT: SpinMutex<Idt> = SpinMutex::new(Idt::new());
 
+pub const X86_ISA_PARAMS: IsaParams = IsaParams {
+    paging: PagingParams {
+        page_size: 0x1000,
+        page_shift: 0xC,
+        page_mask: !0xfff,
+    },
+};
+
 /// Provide the implementation of the Api trait for the Api struct
 impl crate::arch::Api for Api {
     type Api = Api;
@@ -68,6 +77,7 @@ impl crate::arch::Api for Api {
         logln!("============================================================\n");
         logln!("Enable the interrupts");
         api.init_interrupts();
+        logln!("{}",api.bsp_apic.lvt_max);
         logln!("============================================================\n");
 
         logln!("Memory self test");
@@ -110,12 +120,12 @@ impl crate::arch::Api for Api {
 
     /// Read a byte from the specified port
     fn inb(port: u16) -> u8 {
-        unsafe { asm_inb(port) }
+        asm_inb(port)
     }
 
     /// Write a byte to the specified port
     fn outb(port: u16, val: u8) {
-        unsafe { asm_outb(port, val) }
+        asm_outb(port, val)
     }
 
     /// Initialize the bootstrap processor (BSP)

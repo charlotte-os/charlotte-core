@@ -46,10 +46,11 @@ isr_double_fault:
 isr_general_protection_fault:
 	call save_regs
 	pop rdi //pop the error code
+	mov rsi, [rip] // Save the RIP to RSI for the handler
 	call ih_general_protection_fault
 	hlt
-	//call restore_regs
-	//iretq
+	call restore_regs
+	iretq
 
 .global isr_page_fault
 isr_page_fault:

@@ -76,18 +76,30 @@ extern "C" fn ih_divide_by_zero() {
         &mut logger,
         "A divide by zero has occurred in kernelspace! Panicking!"
     )
-    .ignore();
+        .ignore();
 }
 
 #[no_mangle]
-extern "C" fn ih_general_protection_fault(_error_code: u64) {
+extern "C" fn ih_general_protection_fault(error_code: u64, rip: u64) {
     let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "A general protection fault has occurred in kernelspace! Panicking!"
-    )
-    .ignore();
+    if error_code != 0 {
+        writeln!(
+            &mut logger,
+            "A general protection fault has occurred in kernel space with error code {:X}! Panicking!
+            this is usually the segment selector that caused the fault.",
+            error_code
+        )
+            .ignore();
+        return;
+    } else {
+        writeln!(
+            &mut logger,
+            "A general protection fault has occurred in kernelspace! Panicking!
+            RIP = {:X}",
+            rip,
+        )
+            .ignore();
+    }
 }
 
 #[no_mangle]
@@ -99,7 +111,7 @@ extern "C" fn ih_page_fault(error_code: u64) {
         "A page fault has occurred with error code {:x}",
         error_code
     )
-    .ignore();
+        .ignore();
 }
 
 #[no_mangle]
@@ -111,7 +123,7 @@ extern "C" fn ih_segment_not_present(error_code: u64) {
         "Segment Not Present Fault: error code {:x}",
         error_code
     )
-    .ignore();
+        .ignore();
 }
 
 #[no_mangle]
@@ -172,7 +184,7 @@ extern "C" fn ih_invalid_tss(error_code: u64) {
         "Invalid TSS Exception Occurred! Error code: {:x}",
         error_code
     )
-    .ignore();
+        .ignore();
 }
 
 #[no_mangle]
@@ -184,7 +196,7 @@ extern "C" fn ih_stack_segment_fault(error_code: u64) {
         "Stack-Segment Fault Occurred! Error code: {:x}",
         error_code
     )
-    .ignore();
+        .ignore();
 }
 
 #[no_mangle]
@@ -195,7 +207,7 @@ extern "C" fn ih_reserved() {
         &mut logger,
         "Unexpected Reserved Vector 15 Exception Occurred!"
     )
-    .ignore();
+        .ignore();
 }
 
 #[no_mangle]
@@ -214,7 +226,7 @@ extern "C" fn ih_alignment_check(error_code: u64) {
         "Alignment Check Exception Occurred! Error code: {:x}",
         error_code
     )
-    .ignore();
+        .ignore();
 }
 
 #[no_mangle]
@@ -225,7 +237,7 @@ extern "C" fn ih_machine_check() {
         &mut logger,
         "Machine Check Exception Occurred! System is halted for safety."
     )
-    .ignore();
+        .ignore();
     // After logging, the system might be halted by the assembly handler (ih_machine_check does not return).
 }
 
@@ -252,7 +264,7 @@ extern "C" fn ih_control_protection(error_code: u64) {
         "Control Protection Exception Occurred! Error code: {:x}",
         error_code
     )
-    .ignore();
+        .ignore();
 }
 
 #[no_mangle]
@@ -271,7 +283,7 @@ extern "C" fn ih_vmm_communication(error_code: u64) {
         "VMM Communication Exception Occurred! Error code: {:x}",
         error_code
     )
-    .ignore();
+        .ignore();
 }
 
 #[no_mangle]
@@ -283,5 +295,5 @@ extern "C" fn ih_security_exception(error_code: u64) {
         "Security Exception Occurred! Error code: {:x}",
         error_code
     )
-    .ignore();
+        .ignore();
 }

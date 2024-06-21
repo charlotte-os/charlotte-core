@@ -74,3 +74,9 @@ pub const CURRENT_COUNT_FOR_TIMER: u32 = 0x390;
 
 /// Read/Write
 pub const DIVIDE_CONFIGURATION_FOR_TIMER: u32 = 0x3E0;
+
+pub const APIC_DISABLE: u32 = 0x10000;
+
+pub const APIC_NMI: u32 = 0x400;
+
+pub const APIC_SW_ENABLE: u32 = 0x100;
