@@ -1,5 +1,5 @@
 use crate::bootinfo;
-use crate::memory::address::{PhysicalAddress, PointerSized};
+use crate::memory::address::{PhysicalAddress, UAddr};
 
 use core::slice::from_raw_parts_mut;
 
@@ -35,7 +35,7 @@ impl MemoryMap {
         self.entries.iter().map(|entry| entry.length).sum::<u64>() as usize
     }
 
-    pub fn usable_memory(&self) -> PointerSized {
+    pub fn usable_memory(&self) -> UAddr {
         self.entries
             .iter()
             .filter(|entry| entry.entry_type == bootinfo::memory_map::EntryType::USABLE)
@@ -43,7 +43,7 @@ impl MemoryMap {
             .sum::<u64>()
     }
 
-    fn highest_address(&self) -> PointerSized {
+    fn highest_address(&self) -> UAddr {
         self.entries
             .iter()
             .map(|entry| entry.base + entry.length)
@@ -55,7 +55,7 @@ impl MemoryMap {
         self.entries.iter()
     }
 
-    pub fn find_best_fit(&self, size: PointerSized) -> Result<&bootinfo::memory_map::Entry, Error> {
+    pub fn find_best_fit(&self, size: UAddr) -> Result<&bootinfo::memory_map::Entry, Error> {
         self.entries
             .iter()
             .filter(|entry| entry.entry_type == bootinfo::memory_map::EntryType::USABLE)
@@ -84,7 +84,7 @@ enum RegionAvailability {
     Unavailable(PhysicalAddress),
 }
 
-const FRAME_SIZE: PointerSized = 4096;
+const FRAME_SIZE: UAddr = 4096;
 
 /// A bitmap based physical frame allocator
 pub struct PhysicalFrameAllocator {
@@ -142,8 +142,8 @@ impl PhysicalFrameAllocator {
     }
 
     #[inline]
-    const fn frame_capacity(&self) -> PointerSized {
-        (self.bitmap.len() * 8) as PointerSized
+    const fn frame_capacity(&self) -> UAddr {
+        (self.bitmap.len() * 8) as UAddr
     }
 
     pub fn allocate(&mut self) -> Result<PhysicalAddress, Error> {
@@ -170,8 +170,8 @@ impl PhysicalFrameAllocator {
 
     pub fn allocate_contiguous(
         &mut self,
-        n_frames: PointerSized,
-        alignment: PointerSized,
+        n_frames: UAddr,
+        alignment: UAddr,
     ) -> Result<PhysicalAddress, Error> {
         //validate inputs
         if n_frames == 0 {
@@ -207,7 +207,7 @@ impl PhysicalFrameAllocator {
     pub fn deallocate_contiguous(
         &mut self,
         base: PhysicalAddress,
-        n_frames: PointerSized,
+        n_frames: UAddr,
     ) -> Result<(), Error> {
         // validate inputs
         if n_frames == 0 {
@@ -226,7 +226,7 @@ impl PhysicalFrameAllocator {
         Ok(())
     }
 
-    fn check_region(&self, base: PhysicalAddress, n_frames: PointerSized) -> RegionAvailability {
+    fn check_region(&self, base: PhysicalAddress, n_frames: UAddr) -> RegionAvailability {
         // search the region in reverse order so that if a gap is found
         // the address of the last frame in the gap is returned
         // this is useful for the allocate_contiguous method
@@ -240,11 +240,11 @@ impl PhysicalFrameAllocator {
     }
 
     fn index_to_address(&self, byte: usize, bit: usize) -> PhysicalAddress {
-        PhysicalAddress::from_pfn((byte * 8 + bit) as PointerSized)
+        PhysicalAddress::from_pfn((byte * 8 + bit) as UAddr)
     }
 
-    fn address_to_index(&self, address: PhysicalAddress) -> (PointerSized, PointerSized) {
-        ((address.pfn() / 8) as PointerSized, (address.pfn() % 8) as PointerSized)
+    fn address_to_index(&self, address: PhysicalAddress) -> (UAddr, UAddr) {
+        ((address.pfn() / 8) as UAddr, (address.pfn() % 8) as UAddr)
     }
 
     fn get_by_address(&self, address: PhysicalAddress) -> bool {
