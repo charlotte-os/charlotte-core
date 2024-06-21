@@ -8,6 +8,7 @@ use core::fmt::{Result, Write};
 use spin::{lazy::Lazy, mutex::TicketMutex};
 
 use crate::framebuffer::console::CONSOLE;
+use crate::memory::address::UAddr;
 
 #[cfg(target_arch = "aarch64")]
 pub mod aarch64;
@@ -21,6 +22,18 @@ pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
         logger: <ArchApi as Api>::get_logger(),
     })
 });
+
+#[derive(Debug, Copy, Clone)]
+pub struct PagingParams {
+    pub page_size: UAddr,
+    pub page_shift: UAddr,
+    pub page_mask: UAddr,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct IsaParams {
+    pub paging: PagingParams,
+}
 
 pub trait Api {
     type Api: Api;
@@ -94,3 +107,10 @@ pub type ArchApi = x86_64::Api;
 pub type ArchApi = aarch64::Api;
 #[cfg(target_arch = "riscv64")]
 pub type ArchApi = riscv64::Api;
+
+#[cfg(target_arch = "x86_64")]
+pub const ISA_PARAMS: IsaParams = x86_64::X86_ISA_PARAMS;
+#[cfg(target_arch = "aarch64")]
+pub static MEMORY_PARAMS: PagingParams = aarch64::ISA_MEMORY_PARAMS;
+#[cfg(target_arch = "riscv64")]
+pub static MEMORY_PARAMS: PagingParams = riscv64::ISA_MEMORY_PARAMS;

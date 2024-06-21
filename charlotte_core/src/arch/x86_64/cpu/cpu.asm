@@ -20,42 +20,6 @@ asm_outb:
 	out dx, al
 	ret
 
-.global asm_read_msr
-asm_read_msr:
-	push   rbp
-	mov    rbp, rsp
-	mov    [rbp - 4], edi
-	mov    [rbp - 16], rsi
-	mov    [rbp - 24], rdx
-	mov    rax,[rbp - 16]
-	mov    [rbp - 40], rax//       # 8-byte Spill
-	mov    rax,[rbp - 24]
-	mov    [rbp - 32], rax//       # 8-byte Spill
-	mov    ecx,[rbp - 4]
-	rdmsr
-	mov    rcx,[rbp - 40]//       # 8-byte Reload
-	mov    esi, eax
-	mov    rax,[rbp - 32]//       # 8-byte Reload
-	mov    [rcx], esi
-	mov    [rax], edx
-	pop    rbp
-	ret
-
-
-.global asm_write_msr
-asm_write_msr:
-	push    rbp
-	mov     rbp, rsp
-	mov    [rbp - 4], edi
-	mov    [rbp - 8], esi
-	mov    [rbp - 12], edx
-	mov     eax,[rbp - 8]
-	mov     edx,[rbp - 12]
-	mov     ecx,[rbp - 4]
-	wrmsr   // this will have the form MSR[ecx] := edx:eax
-	pop     rbp
-	ret
-
 .global asm_get_privilege_level
 asm_get_privilege_level:
 	// this routine takes in 0 params
