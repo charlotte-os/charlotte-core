@@ -1,5 +1,6 @@
-use core::arch::x86_64::__cpuid;
+use core::arch::x86_64::{__cpuid, _mm_lfence, __rdtscp};
 use core::ptr;
+use core::time::Duration;
 
 use crate::acpi::madt::{Madt, MadtEntry};
 use crate::arch::x86_64::cpu::{asm_irq_disable, asm_irq_restore, clear_msr_bit, set_msr_bit};
@@ -119,5 +120,43 @@ impl Apic {
         // map the APIC timer to IRQ 0x20
         self.write_apic_reg(LVT_TIMER, 0x20);
         self.write_apic_reg(DIVIDE_CONFIGURATION_FOR_TIMER, 0x3);
+    }
+
+    fn measure_tsc_duration(duration: Duration) -> u64 {
+        unsafe {
+            _mm_lfence(); // Serialize
+            let start_tsc = __rdtscp(&mut 0);
+            _mm_lfence(); // Serialize
+
+            let start_time = x86_64::instructions::rdtsc();
+
+            // Busy-wait loop for the specified duration
+            let end_time = start_time + duration.as_nanos() as u64;
+            while x86_64::instructions::rdtsc() < end_time {
+                x86_64::instructions::hlt();
+            }
+
+            _mm_lfence(); // Serialize
+            let end_tsc = __rdtscp(&mut 0);
+            _mm_lfence(); // Serialize
+
+            end_tsc - start_tsc
+        }
+    }
+
+    fn calculate_bus_speed(ticks: u64, duration: Duration) -> u64 {
+        ticks / duration.as_secs()
+    }
+
+    fn calculate_ticks_per_second(&self) -> u64 {
+        let duration = Duration::from_secs(1);
+        let ticks = Self::measure_tsc_duration(duration);
+        Self::calculate_bus_speed(ticks, duration)
+    }
+
+    pub fn set_timer_counter(&self, frequency: u32) {
+        let ticks_per_second = self.calculate_ticks_per_second();
+        let counter_value = ticks_per_second / frequency;
+        self.write_apic_reg(LVT_TIMER, counter_value as u32);
     }
 }
