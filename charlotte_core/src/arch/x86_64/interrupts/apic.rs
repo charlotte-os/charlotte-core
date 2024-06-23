@@ -1,14 +1,18 @@
-use core::arch::x86_64::{__cpuid, _mm_lfence, __rdtscp};
+use core::arch::x86_64::{__cpuid, __rdtscp, _mm_lfence};
 use core::ptr;
 use core::time::Duration;
 
 use crate::acpi::madt::{Madt, MadtEntry};
 use crate::arch::x86_64::cpu::{asm_irq_disable, asm_irq_restore, clear_msr_bit, set_msr_bit};
 use crate::arch::x86_64::idt::Idt;
-use crate::arch::x86_64::interrupts::apic_consts::{APIC_DISABLE, APIC_NMI, DESTINATION_FORMAT, DIVIDE_CONFIGURATION_FOR_TIMER, LAPIC_VERSION, LOGICAL_DESTINATION, LVT_LINT0, LVT_LINT1, LVT_PERFORMANCE_MONITORING_COUNTERS, LVT_TIMER, SPURIOUS_INTERRUPT_VECTOR, TASK_PRIORITY_TPR};
+use crate::arch::x86_64::interrupts::apic_consts::{
+    APIC_DISABLE, APIC_NMI, DESTINATION_FORMAT, DIVIDE_CONFIGURATION_FOR_TIMER, LAPIC_VERSION,
+    LOGICAL_DESTINATION, LVT_LINT0, LVT_LINT1, LVT_PERFORMANCE_MONITORING_COUNTERS, LVT_TIMER,
+    SPURIOUS_INTERRUPT_VECTOR, TASK_PRIORITY_TPR,
+};
 use crate::arch::x86_64::interrupts::isa_handler::set_isr;
 
-const FEAT_EDX_APIC: u32 = 1<<9;
+const FEAT_EDX_APIC: u32 = 1 << 9;
 const APIC_MSR: u32 = 0x1B;
 const APIC_BASE_MSR_ENABLE: u32 = 0x800;
 
