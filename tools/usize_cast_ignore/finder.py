@@ -2,6 +2,7 @@ from typing import Optional, Tuple
 
 from const import LINT_REASON, LOOK_FOR
 
+
 def find_usize_cast(lint: dict) -> Optional[Tuple[str, int]]:
     if lint.get('reason') != LINT_REASON:
         return

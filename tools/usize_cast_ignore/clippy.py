@@ -7,7 +7,9 @@ from const import CLIPPY_COMMAND
 
 
 def fetch() -> Generator[dict, None, None]:
-    for lint in _run_clippy()[:-1].split(b'\n'):
+    lints = _run_clippy()[:-1].split(b'\n')
+    lints.reverse()
+    for lint in lints:
         if lint is None:
             continue
         yield _bytes_to_dict(lint)
