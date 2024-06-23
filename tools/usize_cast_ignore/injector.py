@@ -2,14 +2,17 @@ import os
 
 from const import DISABLE_LINT
 import errors
+import parser
 
 
 def inject(file_path: str, line: int) -> None:
     complete_file_path = f'charlotte_core/{file_path}'
     lines = _load_source_file(complete_file_path)
+    ranges = parser.analyze_rust_file(lines, cache_id=complete_file_path)
+
     if line > len(lines):
         os._exit(errors.ErrorCodes.InvalidLine)
-    _find_place_to_insert(lines, line)
+    _insert(lines, ranges, line)
     _save_source_file(complete_file_path, lines)
 
 
@@ -24,19 +27,14 @@ def _get_indent(line: str) -> str:
     return line[:len(line) - len(line.lstrip())]
 
 
-def _find_place_to_insert(lines: list, line: int) -> None:
-    line_num = line
-    while line_num > 0:
-        for scope in ('fn', 'trait'):
-            if scope not in lines[line_num]:
-                continue
-            print(lines[line_num])
-            if DISABLE_LINT in lines[line_num - 1]:
-                continue
-            lines.insert(line_num, f'{_get_indent(lines[line_num])}{DISABLE_LINT}')
-            break
+def _insert(lines: list, ranges: dict, line: int) -> bool:
+    for type_ in ranges:
+        for range_ in ranges[type_]:
+            if range_[0] <= line <= range_[1]:
+                lines.insert(range_[0], f'{_get_indent(lines[range_[0]])}{DISABLE_LINT}')
+                return True
 
-        line_num -= 1
+    return False
 
 
 def _save_source_file(file_path: str, lines: list) -> None:
