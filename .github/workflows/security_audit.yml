@@ -1,6 +1,7 @@
 name: Security Audit
-on: [push, pull_request]
-
+on:
+  schedule:
+    - cron: "0 6 * * 5,2"
 jobs:
   audit:
     runs-on: ubuntu-latest
