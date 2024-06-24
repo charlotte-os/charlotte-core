@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![warn(missing_copy_implementations)]
+#![cfg(target_pointer_width = "64")]
 
 use core::fmt::Write;
 use core::panic::PanicInfo;
@@ -34,8 +35,8 @@ unsafe extern "C" fn main() -> ! {
 }
 
 #[panic_handler]
-fn rust_panic(_info: &PanicInfo) -> ! {
+fn rust_panic(info: &PanicInfo) -> ! {
     logln!("A kernel panic has occurred due to a Rust runtime panic.");
-    logln!("PanicInfo: {:?}", _info);
+    logln!("PanicInfo: {:?}", info);
     ArchApi::panic()
 }

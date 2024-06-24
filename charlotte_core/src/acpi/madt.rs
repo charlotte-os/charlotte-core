@@ -124,9 +124,9 @@ pub struct ProcessorLocalApic {
 #[derive(Debug, Copy, Clone)]
 pub struct IoApic {
     header: MadtEntryHeader,
-    io_apic_id: u8,
+    id: u8,
     reserved: u8,
-    io_apic_addr: u32,
+    addr: u32,
     global_system_interrupt_base: u32,
 }
 
