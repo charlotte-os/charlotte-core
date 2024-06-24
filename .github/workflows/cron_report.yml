@@ -1,0 +1,12 @@
+name: Create code report
+on:
+  schedule:
+    - cron: "0 6 * * 5,2"
+
+jobs:
+  dependency-check:
+    uses: ./.github/workflows/dependencies.yml
+    secrets: inherit
+  security-audit:
+    uses: ./.github/workflows/security_audit.yml
+    secrets: inherit
