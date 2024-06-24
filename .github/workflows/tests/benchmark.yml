@@ -1,21 +1,33 @@
 name: Benchmark
-on: [push, pull_request]
+on:
+  workflow_call:
+    toolchain:
+        description: Rust toolchain
+        required: true
+        type: string
 
 jobs:
   benchmark:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # TODO: Keep this updated
+        target:
+          - x86_64-unknown-none
+      fail-fast: false
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: ${{ toolchain }}
       - name: Install NASM
         uses: ilammy/setup-nasm@v1
-      - name: Install x86_64-unknown-none target
+      - name: Install ${{ matrix.target }} target
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          target: x86_64-unknown-none
+          target: ${{ matrix.target }}
           cache-workspaces: ./charlotte_core
       - name: Run Benchmarks
         run: cargo bench
