@@ -1,7 +1,7 @@
 name: Security Audit
 on:
-  schedule:
-    - cron: "0 6 * * 5,2"
+  workflow_call:
+
 jobs:
   audit:
     runs-on: ubuntu-latest
