@@ -1,12 +1,6 @@
 name: Check Dependencies
-
 on:
-  schedule:
-    - cron: "0 6 * * 5,2"
-  workflow_dispatch:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 jobs:
   check-dependencies:
