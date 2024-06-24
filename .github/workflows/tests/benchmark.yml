@@ -1,7 +1,8 @@
 name: Benchmark
 on:
   workflow_call:
-    toolchain:
+    inputs:
+      toolchain:
         description: Rust toolchain
         required: true
         type: string
@@ -21,7 +22,7 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ toolchain }}
+          toolchain: ${{ inputs.toolchain }}
       - name: Install NASM
         uses: ilammy/setup-nasm@v1
       - name: Install ${{ matrix.target }} target
