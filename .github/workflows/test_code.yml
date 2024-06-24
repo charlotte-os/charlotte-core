@@ -3,16 +3,16 @@ on: [push, pull_request]
 
 jobs:
   unit-test:
-    uses: ./.github/workflows/tests/unit_tests.yml
+    uses: ./.github/workflows/unit_tests.yml
     secrets: inherit
     with:
       toolchain: stable
   style-check:
-    uses: ./.github/workflows/tests/style_check.yml
+    uses: ./.github/workflows/style_check.yml
     secrets: inherit
   benchmark:
     needs: [unit-test, style-check]
-    uses: ./.github/workflows/tests/benchmark.yml
+    uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     with:
       toolchain: stable
