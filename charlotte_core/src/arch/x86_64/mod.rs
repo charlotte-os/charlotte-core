@@ -11,7 +11,10 @@ use core::{
 use spin::lazy::Lazy;
 use spin::mutex::spin::SpinMutex;
 
-use cpu::{PADDR_SIG_BITS, VADDR_SIG_BITS, asm_are_interrupts_enabled, asm_get_vendor_string, asm_halt, asm_inb, asm_irq_disable, asm_irq_restore, asm_outb, write_msr};
+use cpu::{
+    asm_are_interrupts_enabled, asm_get_vendor_string, asm_halt, asm_inb, asm_irq_disable,
+    asm_irq_restore, asm_outb, write_msr, PADDR_SIG_BITS, VADDR_SIG_BITS,
+};
 use gdt::{tss::Tss, Gdt};
 use idt::Idt;
 use serial::{ComPort, SerialPort};

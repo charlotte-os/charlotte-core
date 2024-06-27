@@ -85,12 +85,20 @@ impl FrameBufferInfo {
             if e2 >= dy {
                 // e_xy+e_x > 0
                 err += dy;
-                if x0 < x1 { x0 += 1 } else { x0 -= 1 };
+                if x0 < x1 {
+                    x0 += 1
+                } else {
+                    x0 -= 1
+                };
             }
             if e2 <= dx {
                 // e_xy+e_y < 0
                 err += dx;
-                if y0 < y1 { y0 += 1 } else { y0 -= 1 };
+                if y0 < y1 {
+                    y0 += 1
+                } else {
+                    y0 -= 1
+                };
             }
         }
     }
@@ -137,14 +145,7 @@ impl FrameBufferInfo {
     /// * `text` - The text to draw.
     /// * `color` - The color of the text in ARGB format.
 
-    pub fn draw_text(
-        &self,
-        mut x: u64,
-        mut y: u64,
-        text: &str,
-        color: u32,
-        background_color: u32,
-    ) {
+    pub fn draw_text(&self, mut x: u64, mut y: u64, text: &str, color: u32, background_color: u32) {
         let start_x = x; // Remember the starting x position to reset to it on new lines
         for c in text.chars() {
             if c == '\n' {
@@ -268,13 +269,12 @@ impl FrameBufferInfo {
     pub fn calc_scale(&mut self) {
         let scale_width = self.width / (CONSOLE_WIDTH * FONT_WIDTH) as u64;
         let scale_height = self.height / (CONSOLE_HEIGHT * FONT_HEIGHT) as u64;
-        self.scale = u8::try_from(
-            if (scale_height > scale_width) {
-                scale_width
-            } else {
-                scale_height
-            }
-        ).expect("Framebuffer scale > 255");
+        self.scale = u8::try_from(if (scale_height > scale_width) {
+            scale_width
+        } else {
+            scale_height
+        })
+        .expect("Framebuffer scale > 255");
     }
 }
 

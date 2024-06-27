@@ -96,8 +96,9 @@ impl Rsdp {
             self.length as usize
         };
 
-        let bytes =
-            unsafe { core::slice::from_raw_parts(core::ptr::from_ref::<Rsdp>(self).cast::<u8>(), length) };
+        let bytes = unsafe {
+            core::slice::from_raw_parts(core::ptr::from_ref::<Rsdp>(self).cast::<u8>(), length)
+        };
         let sum = bytes.iter().fold(0u8, |sum, &byte| sum.wrapping_add(byte));
 
         if sum != 0 {

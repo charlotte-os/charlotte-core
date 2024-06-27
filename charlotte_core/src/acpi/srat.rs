@@ -16,10 +16,10 @@ impl Srat {
     pub fn new(addr: usize) -> Option<Self> {
         let header = get_table(addr, *b"SRAT");
         header.map(|header| Srat {
-                header,
-                length: header.length() + 32,
-                addr,
-            })
+            header,
+            length: header.length() + 32,
+            addr,
+        })
     }
 
     pub fn header(&self) -> SDTHeader {

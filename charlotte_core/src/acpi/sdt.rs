@@ -74,7 +74,7 @@ impl Sdt {
     }
 
     /// Get the address of a table from the XSDT or RSDT
-    pub fn get_table(&self, signature: [u8; 4]) -> Option<usize> {    
+    pub fn get_table(&self, signature: [u8; 4]) -> Option<usize> {
         for i in 0..self.n_entries {
             if self.sub_tables[i].is_some() && self.sub_tables[i].unwrap().signature == signature {
                 return Some(self.sub_tables[i].unwrap().addr);
