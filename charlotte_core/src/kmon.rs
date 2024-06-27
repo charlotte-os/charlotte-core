@@ -28,7 +28,7 @@ impl<T: Serial> Kmon<T> {
         }
         log!("\n");
         self.recv_buf_pos = 0;
-        self.print_term_begin();
+        print_term_begin();
     }
 
     fn handle_char(&mut self, c: char) {
@@ -41,7 +41,7 @@ impl<T: Serial> Kmon<T> {
             /* Clear _ */
             log!(" \x08\n");
             if self.recv_buf_pos == 0 {
-                self.print_term_begin();
+                print_term_begin();
             } else {
                 self.handle_line();
             }
@@ -58,20 +58,21 @@ impl<T: Serial> Kmon<T> {
             /* Reset written content */
             self.recv_buf = ['\0'; 256];
             self.recv_buf_pos = 0;
-            self.print_term_begin();
+            print_term_begin();
         }
     }
 
     pub fn repl_loop(&mut self) {
         log!("=================== [Serial Prompt v1.0] ===================\n");
-        self.print_term_begin();
+        print_term_begin();
         loop {
             let c = self.port.read_char();
             self.handle_char(c);
         }
     }
+}
 
-    fn print_term_begin(&self) {
-        log!(">>> _\x08");
-    }
+#[inline]
+fn print_term_begin() {
+    log!(">>> _\x08");
 }

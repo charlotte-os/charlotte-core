@@ -5,15 +5,15 @@ use core::fmt::Write;
 
 use crate::{log, logln};
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct MemorySpan {
     start: usize,
     width: usize,
 }
 
-#[derive(Clone, Copy)]
-pub struct MemorySpanIter {
-    span: MemorySpan,
+#[derive(Clone)]
+pub struct MemorySpanIter<'a> {
+    span: &'a MemorySpan,
     offset: usize,
 }
 
@@ -74,13 +74,13 @@ impl MemorySpan {
 
     pub fn iter(&self) -> MemorySpanIter {
         MemorySpanIter {
-            span: *self,
+            span: self,
             offset: 0,
         }
     }
 }
 
-impl Iterator for MemorySpanIter {
+impl<'a> Iterator for MemorySpanIter<'a> {
     type Item = u8;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -173,14 +173,15 @@ impl Console {
             }
         }
     }
-
-    pub fn clear_inner_styling(&self) {
-        INNER_STYLE_SETTINGS.lock().clear();
-    }
 }
 
 static INNER_STYLE_SETTINGS: TicketMutex<InnerPrintStyle> =
     TicketMutex::new(InnerPrintStyle::new());
+
+#[allow(unused)]
+pub fn clear_inner_styling() {
+    INNER_STYLE_SETTINGS.lock().clear();
+}
 
 /// Inner style settings for print macros
 #[allow(clippy::struct_field_names)]

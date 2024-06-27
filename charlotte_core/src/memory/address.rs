@@ -15,12 +15,12 @@ impl PhysicalAddress {
     }
 
     #[inline]
-    pub const fn bits(&self) -> usize {
+    pub const fn bits(self) -> usize {
         self.0
     }
 
     #[inline]
-    pub const fn pfn(&self) -> usize {
+    pub const fn pfn(self) -> usize {
         self.bits() >> Self::FRAME_SHIFT
     }
 
@@ -30,17 +30,17 @@ impl PhysicalAddress {
     }
 
     #[inline]
-    pub const fn is_aligned_to(&self, align: NonZeroUsize) -> bool {
+    pub const fn is_aligned_to(self, align: NonZeroUsize) -> bool {
         self.bits() & (align.get() - 1) == 0
     }
 
     #[inline]
-    pub const fn is_page_aligned(&self) -> bool {
+    pub const fn is_page_aligned(self) -> bool {
         self.is_aligned_to(Self::FRAME_SIZE)
     }
 
     #[inline]
-    pub fn iter_frames(&self, n_frames: usize) -> impl DoubleEndedIterator<Item = PhysicalAddress> {
+    pub fn iter_frames(self, n_frames: usize) -> impl DoubleEndedIterator<Item = PhysicalAddress> {
         (self.bits()..(self.bits() + n_frames * Self::FRAME_SIZE.get()))
             .step_by(Self::FRAME_SIZE.get())
             .map(PhysicalAddress::new)

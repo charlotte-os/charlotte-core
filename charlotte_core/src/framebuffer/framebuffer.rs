@@ -40,7 +40,11 @@ impl FrameBufferInfo {
     ///
     /// * `framebuffer` - A reference to a limine `Framebuffer` struct.
     pub fn new(framebuffer: &Framebuffer) -> Self {
+        /* ARM safeguard */
+        assert!(framebuffer.addr() as usize % 4 == 0);
+
         let mut framebuffer = Self {
+            #[allow(clippy::cast_ptr_alignment)]
             address: AtomicPtr::new(framebuffer.addr().cast::<u32>()),
             width: framebuffer.width(),
             height: framebuffer.height(),

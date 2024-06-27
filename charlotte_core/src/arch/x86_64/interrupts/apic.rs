@@ -59,6 +59,7 @@ impl Apic {
         unsafe { ptr::read_volatile(addr) }
     }
 
+    #[allow(clippy::unused_self)]
     pub fn set_apic_base(&mut self, base: usize) {
         let eax = (base & 0x000F_FFFF_0000) | APIC_BASE_MSR_ENABLE as usize;
         let edx = (base >> 32) & 0x0F;

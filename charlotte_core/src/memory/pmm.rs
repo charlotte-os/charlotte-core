@@ -149,7 +149,7 @@ impl PhysicalFrameAllocator {
             let bit_index = byte.trailing_ones() as usize;
             if bit_index < 8 {
                 *byte |= 1 << bit_index;
-                return Ok(self.index_to_address(byte_index, bit_index));
+                return Ok(PhysicalAddress::from_pfn(byte_index * 8 + bit_index));
             }
         }
         Err(Error::OutOfMemory)
@@ -238,26 +238,22 @@ impl PhysicalFrameAllocator {
         RegionAvailability::Available
     }
 
-    fn index_to_address(&self, byte: usize, bit: usize) -> PhysicalAddress {
-        PhysicalAddress::from_pfn(byte * 8 + bit)
-    }
-
-    fn address_to_index(&self, address: PhysicalAddress) -> (usize, usize) {
-        (address.pfn() / 8, address.pfn() % 8)
-    }
-
     fn get_by_address(&self, address: PhysicalAddress) -> bool {
-        let (byte, bit) = self.address_to_index(address);
+        let (byte, bit) = address_to_index(address);
         self.bitmap[byte] & (1 << bit) != 0
     }
 
     fn set_by_address(&mut self, address: PhysicalAddress) {
-        let (byte, bit) = self.address_to_index(address);
+        let (byte, bit) = address_to_index(address);
         self.bitmap[byte] |= 1 << bit;
     }
 
     fn clear_by_address(&mut self, address: PhysicalAddress) {
-        let (byte, bit) = self.address_to_index(address);
+        let (byte, bit) = address_to_index(address);
         self.bitmap[byte] &= !(1 << bit);
     }
+}
+
+fn address_to_index(address: PhysicalAddress) -> (usize, usize) {
+    (address.pfn() / 8, address.pfn() % 8)
 }

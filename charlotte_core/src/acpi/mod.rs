@@ -31,6 +31,7 @@ pub struct AcpiInfo {
 }
 
 #[allow(unused)]
+#[allow(clippy::large_types_passed_by_value)]
 impl AcpiInfo {
     /// Creates a new `AcpiTables`.
     pub fn new(

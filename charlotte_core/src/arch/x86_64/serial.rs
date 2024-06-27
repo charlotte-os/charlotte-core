@@ -33,11 +33,11 @@ impl SerialPort {
         ArchApi::outb(port.io_port + 4, 0x1E); // Set in loopback mode, test the serial chip
         ArchApi::outb(port.io_port + 0, 0xAE); // Test serial chip (send byte 0xAE and check if serial returns same byte)
 
-        if ArchApi::inb(port.io_port) != 0xAE {
-            None
-        } else {
+        if ArchApi::inb(port.io_port) == 0xAE {
             ArchApi::outb(port.io_port + 4, 0x0F);
             Some(port)
+        } else {
+            None
         }
     }
     fn is_transmit_empty(&self) -> i32 {
