@@ -86,18 +86,18 @@ impl FrameBufferInfo {
                 // e_xy+e_x > 0
                 err += dy;
                 if x0 < x1 {
-                    x0 += 1
+                    x0 += 1;
                 } else {
-                    x0 -= 1
+                    x0 -= 1;
                 };
             }
             if e2 <= dx {
                 // e_xy+e_y < 0
                 err += dx;
                 if y0 < y1 {
-                    y0 += 1
+                    y0 += 1;
                 } else {
-                    y0 -= 1
+                    y0 -= 1;
                 };
             }
         }
