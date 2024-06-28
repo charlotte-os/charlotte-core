@@ -31,6 +31,8 @@ pub struct AcpiInfo {
 }
 
 #[allow(unused)]
+// This lint is ignored here because this is a copy that will happen only once during bootstrtap,
+// all further usage is done by reference.
 #[allow(clippy::large_types_passed_by_value)]
 impl AcpiInfo {
     /// Creates a new `AcpiTables`.
