@@ -1,4 +1,4 @@
-name: Check style
+name: Check
 on:
   workflow_call:
     inputs:
