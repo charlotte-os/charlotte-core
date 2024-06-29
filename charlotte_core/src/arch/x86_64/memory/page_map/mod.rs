@@ -1,10 +1,10 @@
-mod page_table;
+pub mod page_table;
 
 use page_table::PageTable;
 
 use super::Error;
 
-use core::arch::asm;
+use core::arch::{asm, global_asm};
 use core::ptr::addr_of_mut;
 
 use crate::arch::x86_64::cpu::ARE_HUGE_PAGES_SUPPORTED;
@@ -313,4 +313,10 @@ impl MemoryMap for PageMap {
             }
         }
     }
+}
+
+global_asm!(include_str!("mod.asm"));
+
+extern "C" {
+    pub fn asm_get_cr3() -> u64;
 }
