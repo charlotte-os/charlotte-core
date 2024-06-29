@@ -4,7 +4,7 @@ use crate::arch::x86_64::memory::*;
 use crate::memory::address::*;
 use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
 
-mod page_table_entry;
+pub mod page_table_entry;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum PageSize {

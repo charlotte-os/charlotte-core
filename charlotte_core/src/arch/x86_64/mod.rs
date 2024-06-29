@@ -1,6 +1,8 @@
 //! # x86_64 Architecture Module
 //! This module implements the Arch interface for the x86_64 instruction set architecture (ISA).
 
+use core::arch::asm;
+use core::convert::From;
 use core::fmt::Write;
 use core::str;
 use core::{
@@ -8,6 +10,7 @@ use core::{
     ptr::addr_of,
 };
 
+use memory::page_map::{asm_get_cr3, PageMap};
 use spin::lazy::Lazy;
 use spin::mutex::spin::SpinMutex;
 
@@ -18,10 +21,12 @@ use serial::{ComPort, SerialPort};
 
 use crate::acpi::{parse, AcpiInfo};
 use crate::arch::x86_64::interrupts::apic::Apic;
-use crate::arch::{IsaParams, PagingParams};
+use crate::arch::x86_64::memory::page_map::page_table::page_table_entry::PteFlags;
+use crate::arch::{IsaParams, MemoryMap, PagingParams};
 use crate::framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
 use crate::logln;
+use crate::memory::address::{PhysicalAddress, VirtualAddress};
 use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
 
 mod cpu;
@@ -79,10 +84,11 @@ impl crate::arch::Api for Api {
         api.init_interrupts();
         logln!("============================================================\n");
 
-        logln!("Memory self test");
+        logln!("Memory self tests");
         Self::pmm_self_test();
         logln!("============================================================\n");
-
+        Self::vmm_self_test();
+        logln!("============================================================\n");
         logln!("All x86_64 sanity checks passed, kernel main has control now");
         logln!("============================================================\n");
 
@@ -258,5 +264,25 @@ impl Api {
         }
         logln!("Contiguous frame allocation and deallocation test complete.");
         logln!("Physical Memory Manager test suite finished.");
+    }
+
+    fn vmm_self_test() {
+        logln!("Beginning VMM Self Test...");
+        let cr3 = unsafe { asm_get_cr3() };
+        let mut pm = PageMap::from_cr3(cr3).expect("Failed to create PageMap from CR3 value.");
+        logln!("PageMap created from current CR3 value.");
+        let frame = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().expect("Failed to allocate frame.");
+        let vaddr = match VirtualAddress::try_from(0x800000000000){
+            Ok(vaddr) => vaddr,
+            Err(e) => {
+                logln!("Failed to create VirtualAddress: {:?}", e);
+                return;
+            }
+        };
+        pm.map_page(vaddr, frame, PteFlags::Write as u64 |
+            PteFlags::Global as u64 |
+            PteFlags::NoExecute as u64
+        );
+        logln!("Page mapping test successful.");
     }
 }
