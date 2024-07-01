@@ -6,4 +6,3 @@
 pub mod address;
 pub mod pmm;
 pub mod span_printer;
-pub mod vmm;
