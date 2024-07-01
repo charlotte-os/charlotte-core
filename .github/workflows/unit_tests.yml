@@ -18,12 +18,10 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ inputs.toolchain }}
       - name: Install ${{ matrix.target }} target
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
+          toolchain: ${{ inputs.toolchain }}
           target: ${{ matrix.target }}
           cache-workspaces: ./charlotte_core
       - name: Run tests
