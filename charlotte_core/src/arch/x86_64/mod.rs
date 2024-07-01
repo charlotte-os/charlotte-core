@@ -276,20 +276,28 @@ impl Api {
         let cr3 = unsafe { asm_get_cr3() };
         let mut pm = PageMap::from_cr3(cr3).expect("Failed to create PageMap from CR3 value.");
         logln!("PageMap created from current CR3 value.");
-        
+
         logln!("Starting page mapping test...");
-        let frame = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().expect("Failed to allocate frame.");
-        let vaddr = match VirtualAddress::try_from(0xFFFF800000000000){
+        let frame = PHYSICAL_FRAME_ALLOCATOR
+            .lock()
+            .allocate()
+            .expect("Failed to allocate frame.");
+        let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
             Ok(vaddr) => vaddr,
             Err(e) => {
                 panic!("Failed to create VirtualAddress: {:?}", e);
             }
         };
-        pm.map_page(vaddr, frame, PteFlags::Write as u64 |
-            PteFlags::Global as u64 |
-            PteFlags::NoExecute as u64
+        pm.map_page(
+            vaddr,
+            frame,
+            PteFlags::Write as u64 | PteFlags::Global as u64 | PteFlags::NoExecute as u64,
         );
-        logln!("Mapped page at virtual address: {:?} to physical frame: {:?}", vaddr, frame);
+        logln!(
+            "Mapped page at virtual address: {:?} to physical frame: {:?}",
+            vaddr,
+            frame
+        );
         unsafe {
             let ptr = <*mut u64>::from(vaddr);
             ptr.write(0xdeadbeef);
@@ -304,18 +312,26 @@ impl Api {
         logln!("Page mapping test successful.");
 
         logln!("Starting large page mapping test...");
-        let large_frame = PHYSICAL_FRAME_ALLOCATOR.lock().allocate_contiguous(512, 4096 * 512).expect("Failed to allocate frames.");
-        let vaddr = match VirtualAddress::try_from(0xFFFF800000000000){
+        let large_frame = PHYSICAL_FRAME_ALLOCATOR
+            .lock()
+            .allocate_contiguous(512, 4096 * 512)
+            .expect("Failed to allocate frames.");
+        let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
             Ok(vaddr) => vaddr,
             Err(e) => {
                 panic!("Failed to create VirtualAddress: {:?}", e);
             }
         };
-        pm.map_large_page(vaddr, large_frame, PteFlags::Write as u64 |
-            PteFlags::Global as u64 |
-            PteFlags::NoExecute as u64
+        pm.map_large_page(
+            vaddr,
+            large_frame,
+            PteFlags::Write as u64 | PteFlags::Global as u64 | PteFlags::NoExecute as u64,
         );
-        logln!("Mapped large page at virtual address: {:?} to physical frame: {:?}", vaddr, large_frame);
+        logln!(
+            "Mapped large page at virtual address: {:?} to physical frame: {:?}",
+            vaddr,
+            large_frame
+        );
         unsafe {
             let ptr = <*mut u64>::from(vaddr);
             ptr.write(0xcafebabe);
@@ -325,23 +341,33 @@ impl Api {
         }
         let _ = pm.unmap_large_page(vaddr);
         logln!("Unmapped large page at virtual address: {:?}", vaddr);
-        let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate_contiguous(large_frame, 512);
+        let _ = PHYSICAL_FRAME_ALLOCATOR
+            .lock()
+            .deallocate_contiguous(large_frame, 512);
         logln!("Deallocated large frame: {:?}", large_frame);
         logln!("Large page mapping test successful.");
 
         logln!("Starting huge page mapping test...");
-        let huge_frame = PHYSICAL_FRAME_ALLOCATOR.lock().allocate_contiguous(512 * 512, 4096 * 512 * 512).expect("Failed to allocate frames.");
-        let vaddr = match VirtualAddress::try_from(0xFFFF800000000000){
+        let huge_frame = PHYSICAL_FRAME_ALLOCATOR
+            .lock()
+            .allocate_contiguous(512 * 512, 4096 * 512 * 512)
+            .expect("Failed to allocate frames.");
+        let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
             Ok(vaddr) => vaddr,
             Err(e) => {
                 panic!("Failed to create VirtualAddress: {:?}", e);
             }
         };
-        pm.map_huge_page(vaddr, huge_frame, PteFlags::Write as u64 |
-            PteFlags::Global as u64 |
-            PteFlags::NoExecute as u64
+        pm.map_huge_page(
+            vaddr,
+            huge_frame,
+            PteFlags::Write as u64 | PteFlags::Global as u64 | PteFlags::NoExecute as u64,
         );
-        logln!("Mapped huge page at virtual address: {:?} to physical frame: {:?}", vaddr, huge_frame);
+        logln!(
+            "Mapped huge page at virtual address: {:?} to physical frame: {:?}",
+            vaddr,
+            huge_frame
+        );
         unsafe {
             let ptr = <*mut u64>::from(vaddr);
             ptr.write(0xdeadbeef);
@@ -351,7 +377,9 @@ impl Api {
         }
         let _ = pm.unmap_huge_page(vaddr);
         logln!("Unmapped huge page at virtual address: {:?}", vaddr);
-        let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate_contiguous(huge_frame, 512 * 512);
+        let _ = PHYSICAL_FRAME_ALLOCATOR
+            .lock()
+            .deallocate_contiguous(huge_frame, 512 * 512);
         logln!("Deallocated huge frame: {:?}", huge_frame);
         logln!("Huge page mapping test successful.");
 
