@@ -7,12 +7,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
       - name: Install x86_64-unknown-none target
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
+          toolchain: nightly
           target: x86_64-unknown-none
           cache-workspaces: ./charlotte_core
       - name: Install cargo-audit
