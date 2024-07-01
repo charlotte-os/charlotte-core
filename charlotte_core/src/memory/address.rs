@@ -127,7 +127,6 @@ impl<T> From<PhysicalAddress> for *mut T {
     }
 }
 
-
 impl Add<UAddr> for PhysicalAddress {
     type Output = Self;
 
