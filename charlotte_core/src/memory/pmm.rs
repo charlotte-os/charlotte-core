@@ -1,17 +1,17 @@
 use crate::bootinfo;
-use crate::memory::address::{PhysicalAddress, UAddr};
+use crate::memory::address::{PhysicalAddress, VirtualAddress, UAddr};
 
 use core::slice::from_raw_parts_mut;
 
 use spin::{lazy::Lazy, mutex::Mutex};
 
-pub static DIRECT_MAP: Lazy<PhysicalAddress> = Lazy::new(|| {
-    PhysicalAddress::new(
+pub static DIRECT_MAP: Lazy<VirtualAddress> = Lazy::new(|| {
+    VirtualAddress::try_from(
         bootinfo::HHDM_REQUEST
             .get_response()
             .expect("Limine failed to create a direct mapping of physical memory.")
-            .offset(),
-    )
+            .offset()
+    ).expect("Direct map address does not fit in a VirtualAddress")
 });
 
 pub static PHYSICAL_FRAME_ALLOCATOR: Lazy<Mutex<PhysicalFrameAllocator>> =

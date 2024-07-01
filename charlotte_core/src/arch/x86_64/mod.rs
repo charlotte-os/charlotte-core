@@ -117,18 +117,23 @@ impl crate::arch::Api for Api {
     #[inline]
     fn validate_paddr(raw: usize) -> bool {
         // Non-significant bits must be zero
-        let unused_bitmask = !(1 << Self::get_paddr_width() - 1);
-        (raw & unused_bitmask) == 0
+        let unused_bitmask = !((1 << Self::get_paddr_width()) - 1);
+        raw & unused_bitmask == 0
     }
 
     /// Validates a virtual address in accordance with the x86_64 architecture
     fn validate_vaddr(raw: u64) -> bool {
         // Canonical form check
-        let unused_bitmask = 1 << Self::get_vaddr_width() - 1;
-        let msb = (raw & (1 << (Self::get_vaddr_width() - 1))) > 0;
-        match msb {
-            false => raw & unused_bitmask == 0,
-            true => raw & unused_bitmask == unused_bitmask,
+        match Self::get_vaddr_width() {
+            48 => {
+                let masked = raw & 0xFFFF800000000000;
+                masked == 0 || masked == 0xFFFF800000000000
+            }
+            57 => {
+                let masked = raw & 0xFFFE000000000000;
+                masked == 0 || masked == 0xFFFE000000000000
+            }
+            _ => false,
         }
     }
 
@@ -272,11 +277,10 @@ impl Api {
         let mut pm = PageMap::from_cr3(cr3).expect("Failed to create PageMap from CR3 value.");
         logln!("PageMap created from current CR3 value.");
         let frame = PHYSICAL_FRAME_ALLOCATOR.lock().allocate().expect("Failed to allocate frame.");
-        let vaddr = match VirtualAddress::try_from(0x800000000000){
+        let vaddr = match VirtualAddress::try_from(0xFFFF800000000000){
             Ok(vaddr) => vaddr,
             Err(e) => {
-                logln!("Failed to create VirtualAddress: {:?}", e);
-                return;
+                panic!("Failed to create VirtualAddress: {:?}", e);
             }
         };
         pm.map_page(vaddr, frame, PteFlags::Write as u64 |
