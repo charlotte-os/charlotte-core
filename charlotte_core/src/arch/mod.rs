@@ -25,7 +25,7 @@ pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
     })
 });
 
-pub trait MemoryMap: Clone + Drop {
+pub trait MemoryMap {
     type Error;
     type Flags;
 
