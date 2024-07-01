@@ -5,10 +5,12 @@ use page_table::PageTable;
 use super::Error;
 
 use core::arch::{asm, global_asm};
+use core::fmt::Write;
 use core::ptr::addr_of_mut;
 
 use crate::arch::x86_64::cpu::ARE_HUGE_PAGES_SUPPORTED;
 use crate::arch::{Api, ArchApi, MemoryMap};
+use crate::logln;
 use crate::memory::address::VirtualAddress;
 use crate::memory::{address::PhysicalAddress, pmm::PHYSICAL_FRAME_ALLOCATOR};
 
@@ -74,6 +76,7 @@ impl<'a> Walker<'a> {
                 Ok(())
             }
             None => {
+                logln!("Walking PML4");
                 self.walk_pml4(vaddr, flags)?;
                 self.walk_pdpt(vaddr, flags)
             }
@@ -85,6 +88,7 @@ impl<'a> Walker<'a> {
             Some(pd) => {
                 unsafe {
                     let pd_ptr = addr_of_mut!(*pd);
+                    logln!("Obtained PD pointer: {:p}", pd_ptr);
                     self.pd = Some(
                         &mut *((*pd_ptr).get_or_map_table(
                             vaddr,
@@ -92,10 +96,12 @@ impl<'a> Walker<'a> {
                             flags,
                         )?),
                     );
+                    logln!("Obtained or Mapped PD table.");
                 }
                 Ok(())
             }
             None => {
+                logln!("Walking PDPT");
                 self.walk_pdpt(vaddr, flags)?;
                 self.walk_pd(vaddr, flags)
             }
@@ -117,7 +123,7 @@ impl PageMap {
     }
     pub fn from_cr3(mut cr3: u64) -> Result<Self, Error> {
         // clear the PCID bits
-        cr3 &= !0xFFF;
+        //cr3 &= !0xFFF;
 
         if ArchApi::validate_paddr(cr3 as usize) == false {
             Err(Error::InvalidAddress)
@@ -199,7 +205,9 @@ impl MemoryMap for PageMap {
             Err(Error::InvalidAddress)
         } else {
             let mut walker = Walker::new(self);
+            logln!("Walker created.");
             walker.walk_pd(vaddr, flags)?;
+            logln!("Walker walked to PD.");
             walker.pt.unwrap().map_page(
                 page_table::PageSize::Standard,
                 vaddr.pt_index(),

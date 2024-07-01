@@ -127,6 +127,7 @@ impl<T> From<PhysicalAddress> for *mut T {
     }
 }
 
+
 impl Add<UAddr> for PhysicalAddress {
     type Output = Self;
 
@@ -261,5 +262,14 @@ impl Add<usize> for VirtualAddress {
     #[inline]
     fn add(self, val: usize) -> Self::Output {
         Self(self.0 + val as UAddr)
+    }
+}
+
+impl Add<UAddr> for VirtualAddress {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, val: UAddr) -> Self::Output {
+        Self(self.0 + val)
     }
 }
