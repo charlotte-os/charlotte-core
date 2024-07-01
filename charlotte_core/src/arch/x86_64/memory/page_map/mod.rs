@@ -157,18 +157,6 @@ impl PageMap {
     }
 }
 
-impl Clone for PageMap {
-    fn clone(&self) -> Self {
-        todo!()
-    }
-}
-
-impl Drop for PageMap {
-    fn drop(&mut self) {
-        todo!()
-    }
-}
-
 impl MemoryMap for PageMap {
     type Error = Error;
     type Flags = u64;
