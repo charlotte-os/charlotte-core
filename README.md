@@ -1,7 +1,7 @@
 # Charlotte Core
 ### The Kernel of CharlotteOS
 
-Charlotte Core is the kernel of CharlotteOS. It is a monolithic kernel that is designed to provide a flexible and low level interface to programs running on top of it.
+Charlotte Core is the kernel of CharlotteOS. It is a monolithic kernel designed to provide a flexible and low level interface to programs running on top of it.
 
 ### Status
 
