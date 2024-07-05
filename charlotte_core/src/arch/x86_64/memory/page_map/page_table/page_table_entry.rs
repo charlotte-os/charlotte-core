@@ -67,10 +67,10 @@ impl PageTableEntry {
     pub fn map_table(&mut self, paddr: PhysicalAddress, flags: u64) -> Result<(), Error> {
         if self.is_present() {
             Err(Error::VAddrRangeUnavailable)
-        } else if paddr.is_page_aligned() == false {
+        } else if !paddr.is_page_aligned() {
             Err(Error::InvalidPAddrAlignment)
         } else {
-            self.entry = (paddr.bits() as u64 & *ADDR_MASK) | (flags & FLAG_MASK);
+            self.entry = (paddr.bits() & *ADDR_MASK) | (flags & FLAG_MASK);
             Ok(())
         }
     }
@@ -83,7 +83,7 @@ impl PageTableEntry {
     ) -> Result<(), Error> {
         if self.is_present() {
             Err(Error::VAddrRangeUnavailable)
-        } else if paddr.is_page_aligned() == false {
+        } else if !paddr.is_page_aligned() {
             Err(Error::InvalidPAddrAlignment)
         } else {
             let flag_mask = if size == PageSize::Standard {
@@ -91,7 +91,7 @@ impl PageTableEntry {
             } else {
                 HUGE_AND_LARGE_PAGE_FLAG_MASK
             };
-            self.entry = (paddr.bits() as u64 & *ADDR_MASK) | (flags & flag_mask);
+            self.entry = (paddr.bits() & *ADDR_MASK) | (flags & flag_mask);
             Ok(())
         }
     }

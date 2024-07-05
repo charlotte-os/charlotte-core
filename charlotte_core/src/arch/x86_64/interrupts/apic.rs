@@ -39,12 +39,9 @@ impl Apic {
     pub fn get_apic_addr(madt: &Madt) -> usize {
         let mut addr = madt.local_apic_addr() as usize;
         let mut itr = madt.iter();
-        while let Some(entry) = itr.next() {
-            match entry {
-                MadtEntry::LocalApicAddressOverride(addr_o) => {
-                    addr = addr_o.local_apic_address as usize;
-                }
-                _ => {}
+        for entry in itr {
+            if let MadtEntry::LocalApicAddressOverride(addr_o) = entry {
+                addr = addr_o.local_apic_address as usize;
             }
         }
 

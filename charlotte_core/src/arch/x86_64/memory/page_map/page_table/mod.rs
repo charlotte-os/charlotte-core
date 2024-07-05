@@ -42,7 +42,7 @@ impl PageTable {
 
     pub unsafe fn unmap_table(&mut self, index: usize) -> Result<(), Error> {
         if self.table[index].is_present() {
-            if self.table[index].is_size_bit_set() == false {
+            if !self.table[index].is_size_bit_set() {
                 let table_paddr = self.table[index].unmap()?;
                 PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(table_paddr)?;
                 Ok(())
@@ -63,17 +63,17 @@ impl PageTable {
     ) -> Result<(), Error> {
         match size {
             PageSize::Standard => {
-                if paddr.is_page_aligned() == false {
+                if !paddr.is_page_aligned() {
                     return Err(Error::InvalidPAddrAlignment);
                 }
             }
             PageSize::Large => {
-                if paddr.is_aligned_to(4096 * 512) == false {
+                if !paddr.is_aligned_to(4096 * 512) {
                     return Err(Error::InvalidPAddrAlignment);
                 }
             }
             PageSize::Huge => {
-                if paddr.is_aligned_to(4096 * 512 * 512) == false {
+                if !paddr.is_aligned_to(4096 * 512 * 512) {
                     return Err(Error::InvalidPAddrAlignment);
                 }
             }
