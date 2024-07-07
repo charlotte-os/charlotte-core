@@ -11,7 +11,7 @@ use crate::arch::x86_64::interrupts::apic_consts::{
     LOGICAL_DESTINATION, LVT_LINT0, LVT_LINT1, LVT_PERFORMANCE_MONITORING_COUNTERS, LVT_TIMER,
     SPURIOUS_INTERRUPT_VECTOR, TASK_PRIORITY_TPR,
 };
-use crate::arch::x86_64::interrupts::isa_handler::set_isr;
+use crate::arch::x86_64::interrupts::isa_handler::{handle_int, set_isr};
 
 const FEAT_EDX_APIC: u32 = 1 << 9;
 const APIC_MSR: u32 = 0x1B;
@@ -20,6 +20,7 @@ const APIC_BASE_MSR_ENABLE: u32 = 0x800;
 pub struct Apic {
     base_phys_addr: usize,
     base_mapped_addr: Option<usize>,
+    pub tps: u64,
     pub lvt_max: u8,
 }
 
@@ -30,6 +31,7 @@ impl Apic {
         Apic {
             base_phys_addr: addr,
             base_mapped_addr: None,
+            tps: 0,
             lvt_max: 0,
         }
     }
@@ -111,13 +113,14 @@ impl Apic {
         // re-enable apic interrupts
         set_msr_bit(APIC_MSR, 8);
         asm_irq_restore(flags);
+        self.tps = self.calculate_ticks_per_second();
     }
 
     pub fn enable(&mut self, idt: &mut Idt) {
         // Map spurious interrupt to IRQ 39 which is using a dummy isr
         self.write_apic_reg(SPURIOUS_INTERRUPT_VECTOR, 0x29 + APIC_BASE_MSR_ENABLE);
         // set the timer interrupt handler
-        set_isr(idt, 0x20, handle_timer_interrupt);
+        set_isr(idt, 0x20, handle_int);
         // map the APIC timer to IRQ 0x20
         self.write_apic_reg(LVT_TIMER, 0x20);
         self.write_apic_reg(DIVIDE_CONFIGURATION_FOR_TIMER, 0x3);
@@ -157,7 +160,7 @@ impl Apic {
 
     pub fn set_timer_counter(&self, frequency: u32) {
         let ticks_per_second = self.calculate_ticks_per_second();
-        let counter_value = ticks_per_second / frequency;
+        let counter_value = ticks_per_second / frequency as u64;
         self.write_apic_reg(LVT_TIMER, counter_value as u32);
     }
 
@@ -168,16 +171,6 @@ impl Apic {
     pub fn setup_timer(&self, frequency: u32, divisor: u8) {
         self.set_timer_divisor(divisor);
         self.set_timer_counter(frequency);
-    }
-}
-
-extern "x86-interrupt" fn handle_timer_interrupt(_stack_frame: &mut x86_64::structures::idt::InterruptStackFrame) {
-    // Handle the timer interrupt
-
-    // Send EOI to the APIC
-    unsafe {
-        let eoi_addr = 0xFEE000B0 as *mut u32;
-        ptr::write_volatile(eoi_addr, 0);
     }
 }
 
@@ -213,22 +206,6 @@ pub fn init_serial_interrupts() {
     }
 }
 
-extern "x86-interrupt" fn handle_serial_interrupt(_stack_frame: &mut x86_64::structures::idt::InterruptStackFrame) {
-    // Read from the serial port to clear the interrupt
-    let port = 0x3F8;
-    unsafe {
-        let _data = inb(port);
-    }
-
-    // Add serial input handling here
-
-    // Send EOI to the APIC
-    unsafe {
-        let eoi_addr = 0xFEE000B0 as *mut u32;
-        ptr::write_volatile(eoi_addr, 0);
-    }
-}
-
 unsafe fn outb(port: u16, value: u8) {
     core::arch::asm!("out dx, al", in("dx") port, in("al") value);
 }
@@ -237,26 +214,4 @@ unsafe fn inb(port: u16) -> u8 {
     let value: u8;
     core::arch::asm!("in al, dx", out("al") value, in("dx") port);
     value
-}
-
-// Initialize the system
-
-pub fn initialize_system() {
-    let mut idt = Idt::new();
-    let madt = ...; // Initialize MADT structure here
-    let apic = Apic::new(&madt);
-    let io_apic_base_addr = ...; // Initialize IO APIC base address here
-    let io_apic_id = ...; // Initialize IO APIC ID here
-    let io_apic = IoApic::new(io_apic_base_addr, io_apic_id);
-
-    apic.init();
-    apic.enable(&mut idt);
-    io_apic.map_interrupt(0, 0x20); // Map APIC timer interrupt
-    io_apic.map_interrupt(4, 0x24); // Map serial interrupt
-
-    apic.setup_timer(1000, 0x3); // Setup APIC timer with 1000Hz frequency and divisor
-
-    idt.load();
-
-    init_serial_interrupts();
 }

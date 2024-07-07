@@ -77,7 +77,7 @@ impl crate::arch::Api for Api {
         logln!("============================================================\n");
         logln!("Enable the interrupts");
         api.init_interrupts();
-        logln!("{}", api.bsp_apic.lvt_max);
+        logln!("bus speed: {}", api.bsp_apic.tps/10000);
         logln!("============================================================\n");
 
         logln!("Memory self test");
