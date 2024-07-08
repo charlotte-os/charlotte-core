@@ -110,9 +110,10 @@ pub fn asm_irq_enable() {
 pub fn irq_disable() {
     unsafe {
         asm!(
-        "
+            "
             cli
-        ");
+        "
+        );
     };
 }
 
@@ -120,9 +121,10 @@ pub fn irq_disable() {
 pub fn irq_restore() {
     unsafe {
         asm!(
-        "
+            "
             sti
-        ");
+        "
+        );
     };
 }
 

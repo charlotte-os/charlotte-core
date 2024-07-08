@@ -86,11 +86,10 @@ extern "C" fn ih_general_protection_fault(error_code: u64, rip: u64) {
         writeln!(
             &mut logger,
             "A general protection fault has occurred in kernel space with error code {:X}! Panicking!
-            this is usually the segment selector that caused the fault.",
-            error_code
+            this is usually the segment selector that caused the fault. RIP = {:X}",
+            error_code, rip
         )
             .ignore();
-        return;
     } else {
         writeln!(
             &mut logger,
@@ -108,7 +107,7 @@ extern "C" fn ih_page_fault(error_code: u64) {
 
     writeln!(
         &mut logger,
-        "A page fault has occurred with error code {:x}",
+        "A page fault has occurred with error code {:32b}",
         error_code
     )
     .ignore();
