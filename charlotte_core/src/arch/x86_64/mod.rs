@@ -19,7 +19,6 @@ use serial::{ComPort, SerialPort};
 use crate::acpi::{parse, AcpiInfo};
 use crate::arch::x86_64::interrupts::apic::{Apic, TimerMode};
 use crate::arch::{IsaParams, PagingParams};
-use crate::arch::x86_64::interrupts::isa_handler::TIMER_CALLED_TIMES;
 use crate::framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
 use crate::logln;
@@ -78,9 +77,7 @@ impl crate::arch::Api for Api {
         logln!("============================================================\n");
         logln!("Enable interrupts");
         api.init_interrupts();
-        api.bsp_apic.enable(BSP_IDT.lock().borrow_mut());
-        api.bsp_apic.setup_timer(TimerMode::Periodic, 100000, 0);
-        logln!("bus speed: {}", api.bsp_apic.tps/10000);
+        logln!("bus speed: {}", api.bsp_apic.tps / 10000);
         logln!("============================================================\n");
 
         logln!("Memory self test");
@@ -143,7 +140,9 @@ impl crate::arch::Api for Api {
     }
 
     fn init_interrupts(&mut self) {
-        self.bsp_apic.init()
+        self.bsp_apic.enable(BSP_IDT.lock().borrow_mut());
+        self.bsp_apic.init();
+        self.bsp_apic.setup_timer(TimerMode::Periodic, 100000, 0);
     }
 
     fn interrupts_enabled(&self) -> bool {
@@ -151,11 +150,11 @@ impl crate::arch::Api for Api {
     }
 
     fn disable_interrupts(&mut self) {
-        self.irq_flags = asm_irq_disable();
+        irq_disable();
     }
 
     fn restore_interrupts(&mut self) {
-        asm_irq_restore(self.irq_flags);
+        irq_restore();
     }
 
     fn end_of_interrupt(&self) {}
