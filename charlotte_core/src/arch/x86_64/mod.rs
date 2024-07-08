@@ -17,8 +17,9 @@ use idt::*;
 use serial::{ComPort, SerialPort};
 
 use crate::acpi::{parse, AcpiInfo};
-use crate::arch::x86_64::interrupts::apic::Apic;
+use crate::arch::x86_64::interrupts::apic::{Apic, TimerMode};
 use crate::arch::{IsaParams, PagingParams};
+use crate::arch::x86_64::interrupts::isa_handler::TIMER_CALLED_TIMES;
 use crate::framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
 use crate::logln;
@@ -75,8 +76,10 @@ impl crate::arch::Api for Api {
             irq_flags: 0,
         };
         logln!("============================================================\n");
-        logln!("Enable the interrupts");
+        logln!("Enable interrupts");
         api.init_interrupts();
+        api.bsp_apic.enable(BSP_IDT.lock().borrow_mut());
+        api.bsp_apic.setup_timer(TimerMode::Periodic, 100000, 0);
         logln!("bus speed: {}", api.bsp_apic.tps/10000);
         logln!("============================================================\n");
 

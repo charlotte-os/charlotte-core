@@ -1,5 +1,4 @@
-mod idt;
-
+use core::arch::asm;
 use core::ptr::addr_of;
 
 #[derive(Debug)]
@@ -29,7 +28,7 @@ impl Idt {
         gate.segment_selector = segment_selector;
         gate.reserved_ist_index = 0u8; // the IST is not used
         gate.flags = if is_trap { 0b1111u8 } else { 0b1110u8 }; //gate type
-                                                                //reserved bit
+        //reserved bit
         gate.flags &= !(0b1u8 << 4);
         //privilege ring required to use gate
         gate.flags &= !(0b11u8 << 5);
@@ -100,6 +99,9 @@ impl Idtr {
     }
 }
 
-extern "C" {
-    fn asm_load_idt(idtr: &Idtr);
+unsafe fn asm_load_idt(idtr: &Idtr) {
+    asm!("\
+        lidt [{}]
+    ", in(reg) idtr);
 }
+

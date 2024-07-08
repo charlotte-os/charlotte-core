@@ -1,27 +1,33 @@
-use core::arch::x86_64::{__cpuid, _mm_lfence, __rdtscp, _rdtsc, _mm_pause};
+use core::arch::x86_64::{__cpuid, __rdtscp, _mm_lfence, _mm_pause, _rdtsc};
 use core::ptr;
 use core::time::Duration;
-use spin::Mutex;
 
 use crate::acpi::madt::{Madt, MadtEntry};
-use crate::arch::x86_64::cpu::{asm_irq_disable, asm_irq_restore, clear_msr_bit, set_msr_bit};
+use crate::arch::x86_64::cpu::{read_msr, write_msr};
 use crate::arch::x86_64::idt::Idt;
-use crate::arch::x86_64::interrupts::apic_consts::{
-    APIC_DISABLE, APIC_NMI, DESTINATION_FORMAT, DIVIDE_CONFIGURATION_FOR_TIMER, LAPIC_VERSION,
-    LOGICAL_DESTINATION, LVT_LINT0, LVT_LINT1, LVT_PERFORMANCE_MONITORING_COUNTERS, LVT_TIMER,
-    SPURIOUS_INTERRUPT_VECTOR, TASK_PRIORITY_TPR,
-};
-use crate::arch::x86_64::interrupts::isa_handler::{handle_int, set_isr};
+use crate::arch::x86_64::interrupts::apic_consts::{APIC_DISABLE, APIC_NMI, DESTINATION_FORMAT, EOI_REGISTER, LAPIC_VERSION, LOGICAL_DESTINATION, LVT_LINT0, LVT_LINT1, LVT_PERFORMANCE_MONITORING_COUNTERS, LVT_TIMER, TASK_PRIORITY_TPR, TIMER_DIVISOR, TIMER_CURRENT, TIMER_INIT_COUNT, SPURIOUS_INTERRUPT_VECTOR, APIC_SW_ENABLE};
+use crate::arch::x86_64::interrupts::isa_handler::{load_dummy_handlers, set_isr, timer_handler};
 
 const FEAT_EDX_APIC: u32 = 1 << 9;
 const APIC_MSR: u32 = 0x1B;
-const APIC_BASE_MSR_ENABLE: u32 = 0x800;
 
 pub struct Apic {
     base_phys_addr: usize,
     base_mapped_addr: Option<usize>,
     pub tps: u64,
+    pub timer: u32,
+    pub timer_div: u32,
     pub lvt_max: u8,
+}
+
+
+#[repr(u32)]
+/// Masks bits 17 & 18 as per fig 11-8 from the intel SDM Vol 3 11.5
+pub enum TimerMode {
+    // makes the bits for mode 00, so is a no op
+    Oneshot = 0x00,
+    Periodic = 0x01 << 17,
+    TscDeadline = 0x02 << 17,
 }
 
 impl Apic {
@@ -32,6 +38,8 @@ impl Apic {
             base_phys_addr: addr,
             base_mapped_addr: None,
             tps: 0,
+            timer: 0,
+            timer_div: 0,
             lvt_max: 0,
         }
     }
@@ -58,6 +66,23 @@ impl Apic {
         addr
     }
 
+    pub fn enable_apic(enable: bool) {
+        let mut msr = read_msr(APIC_MSR);
+
+        if enable {
+            msr.eax |= 1 << 11;
+        } else {
+            msr.eax ^= 1 << 11;
+        }
+        write_msr(APIC_MSR, msr);
+    }
+
+    pub fn is_apic_enabled() -> bool {
+        let msr = read_msr(APIC_MSR);
+
+        (msr.eax & 1 << 11) != 0
+    }
+
     pub fn write_apic_reg(&self, offset: u32, value: u32) {
         let addr = (self.get_addr() + offset as usize) as *mut u32;
         unsafe { ptr::write_volatile(addr, value) }
@@ -68,19 +93,7 @@ impl Apic {
         unsafe { ptr::read_volatile(addr) }
     }
 
-    // pub fn set_apic_base(&mut self, base: u32) {
-    //     if !is_aligned(base as u64, 0x1000) {
-    //         panic!("APIC base address must be page aligned to 4KB, per Intel SDM");
-    //     }
-    //     let prev = read_msr(APIC_MSR);
-    //     // shift base 12 bits
-    //     let new_value = (base << 12) | (prev.edx & 0xFFF);
-    //
-    //     write_msr(APIC_MSR, MSRValue { eax: eax as u32, edx: edx as u32 });
-    // }
-
     pub fn init(&mut self) {
-        let flags = asm_irq_disable();
         // If the apic is not present according to cpuid
         if !Apic::is_present() {
             panic!("APIC is not present, and is required!")
@@ -92,38 +105,33 @@ impl Apic {
         // in the lower 8 bits of the u32 and can then transmute it to an u8.
         self.lvt_max = ((max_lvt >> 16) + 1) as u8;
 
-        // temporarily disable apic interrupts
-        clear_msr_bit(APIC_MSR, 8);
-
         // initialize the APIC to known state
         let base = self.get_addr();
         if base != 0xFEE00000 {
             panic!("APIC base address is not 0xFEE00000, it is {:#X}", base);
         }
+        // reset the apic to make sure it's in a known state
+        Self::enable_apic(false);
+        Self::enable_apic(true);
 
         self.write_apic_reg(DESTINATION_FORMAT, 0x0FFFFFFFF);
         let ldf = self.read_apic_reg(LOGICAL_DESTINATION) & 0x00FFFFFF;
         self.write_apic_reg(LOGICAL_DESTINATION, ldf);
+        self.write_apic_reg(SPURIOUS_INTERRUPT_VECTOR, 0x27+APIC_SW_ENABLE);
         self.write_apic_reg(LVT_TIMER, APIC_DISABLE);
         self.write_apic_reg(LVT_PERFORMANCE_MONITORING_COUNTERS, APIC_NMI);
         self.write_apic_reg(LVT_LINT0, APIC_DISABLE);
         self.write_apic_reg(LVT_LINT1, APIC_DISABLE);
         self.write_apic_reg(TASK_PRIORITY_TPR, 0);
 
-        // re-enable apic interrupts
-        set_msr_bit(APIC_MSR, 8);
-        asm_irq_restore(flags);
         self.tps = self.calculate_ticks_per_second();
+        self.write_eoi();
     }
 
     pub fn enable(&mut self, idt: &mut Idt) {
-        // Map spurious interrupt to IRQ 39 which is using a dummy isr
-        self.write_apic_reg(SPURIOUS_INTERRUPT_VECTOR, 0x29 + APIC_BASE_MSR_ENABLE);
+        load_dummy_handlers(idt);
         // set the timer interrupt handler
-        set_isr(idt, 0x20, handle_int);
-        // map the APIC timer to IRQ 0x20
-        self.write_apic_reg(LVT_TIMER, 0x20);
-        self.write_apic_reg(DIVIDE_CONFIGURATION_FOR_TIMER, 0x3);
+        set_isr(idt, 0x20, timer_handler);
     }
 
     fn measure_tsc_duration(duration: Duration) -> u64 {
@@ -161,21 +169,42 @@ impl Apic {
     pub fn set_timer_counter(&self, frequency: u32) {
         let ticks_per_second = self.calculate_ticks_per_second();
         let counter_value = ticks_per_second / frequency as u64;
-        self.write_apic_reg(LVT_TIMER, counter_value as u32);
+        self.write_apic_reg(TIMER_INIT_COUNT, counter_value as u32);
     }
 
     pub fn set_timer_divisor(&self, divisor: u8) {
-        self.write_apic_reg(DIVIDE_CONFIGURATION_FOR_TIMER, divisor as u32);
+        self.write_apic_reg(TIMER_DIVISOR, divisor as u32);
     }
 
-    pub fn setup_timer(&self, frequency: u32, divisor: u8) {
-        self.set_timer_divisor(divisor);
+    pub fn setup_timer(&self, mode: TimerMode, frequency: u32, divisor: u8) {
         self.set_timer_counter(frequency);
+        self.set_timer_divisor(divisor);
+        self.set_lvt_timer_register(mode, true, 0x20);
+        self.set_timer_divisor(divisor);
+    }
+
+    pub fn set_lvt_timer_register(&self, mode: TimerMode, enabled: bool, vector: u8) {
+        let mut value = vector as u32;
+        value |= mode as u32;
+        // if masking is desired by enabled being false
+        // then or 1 << 16 with the mask
+        if !enabled {
+            value
+                |= 1 << 16;
+        }
+        self.write_apic_reg(LVT_TIMER, value);
+    }
+
+    pub fn write_eoi(&self) {
+        self.write_apic_reg(EOI_REGISTER, 1);
+    }
+
+    pub fn get_timer_current_count(&self) -> u32 {
+        self.read_apic_reg(TIMER_CURRENT)
     }
 }
 
 // IO APIC Configuration
-
 pub struct IoApic {
     base_phys_addr: usize,
     base_mapped_addr: Option<usize>,
