@@ -107,29 +107,22 @@ pub fn asm_irq_enable() {
 }
 
 #[allow(unused)]
-pub fn asm_irq_disable() -> u64 {
-    let mut flags: u64;
+pub fn irq_disable() {
     unsafe {
         asm!(
         "
-            pushf
             cli
-            pop {}
-        ",
-        out(reg) flags)
+        ");
     };
-    flags
 }
 
 #[allow(unused)]
-pub fn asm_irq_restore(flags: u64) {
+pub fn irq_restore() {
     unsafe {
         asm!(
         "
-            push {}
-            popf
-        ",
-        in(reg) flags)
+            sti
+        ");
     };
 }
 

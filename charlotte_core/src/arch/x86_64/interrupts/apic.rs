@@ -3,10 +3,14 @@ use core::ptr;
 use core::time::Duration;
 
 use crate::acpi::madt::{Madt, MadtEntry};
-use crate::arch::x86_64::cpu::{read_msr, write_msr};
+use crate::arch::x86_64::cpu::{irq_disable, read_msr, write_msr, irq_restore};
 use crate::arch::x86_64::idt::Idt;
-use crate::arch::x86_64::interrupts::apic_consts::{APIC_DISABLE, APIC_NMI, DESTINATION_FORMAT, EOI_REGISTER, LAPIC_VERSION, LOGICAL_DESTINATION, LVT_LINT0, LVT_LINT1, LVT_PERFORMANCE_MONITORING_COUNTERS, LVT_TIMER, TASK_PRIORITY_TPR, TIMER_DIVISOR, TIMER_CURRENT, TIMER_INIT_COUNT, SPURIOUS_INTERRUPT_VECTOR, APIC_SW_ENABLE};
-use crate::arch::x86_64::interrupts::isa_handler::{load_dummy_handlers, set_isr, timer_handler};
+use crate::arch::x86_64::interrupts::apic_consts::{
+    APIC_DISABLE, APIC_NMI, APIC_SW_ENABLE, DESTINATION_FORMAT, EOI_REGISTER, LAPIC_VERSION,
+    LOGICAL_DESTINATION, LVT_LINT0, LVT_LINT1, LVT_PERFORMANCE_MONITORING_COUNTERS, LVT_TIMER,
+    SPURIOUS_INTERRUPT_VECTOR, TASK_PRIORITY_TPR, TIMER_CURRENT, TIMER_DIVISOR, TIMER_INIT_COUNT,
+};
+use crate::arch::x86_64::interrupts::isa_handler::{isr_spurious, load_dummy_handlers, set_isr, timer_handler};
 
 const FEAT_EDX_APIC: u32 = 1 << 9;
 const APIC_MSR: u32 = 0x1B;
@@ -15,11 +19,8 @@ pub struct Apic {
     base_phys_addr: usize,
     base_mapped_addr: Option<usize>,
     pub tps: u64,
-    pub timer: u32,
-    pub timer_div: u32,
     pub lvt_max: u8,
 }
-
 
 #[repr(u32)]
 /// Masks bits 17 & 18 as per fig 11-8 from the intel SDM Vol 3 11.5
@@ -38,8 +39,6 @@ impl Apic {
             base_phys_addr: addr,
             base_mapped_addr: None,
             tps: 0,
-            timer: 0,
-            timer_div: 0,
             lvt_max: 0,
         }
     }
@@ -94,6 +93,7 @@ impl Apic {
     }
 
     pub fn init(&mut self) {
+        irq_disable();
         // If the apic is not present according to cpuid
         if !Apic::is_present() {
             panic!("APIC is not present, and is required!")
@@ -117,19 +117,28 @@ impl Apic {
         self.write_apic_reg(DESTINATION_FORMAT, 0x0FFFFFFFF);
         let ldf = self.read_apic_reg(LOGICAL_DESTINATION) & 0x00FFFFFF;
         self.write_apic_reg(LOGICAL_DESTINATION, ldf);
-        self.write_apic_reg(SPURIOUS_INTERRUPT_VECTOR, 0x27+APIC_SW_ENABLE);
+        self.write_apic_reg(SPURIOUS_INTERRUPT_VECTOR, 0x27 + APIC_SW_ENABLE);
         self.write_apic_reg(LVT_TIMER, APIC_DISABLE);
         self.write_apic_reg(LVT_PERFORMANCE_MONITORING_COUNTERS, APIC_NMI);
         self.write_apic_reg(LVT_LINT0, APIC_DISABLE);
         self.write_apic_reg(LVT_LINT1, APIC_DISABLE);
-        self.write_apic_reg(TASK_PRIORITY_TPR, 0);
+        self.write_apic_reg(TASK_PRIORITY_TPR, 15);
 
         self.tps = self.calculate_ticks_per_second();
         self.write_eoi();
+        irq_restore();
     }
 
     pub fn enable(&mut self, idt: &mut Idt) {
         load_dummy_handlers(idt);
+        // Set spurious handler
+        idt.set_gate(
+            SPURIOUS_INTERRUPT_VECTOR as usize,
+            isr_spurious,
+            1 << 3,
+            true,
+            true,
+        );
         // set the timer interrupt handler
         set_isr(idt, 0x20, timer_handler);
     }
@@ -189,8 +198,7 @@ impl Apic {
         // if masking is desired by enabled being false
         // then or 1 << 16 with the mask
         if !enabled {
-            value
-                |= 1 << 16;
+            value |= 1 << 16;
         }
         self.write_apic_reg(LVT_TIMER, value);
     }
