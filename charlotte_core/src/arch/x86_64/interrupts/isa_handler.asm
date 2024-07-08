@@ -13,13 +13,16 @@ asm_iretq:
 
 .extern save_regs
 .extern restore_regs
+.extern TIMER_CALLED_TIMES
 
-.extern handle_int
-.global isr_wrapper
+.extern timer_handler
+.global timer_handler
 isr_wrapper:
 	call save_regs
-	cld
-	call handle_int
+	mov  [rip + TIMER_CALLED_TIMES], eax
+	inc  eax
+	mov  eax, [rip + TIMER_CALLED_TIMES]
+	call timer_handler
 	call restore_regs
 	iretq
 
