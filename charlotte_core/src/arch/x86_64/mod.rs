@@ -77,7 +77,6 @@ impl crate::arch::Api for Api {
         logln!("============================================================\n");
         logln!("Enable interrupts");
         api.init_interrupts();
-        logln!("bus speed: {}", api.bsp_apic.tps / 10000);
         logln!("============================================================\n");
 
         logln!("Memory self test");
@@ -141,7 +140,6 @@ impl crate::arch::Api for Api {
 
     fn init_interrupts(&mut self) {
         self.bsp_apic.enable(BSP_IDT.lock().borrow_mut());
-        self.bsp_apic.init();
         self.bsp_apic.setup_timer(TimerMode::Periodic, 100000, 0);
     }
 

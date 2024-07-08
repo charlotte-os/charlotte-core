@@ -7,17 +7,6 @@
 asm_iretq:
 	iretq
 
-.extern save_regs
-.extern restore_regs
-
-.extern timer_handler
-.global timer_handler
-isr_wrapper:
-	call save_regs
-	call timer_handler
-	call restore_regs
-	iretq
-
 .global isr_dummy
 isr_dummy: // Dummyinterrupt to map to spurious interrupt
 	iretq

@@ -4,3 +4,4 @@
 pub mod apic;
 pub mod apic_consts;
 pub mod isa_handler;
+mod vectors;

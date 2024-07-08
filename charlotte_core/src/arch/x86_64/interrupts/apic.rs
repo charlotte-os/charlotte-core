@@ -3,17 +3,25 @@ use core::ptr;
 use core::time::Duration;
 
 use crate::acpi::madt::{Madt, MadtEntry};
-use crate::arch::x86_64::cpu::{irq_disable, read_msr, write_msr, irq_restore};
+use crate::arch::x86_64::cpu::{irq_disable, irq_restore, read_msr, write_msr};
 use crate::arch::x86_64::idt::Idt;
 use crate::arch::x86_64::interrupts::apic_consts::{
     APIC_DISABLE, APIC_NMI, APIC_SW_ENABLE, DESTINATION_FORMAT, EOI_REGISTER, LAPIC_VERSION,
     LOGICAL_DESTINATION, LVT_LINT0, LVT_LINT1, LVT_PERFORMANCE_MONITORING_COUNTERS, LVT_TIMER,
     SPURIOUS_INTERRUPT_VECTOR, TASK_PRIORITY_TPR, TIMER_CURRENT, TIMER_DIVISOR, TIMER_INIT_COUNT,
 };
-use crate::arch::x86_64::interrupts::isa_handler::{isr_spurious, load_dummy_handlers, set_isr, timer_handler};
+use crate::arch::x86_64::interrupts::isa_handler::{isr_spurious, load_handlers};
 
 const FEAT_EDX_APIC: u32 = 1 << 9;
 const APIC_MSR: u32 = 0x1B;
+
+#[no_mangle]
+static mut APIC_REMAPPED_LOCATION: u64 = 0xFEE00000;
+
+#[no_mangle]
+pub extern "C" fn apic_offset() -> u64 {
+    unsafe { APIC_REMAPPED_LOCATION }
+}
 
 pub struct Apic {
     base_phys_addr: usize,
@@ -43,43 +51,8 @@ impl Apic {
         }
     }
 
-    pub fn is_present() -> bool {
-        let cpuid = unsafe { __cpuid(1) };
-        (cpuid.edx & FEAT_EDX_APIC) == FEAT_EDX_APIC
-    }
-
     fn get_addr(&self) -> usize {
         self.base_mapped_addr.unwrap_or(self.base_phys_addr)
-    }
-
-    #[allow(unused)]
-    pub fn get_apic_addr(madt: &Madt) -> usize {
-        let mut addr = madt.local_apic_addr() as usize;
-        let mut itr = madt.iter();
-        for entry in itr {
-            if let MadtEntry::LocalApicAddressOverride(addr_o) = entry {
-                addr = addr_o.local_apic_address as usize;
-            }
-        }
-
-        addr
-    }
-
-    pub fn enable_apic(enable: bool) {
-        let mut msr = read_msr(APIC_MSR);
-
-        if enable {
-            msr.eax |= 1 << 11;
-        } else {
-            msr.eax ^= 1 << 11;
-        }
-        write_msr(APIC_MSR, msr);
-    }
-
-    pub fn is_apic_enabled() -> bool {
-        let msr = read_msr(APIC_MSR);
-
-        (msr.eax & 1 << 11) != 0
     }
 
     pub fn write_apic_reg(&self, offset: u32, value: u32) {
@@ -130,43 +103,8 @@ impl Apic {
     }
 
     pub fn enable(&mut self, idt: &mut Idt) {
-        load_dummy_handlers(idt);
-        // Set spurious handler
-        idt.set_gate(
-            SPURIOUS_INTERRUPT_VECTOR as usize,
-            isr_spurious,
-            1 << 3,
-            true,
-            true,
-        );
-        // set the timer interrupt handler
-        set_isr(idt, 0x20, timer_handler);
-    }
-
-    fn measure_tsc_duration(duration: Duration) -> u64 {
-        unsafe {
-            _mm_lfence(); // Serialize
-            let start_tsc = __rdtscp(&mut 0);
-            _mm_lfence(); // Serialize
-
-            let start_time = _rdtsc();
-
-            // Busy-wait loop for the specified duration
-            let end_time = start_time + duration.as_nanos() as u64;
-            while _rdtsc() < end_time {
-                _mm_pause();
-            }
-
-            _mm_lfence(); // Serialize
-            let end_tsc = __rdtscp(&mut 0);
-            _mm_lfence(); // Serialize
-
-            end_tsc - start_tsc
-        }
-    }
-
-    fn calculate_bus_speed(ticks: u64, duration: Duration) -> u64 {
-        ticks / duration.as_secs()
+        load_handlers(idt);
+        self.init();
     }
 
     fn calculate_ticks_per_second(&self) -> u64 {
@@ -209,6 +147,76 @@ impl Apic {
 
     pub fn get_timer_current_count(&self) -> u32 {
         self.read_apic_reg(TIMER_CURRENT)
+    }
+}
+
+// static methods
+impl Apic {
+    pub fn signal_eoi() {
+        let base = unsafe { APIC_REMAPPED_LOCATION };
+        let addr = (base + EOI_REGISTER as u64) as *mut u32;
+        unsafe { ptr::write_volatile(addr, 0) }
+    }
+
+    fn measure_tsc_duration(duration: Duration) -> u64 {
+        unsafe {
+            _mm_lfence(); // Serialize
+            let start_tsc = __rdtscp(&mut 0);
+            _mm_lfence(); // Serialize
+
+            let start_time = _rdtsc();
+
+            // Busy-wait loop for the specified duration
+            let end_time = start_time + duration.as_nanos() as u64;
+            while _rdtsc() < end_time {
+                _mm_pause();
+            }
+
+            _mm_lfence(); // Serialize
+            let end_tsc = __rdtscp(&mut 0);
+            _mm_lfence(); // Serialize
+
+            end_tsc - start_tsc
+        }
+    }
+
+    fn calculate_bus_speed(ticks: u64, duration: Duration) -> u64 {
+        ticks / duration.as_secs()
+    }
+
+    #[allow(unused)]
+    pub fn get_apic_addr(madt: &Madt) -> usize {
+        let mut addr = madt.local_apic_addr() as usize;
+        let mut itr = madt.iter();
+        for entry in itr {
+            if let MadtEntry::LocalApicAddressOverride(addr_o) = entry {
+                addr = addr_o.local_apic_address as usize;
+            }
+        }
+
+        addr
+    }
+
+    pub fn enable_apic(enable: bool) {
+        let mut msr = read_msr(APIC_MSR);
+
+        if enable {
+            msr.eax |= 1 << 11;
+        } else {
+            msr.eax ^= 1 << 11;
+        }
+        write_msr(APIC_MSR, msr);
+    }
+
+    pub fn is_apic_enabled() -> bool {
+        let msr = read_msr(APIC_MSR);
+
+        (msr.eax & 1 << 11) != 0
+    }
+
+    pub fn is_present() -> bool {
+        let cpuid = unsafe { __cpuid(1) };
+        (cpuid.edx & FEAT_EDX_APIC) == FEAT_EDX_APIC
     }
 }
 
