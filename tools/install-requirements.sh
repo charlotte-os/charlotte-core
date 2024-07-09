@@ -8,7 +8,7 @@
 
 # CHANGE THIS when there are new requirements
 # WARNING: A package might be named differently on different distributions
-required_packages_common="nasm xorriso make curl"
+required_packages_common="xorriso make curl"
 
 # Here are the requirements with different names on different distros
 required_packages_ubuntu="qemu-system"
