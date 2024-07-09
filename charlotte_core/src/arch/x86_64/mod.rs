@@ -21,8 +21,8 @@ use crate::arch::x86_64::interrupts::apic::{Apic, TimerMode};
 use crate::arch::{IsaParams, PagingParams};
 use crate::framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
-use crate::logln;
 use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
+use crate::{log, logln};
 
 mod cpu;
 mod exceptions;
@@ -75,8 +75,10 @@ impl crate::arch::Api for Api {
             irq_flags: 0,
         };
         logln!("============================================================\n");
+
         logln!("Enable interrupts");
         api.init_interrupts();
+        logln!("Counter frequency: {}", api.bsp_apic.tps / 10000000);
         logln!("============================================================\n");
 
         logln!("Memory self test");
@@ -140,7 +142,7 @@ impl crate::arch::Api for Api {
 
     fn init_interrupts(&mut self) {
         self.bsp_apic.enable(BSP_IDT.lock().borrow_mut());
-        self.bsp_apic.setup_timer(TimerMode::Periodic, 100000, 0);
+        self.bsp_apic.setup_timer(TimerMode::Periodic, 10000, 0);
     }
 
     fn interrupts_enabled(&self) -> bool {
@@ -155,7 +157,16 @@ impl crate::arch::Api for Api {
         irq_restore();
     }
 
-    fn end_of_interrupt(&self) {}
+    fn set_interrupt_handler(&mut self, h: fn(), vector: u32) {
+        if vector > u8::MAX as u32 {
+            panic!("X86_64 can only have from iv 32 to iv 255 set");
+        }
+        Apic::register_iv_handler(h, vector as u8);
+    }
+
+    fn end_of_interrupt() {
+        Apic::signal_eoi();
+    }
 }
 
 impl Api {

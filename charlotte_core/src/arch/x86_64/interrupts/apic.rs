@@ -3,20 +3,25 @@ use core::ptr;
 use core::time::Duration;
 
 use crate::acpi::madt::{Madt, MadtEntry};
-use crate::arch::x86_64::cpu::{irq_disable, irq_restore, read_msr, write_msr};
+use crate::arch::x86_64::cpu::{
+    asm_are_interrupts_enabled, irq_disable, irq_restore, read_msr, write_msr,
+};
 use crate::arch::x86_64::idt::Idt;
 use crate::arch::x86_64::interrupts::apic_consts::{
     APIC_DISABLE, APIC_NMI, APIC_SW_ENABLE, DESTINATION_FORMAT, EOI_REGISTER, LAPIC_VERSION,
     LOGICAL_DESTINATION, LVT_LINT0, LVT_LINT1, LVT_PERFORMANCE_MONITORING_COUNTERS, LVT_TIMER,
     SPURIOUS_INTERRUPT_VECTOR, TASK_PRIORITY_TPR, TIMER_CURRENT, TIMER_DIVISOR, TIMER_INIT_COUNT,
 };
-use crate::arch::x86_64::interrupts::isa_handler::{isr_spurious, load_handlers};
+use crate::arch::x86_64::interrupts::isa_handler::load_handlers;
 
 const FEAT_EDX_APIC: u32 = 1 << 9;
 const APIC_MSR: u32 = 0x1B;
 
 #[no_mangle]
 static mut APIC_REMAPPED_LOCATION: u64 = 0xFEE00000;
+
+#[no_mangle]
+pub(super) static mut IV_HANDLER_FN: [Option<fn()>; 224] = [None; 224];
 
 #[no_mangle]
 pub extern "C" fn apic_offset() -> u64 {
@@ -98,7 +103,6 @@ impl Apic {
         self.write_apic_reg(TASK_PRIORITY_TPR, 15);
 
         self.tps = self.calculate_ticks_per_second();
-        self.write_eoi();
         irq_restore();
     }
 
@@ -108,7 +112,7 @@ impl Apic {
     }
 
     fn calculate_ticks_per_second(&self) -> u64 {
-        let duration = Duration::from_secs(1);
+        let duration = Duration::from_millis(100);
         let ticks = Self::measure_tsc_duration(duration);
         Self::calculate_bus_speed(ticks, duration)
     }
@@ -124,10 +128,10 @@ impl Apic {
     }
 
     pub fn setup_timer(&self, mode: TimerMode, frequency: u32, divisor: u8) {
+        self.set_timer_divisor(divisor);
+        self.set_lvt_timer_register(mode, true, 32);
+        self.set_timer_divisor(divisor);
         self.set_timer_counter(frequency);
-        self.set_timer_divisor(divisor);
-        self.set_lvt_timer_register(mode, true, 0x20);
-        self.set_timer_divisor(divisor);
     }
 
     pub fn set_lvt_timer_register(&self, mode: TimerMode, enabled: bool, vector: u8) {
@@ -152,6 +156,22 @@ impl Apic {
 
 // static methods
 impl Apic {
+    pub fn register_iv_handler(h: fn(), vector: u8) {
+        if asm_are_interrupts_enabled() {
+            irq_disable();
+        }
+        if vector < 32 {
+            panic!("Cannot set vector handler lower than 32");
+        }
+        unsafe {
+            let idx = (vector - 32) as usize;
+            IV_HANDLER_FN[idx] = Some(h);
+        }
+        if !asm_are_interrupts_enabled() {
+            irq_restore();
+        }
+    }
+
     pub fn signal_eoi() {
         let base = unsafe { APIC_REMAPPED_LOCATION };
         let addr = (base + EOI_REGISTER as u64) as *mut u32;
@@ -160,6 +180,8 @@ impl Apic {
 
     fn measure_tsc_duration(duration: Duration) -> u64 {
         unsafe {
+            let sec = Duration::from_secs(1);
+
             _mm_lfence(); // Serialize
             let start_tsc = __rdtscp(&mut 0);
             _mm_lfence(); // Serialize
@@ -175,13 +197,12 @@ impl Apic {
             _mm_lfence(); // Serialize
             let end_tsc = __rdtscp(&mut 0);
             _mm_lfence(); // Serialize
-
-            end_tsc - start_tsc
+            (end_tsc - start_tsc) * sec.as_millis() as u64
         }
     }
 
     fn calculate_bus_speed(ticks: u64, duration: Duration) -> u64 {
-        ticks / duration.as_secs()
+        ticks / duration.as_millis() as u64
     }
 
     #[allow(unused)]
@@ -218,45 +239,4 @@ impl Apic {
         let cpuid = unsafe { __cpuid(1) };
         (cpuid.edx & FEAT_EDX_APIC) == FEAT_EDX_APIC
     }
-}
-
-// IO APIC Configuration
-pub struct IoApic {
-    base_phys_addr: usize,
-    base_mapped_addr: Option<usize>,
-    id: u8,
-}
-
-impl IoApic {
-    pub fn new(base_phys_addr: usize, id: u8) -> Self {
-        IoApic {
-            base_phys_addr,
-            base_mapped_addr: None,
-            id,
-        }
-    }
-
-    pub fn map_interrupt(&self, irq: u8, vector: u8) {
-        // Map the IRQ to the interrupt vector in the IO APIC
-    }
-}
-
-// Serial Port Interrupts
-
-pub fn init_serial_interrupts() {
-    unsafe {
-        // Enable interrupts on the serial port (COM1)
-        let port = 0x3F8;
-        outb(port + 1, 0x01); // Enable interrupt on received data available
-    }
-}
-
-unsafe fn outb(port: u16, value: u8) {
-    core::arch::asm!("out dx, al", in("dx") port, in("al") value);
-}
-
-unsafe fn inb(port: u16) -> u8 {
-    let value: u8;
-    core::arch::asm!("in al, dx", out("al") value, in("dx") port);
-    value
 }

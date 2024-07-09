@@ -2,6 +2,7 @@ mod cpu;
 
 use crate::arch::x86_64::cpu::cpu::{asm_read_msr, asm_write_msr};
 use core::arch::asm;
+use core::arch::x86_64::__cpuid;
 use core::{arch::x86_64::__cpuid_count, fmt::Write};
 use spin::lazy::Lazy;
 
@@ -83,48 +84,20 @@ pub fn clear_msr_bit(msr: u32, bit: u8) {
 pub fn asm_are_interrupts_enabled() -> bool {
     let mut flags: u64;
     unsafe { asm!("pushf\n\tpop {}", out(reg) flags) };
-    flags & 1 << 9 != 0
-}
-
-pub fn asm_irq_enable() {
-    // Get the status flags of the processor
-    let mut flags: u64;
-    unsafe {
-        asm!("
-            pushf
-            pop {}
-            ",
-        out(reg) flags)
-    };
-    flags |= 1 << 9;
-    unsafe {
-        asm!("
-            push {}
-            popf
-            ",
-        in(reg) flags)
-    };
+    (flags & 1 << 9) != 0
 }
 
 #[allow(unused)]
 pub fn irq_disable() {
     unsafe {
-        asm!(
-            "
-            cli
-        "
-        );
+        asm!("cli");
     };
 }
 
 #[allow(unused)]
 pub fn irq_restore() {
     unsafe {
-        asm!(
-            "
-            sti
-        "
-        );
+        asm!("sti");
     };
 }
 
@@ -206,4 +179,14 @@ pub fn asm_indw(port: u16) -> u32 {
         );
     }
     dword
+}
+
+pub fn get_tsc_frequency() -> u32 {
+    let cpuid_res = unsafe { __cpuid(0x15) };
+
+    if cpuid_res.ebx == 0 {
+        panic!("TSC clock ratio is not enumerated!");
+    }
+
+    cpuid_res.ebx / cpuid_res.eax
 }
