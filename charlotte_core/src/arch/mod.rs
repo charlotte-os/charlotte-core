@@ -65,7 +65,9 @@ pub trait Api {
     #[allow(unused)]
     fn restore_interrupts(&mut self);
     #[allow(unused)]
-    fn end_of_interrupt(&self);
+    fn set_interrupt_handler(&mut self, h: fn(), vector: u32);
+    #[allow(unused)]
+    fn end_of_interrupt();
 }
 
 pub trait Serial {
