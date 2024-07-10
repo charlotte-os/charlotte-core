@@ -27,7 +27,11 @@ static mut TIMER_CALLS: u64 = 0;
 unsafe extern "C" fn main() -> ! {
     let mut arch_api = ArchApi::isa_init();
     logln!("Bring up finished, starting kernel interactive prompt");
+    // Setup handle_timer function to handle interrupt vector 32 for x86_64
+    #[cfg(target_arch = "x86_64")]
     arch_api.set_interrupt_handler(handle_timer, 32);
+    // Start the ISA specific timer(s)
+    arch_api.start_isa_timers();
     let port = arch_api.get_serial();
     let mut mon = Kmon::new(port);
     mon.repl_loop();
@@ -36,9 +40,12 @@ unsafe extern "C" fn main() -> ! {
     loop {}
 }
 
-fn handle_timer() {
+fn handle_timer(_: u64) {
     unsafe {
         TIMER_CALLS += 1;
+        if (TIMER_CALLS % 100) == 0 {
+            logln!("timers are working");
+        }
     }
     ArchApi::end_of_interrupt();
 }

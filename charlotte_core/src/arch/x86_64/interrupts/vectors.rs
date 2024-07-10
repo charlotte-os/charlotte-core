@@ -1,3 +1,5 @@
+use core::arch::global_asm;
+
 // handlers
 extern "C" {
     fn iv_32();
@@ -248,3 +250,7 @@ pub const IV_HANDLERS: [unsafe extern "C" fn(); 224] = [
     iv_241, iv_242, iv_243, iv_244, iv_245, iv_246, iv_247, iv_248, iv_249, iv_250, iv_251, iv_252,
     iv_253, iv_254, iv_255,
 ];
+
+global_asm! {
+    include_str!("vectors.asm"),
+}

@@ -57,7 +57,7 @@ pub trait Api {
     #[allow(unused)]
     fn init_ap(&mut self);
     #[allow(unused)]
-    fn init_timers(&self);
+    fn start_isa_timers(&self);
     fn init_interrupts(&mut self);
     fn interrupts_enabled(&self) -> bool;
     #[allow(unused)]
@@ -65,7 +65,7 @@ pub trait Api {
     #[allow(unused)]
     fn restore_interrupts(&mut self);
     #[allow(unused)]
-    fn set_interrupt_handler(&mut self, h: fn(), vector: u32);
+    fn set_interrupt_handler(&mut self, h: fn(vector: u64), vector: u32);
     #[allow(unused)]
     fn end_of_interrupt();
 }

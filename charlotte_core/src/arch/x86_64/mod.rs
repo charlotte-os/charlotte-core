@@ -18,11 +18,12 @@ use serial::{ComPort, SerialPort};
 
 use crate::acpi::{parse, AcpiInfo};
 use crate::arch::x86_64::interrupts::apic::{Apic, TimerMode};
+use crate::arch::x86_64::interrupts::isa_handler::register_iv_handler;
 use crate::arch::{IsaParams, PagingParams};
 use crate::framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
+use crate::logln;
 use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
-use crate::{log, logln};
 
 mod cpu;
 mod exceptions;
@@ -31,7 +32,6 @@ mod global;
 mod idt;
 mod interrupts;
 mod serial;
-mod timers;
 
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api {
@@ -136,13 +136,13 @@ impl crate::arch::Api for Api {
         //! This routine is run by each application processor to initialize itself prior to being handed off to the scheduler.
     }
 
-    fn init_timers(&self) {
-        unimplemented!()
+    fn start_isa_timers(&self) {
+        self.bsp_apic.start_timer()
     }
 
     fn init_interrupts(&mut self) {
         self.bsp_apic.enable(BSP_IDT.lock().borrow_mut());
-        self.bsp_apic.setup_timer(TimerMode::Periodic, 10000, 0);
+        self.bsp_apic.setup_timer(TimerMode::Periodic, 10000);
     }
 
     fn interrupts_enabled(&self) -> bool {
@@ -157,11 +157,11 @@ impl crate::arch::Api for Api {
         irq_restore();
     }
 
-    fn set_interrupt_handler(&mut self, h: fn(), vector: u32) {
+    fn set_interrupt_handler(&mut self, h: fn(vector: u64), vector: u32) {
         if vector > u8::MAX as u32 {
             panic!("X86_64 can only have from iv 32 to iv 255 set");
         }
-        Apic::register_iv_handler(h, vector as u8);
+        register_iv_handler(h, vector as u8);
     }
 
     fn end_of_interrupt() {

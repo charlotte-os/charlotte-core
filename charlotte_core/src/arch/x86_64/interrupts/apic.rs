@@ -3,9 +3,7 @@ use core::ptr;
 use core::time::Duration;
 
 use crate::acpi::madt::{Madt, MadtEntry};
-use crate::arch::x86_64::cpu::{
-    asm_are_interrupts_enabled, irq_disable, irq_restore, read_msr, write_msr,
-};
+use crate::arch::x86_64::cpu::{irq_disable, irq_restore, read_msr, write_msr};
 use crate::arch::x86_64::idt::Idt;
 use crate::arch::x86_64::interrupts::apic_consts::{
     APIC_DISABLE, APIC_NMI, APIC_SW_ENABLE, DESTINATION_FORMAT, EOI_REGISTER, LAPIC_VERSION,
@@ -18,24 +16,24 @@ const FEAT_EDX_APIC: u32 = 1 << 9;
 const APIC_MSR: u32 = 0x1B;
 
 #[no_mangle]
-static mut APIC_REMAPPED_LOCATION: u64 = 0xFEE00000;
-
-#[no_mangle]
-pub(super) static mut IV_HANDLER_FN: [Option<fn()>; 224] = [None; 224];
+static mut LAPIC_REMAPPED_LOCATION: u64 = 0xFEE00000;
 
 #[no_mangle]
 pub extern "C" fn apic_offset() -> u64 {
-    unsafe { APIC_REMAPPED_LOCATION }
+    unsafe { LAPIC_REMAPPED_LOCATION }
 }
 
 pub struct Apic {
     base_phys_addr: usize,
     base_mapped_addr: Option<usize>,
+    timer_mode: TimerMode,
+    timer_count: u32,
     pub tps: u64,
     pub lvt_max: u8,
 }
 
 #[repr(u32)]
+#[derive(Debug, Copy, Clone)]
 /// Masks bits 17 & 18 as per fig 11-8 from the intel SDM Vol 3 11.5
 pub enum TimerMode {
     // makes the bits for mode 00, so is a no op
@@ -51,6 +49,8 @@ impl Apic {
         Apic {
             base_phys_addr: addr,
             base_mapped_addr: None,
+            timer_mode: TimerMode::Oneshot,
+            timer_count: 0,
             tps: 0,
             lvt_max: 0,
         }
@@ -127,14 +127,14 @@ impl Apic {
         self.write_apic_reg(TIMER_DIVISOR, divisor as u32);
     }
 
-    pub fn setup_timer(&self, mode: TimerMode, frequency: u32, divisor: u8) {
-        self.set_timer_divisor(divisor);
-        self.set_lvt_timer_register(mode, true, 32);
-        self.set_timer_divisor(divisor);
-        self.set_timer_counter(frequency);
+    pub fn setup_timer(&mut self, mode: TimerMode, frequency: u32) {
+        self.set_timer_divisor(3);
+        self.timer_mode = mode;
+        self.timer_count = frequency;
+        self.set_timer_divisor(3);
     }
 
-    pub fn set_lvt_timer_register(&self, mode: TimerMode, enabled: bool, vector: u8) {
+    fn set_lvt_timer_register(&self, mode: TimerMode, enabled: bool, vector: u8) {
         let mut value = vector as u32;
         value |= mode as u32;
         // if masking is desired by enabled being false
@@ -143,6 +143,12 @@ impl Apic {
             value |= 1 << 16;
         }
         self.write_apic_reg(LVT_TIMER, value);
+    }
+
+    pub fn start_timer(&self) {
+        self.set_timer_counter(self.timer_count);
+        self.set_lvt_timer_register(self.timer_mode, true, 32);
+        self.set_timer_divisor(3);
     }
 
     pub fn write_eoi(&self) {
@@ -156,24 +162,8 @@ impl Apic {
 
 // static methods
 impl Apic {
-    pub fn register_iv_handler(h: fn(), vector: u8) {
-        if asm_are_interrupts_enabled() {
-            irq_disable();
-        }
-        if vector < 32 {
-            panic!("Cannot set vector handler lower than 32");
-        }
-        unsafe {
-            let idx = (vector - 32) as usize;
-            IV_HANDLER_FN[idx] = Some(h);
-        }
-        if !asm_are_interrupts_enabled() {
-            irq_restore();
-        }
-    }
-
     pub fn signal_eoi() {
-        let base = unsafe { APIC_REMAPPED_LOCATION };
+        let base = unsafe { LAPIC_REMAPPED_LOCATION };
         let addr = (base + EOI_REGISTER as u64) as *mut u32;
         unsafe { ptr::write_volatile(addr, 0) }
     }

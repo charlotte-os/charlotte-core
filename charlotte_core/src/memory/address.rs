@@ -1,4 +1,4 @@
-use crate::arch::{ArchApi, ISA_PARAMS};
+use crate::arch::ISA_PARAMS;
 use core::num::NonZeroUsize;
 use core::ops::Add;
 

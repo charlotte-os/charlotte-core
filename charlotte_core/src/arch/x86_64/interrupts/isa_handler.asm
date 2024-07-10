@@ -3,15 +3,6 @@
 
 .text
 
-.global asm_iretq
-asm_iretq:
-	iretq
-
 .global isr_dummy
 isr_dummy: // Dummyinterrupt to map to spurious interrupt
 	iretq
-
-.global isr_spurious
-isr_spurious:
-	ret
-
