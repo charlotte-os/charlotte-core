@@ -1,12 +1,11 @@
-mod cpu;
-
-use crate::arch::x86_64::cpu::cpu::{asm_read_msr, asm_write_msr};
 use core::arch::asm;
-use core::arch::x86_64::__cpuid;
-use core::{arch::x86_64::__cpuid_count, fmt::Write};
+use core::arch::x86_64::{__cpuid, __cpuid_count};
+
 use spin::lazy::Lazy;
 
-use crate::logln;
+use crate::arch::x86_64::cpu::cpu_intrinsics::{asm_read_msr, asm_write_msr};
+
+mod cpu_intrinsics;
 
 /// The number of significant bits in a physical address on the current CPU.
 pub static PADDR_SIG_BITS: Lazy<u8> = Lazy::new(|| {
@@ -26,7 +25,7 @@ pub static VADDR_SIG_BITS: Lazy<u8> = Lazy::new(|| {
 
 pub static CPU_HAS_MSR: Lazy<bool> = Lazy::new(|| {
     let res = unsafe { __cpuid_count(0, 0) };
-    return res.edx & 1 << 5 != 0;
+    res.edx & 1 << 5 != 0
 });
 
 extern "C" {
