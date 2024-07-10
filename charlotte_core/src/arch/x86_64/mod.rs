@@ -17,9 +17,9 @@ use idt::*;
 use serial::{ComPort, SerialPort};
 
 use crate::acpi::{parse, AcpiInfo};
-use crate::arch::x86_64::interrupts::apic::{Apic, TimerMode};
+use crate::arch::x86_64::interrupts::apic::Apic;
 use crate::arch::x86_64::interrupts::isa_handler::register_iv_handler;
-use crate::arch::{IsaParams, PagingParams};
+use crate::arch::{HwTimerMode, IsaParams, PagingParams};
 use crate::framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
 use crate::logln;
@@ -78,7 +78,7 @@ impl crate::arch::Api for Api {
 
         logln!("Enable interrupts");
         api.init_interrupts();
-        logln!("Counter frequency: {}", api.bsp_apic.tps / 10000000);
+        logln!("Bus frequency is: {}MHz", api.bsp_apic.tps / 10000000);
         logln!("============================================================\n");
 
         logln!("Memory self test");
@@ -136,13 +136,31 @@ impl crate::arch::Api for Api {
         //! This routine is run by each application processor to initialize itself prior to being handed off to the scheduler.
     }
 
+    fn setup_isa_timer(&mut self, tps: u32, mode: HwTimerMode, _: u16) {
+        let mut divisor = 1u8;
+        let mut counter = 0u64;
+        while divisor < 128 {
+            counter = (self.bsp_apic.tps / divisor as u64) / (tps as u64 * 10);
+            if counter < u32::MAX as u64 {
+                break;
+            }
+            divisor <<= 1;
+        }
+        logln!(
+            "Setting up ISA timer with divisor: {}, counter: {}",
+            divisor,
+            counter
+        );
+        self.bsp_apic
+            .setup_timer(mode.into(), counter as u32, divisor.into());
+    }
+
     fn start_isa_timers(&self) {
         self.bsp_apic.start_timer()
     }
 
-    fn init_interrupts(&mut self) {
-        self.bsp_apic.enable(BSP_IDT.lock().borrow_mut());
-        self.bsp_apic.setup_timer(TimerMode::Periodic, 10000);
+    fn pause_isa_timers(&self) {
+        todo!()
     }
 
     fn interrupts_enabled(&self) -> bool {
@@ -157,6 +175,10 @@ impl crate::arch::Api for Api {
         irq_restore();
     }
 
+    fn init_interrupts(&mut self) {
+        self.bsp_apic.enable(BSP_IDT.lock().borrow_mut());
+    }
+
     fn set_interrupt_handler(&mut self, h: fn(vector: u64), vector: u32) {
         if vector > u8::MAX as u32 {
             panic!("X86_64 can only have from iv 32 to iv 255 set");
@@ -164,6 +186,7 @@ impl crate::arch::Api for Api {
         register_iv_handler(h, vector as u8);
     }
 
+    #[inline(always)]
     fn end_of_interrupt() {
         Apic::signal_eoi();
     }

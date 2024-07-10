@@ -11,6 +11,7 @@ use crate::arch::x86_64::interrupts::apic_consts::{
     SPURIOUS_INTERRUPT_VECTOR, TASK_PRIORITY_TPR, TIMER_CURRENT, TIMER_DIVISOR, TIMER_INIT_COUNT,
 };
 use crate::arch::x86_64::interrupts::isa_handler::load_handlers;
+use crate::arch::HwTimerMode;
 
 const FEAT_EDX_APIC: u32 = 1 << 9;
 const APIC_MSR: u32 = 0x1B;
@@ -23,15 +24,6 @@ pub extern "C" fn apic_offset() -> u64 {
     unsafe { LAPIC_REMAPPED_LOCATION }
 }
 
-pub struct Apic {
-    base_phys_addr: usize,
-    base_mapped_addr: Option<usize>,
-    timer_mode: TimerMode,
-    timer_count: u32,
-    pub tps: u64,
-    pub lvt_max: u8,
-}
-
 #[repr(u32)]
 #[derive(Debug, Copy, Clone)]
 /// Masks bits 17 & 18 as per fig 11-8 from the intel SDM Vol 3 11.5
@@ -42,6 +34,59 @@ pub enum TimerMode {
     TscDeadline = 0x02 << 17,
 }
 
+impl From<HwTimerMode> for TimerMode {
+    fn from(mode: HwTimerMode) -> Self {
+        match mode {
+            HwTimerMode::OneShot => TimerMode::Oneshot,
+            HwTimerMode::Recurrent => TimerMode::Periodic,
+        }
+    }
+}
+
+#[repr(u32)]
+#[derive(Debug, Copy, Clone)]
+/// Consts for the timer divisor,
+/// the divisor takes the form of bit indexes `[3, 1, 0]` with index 2 being reserved
+/// ## References:
+/// * AMD SDM 16.4.1
+/// * Intel SDM Vol3 11.5.4
+pub enum TimerDivisor {
+    Div1 = 0b1011,
+    Div2 = 0b0000,
+    Div4 = 0b0001,
+    Div8 = 0b0010,
+    Div16 = 0b0011,
+    Div32 = 0b1000,
+    Div64 = 0b1001,
+    Div128 = 0b1010,
+}
+
+impl From<u8> for TimerDivisor {
+    fn from(value: u8) -> Self {
+        match value {
+            1 => TimerDivisor::Div1,
+            2 => TimerDivisor::Div2,
+            4 => TimerDivisor::Div4,
+            8 => TimerDivisor::Div8,
+            16 => TimerDivisor::Div16,
+            32 => TimerDivisor::Div32,
+            64 => TimerDivisor::Div64,
+            128 => TimerDivisor::Div128,
+            _ => panic!("Invalid divisor value"),
+        }
+    }
+}
+
+pub struct Apic {
+    base_phys_addr: usize,
+    base_mapped_addr: Option<usize>,
+    timer_mode: TimerMode,
+    timer_count: u32,
+    timer_divisor: TimerDivisor,
+    pub tps: u64,
+    pub lvt_max: u8,
+}
+
 impl Apic {
     pub fn new(madt: &Madt) -> Self {
         let addr = Self::get_apic_addr(madt);
@@ -50,6 +95,7 @@ impl Apic {
             base_phys_addr: addr,
             base_mapped_addr: None,
             timer_mode: TimerMode::Oneshot,
+            timer_divisor: TimerDivisor::Div1,
             timer_count: 0,
             tps: 0,
             lvt_max: 0,
@@ -117,21 +163,18 @@ impl Apic {
         Self::calculate_bus_speed(ticks, duration)
     }
 
-    pub fn set_timer_counter(&self, frequency: u32) {
-        let ticks_per_second = self.calculate_ticks_per_second();
-        let counter_value = ticks_per_second / frequency as u64;
-        self.write_apic_reg(TIMER_INIT_COUNT, counter_value as u32);
+    fn set_timer_counter(&self, frequency: u32) {
+        self.write_apic_reg(TIMER_INIT_COUNT, frequency);
     }
 
-    pub fn set_timer_divisor(&self, divisor: u8) {
+    fn set_timer_divisor(&self, divisor: TimerDivisor) {
         self.write_apic_reg(TIMER_DIVISOR, divisor as u32);
     }
 
-    pub fn setup_timer(&mut self, mode: TimerMode, frequency: u32) {
-        self.set_timer_divisor(3);
+    pub fn setup_timer(&mut self, mode: TimerMode, frequency: u32, divisor: TimerDivisor) {
+        self.timer_divisor = divisor;
         self.timer_mode = mode;
         self.timer_count = frequency;
-        self.set_timer_divisor(3);
     }
 
     fn set_lvt_timer_register(&self, mode: TimerMode, enabled: bool, vector: u8) {
@@ -146,9 +189,9 @@ impl Apic {
     }
 
     pub fn start_timer(&self) {
+        self.set_timer_divisor(self.timer_divisor);
         self.set_timer_counter(self.timer_count);
         self.set_lvt_timer_register(self.timer_mode, true, 32);
-        self.set_timer_divisor(3);
     }
 
     pub fn write_eoi(&self) {

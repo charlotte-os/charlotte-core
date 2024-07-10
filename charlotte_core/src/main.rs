@@ -2,10 +2,10 @@
 #![no_main]
 #![warn(missing_copy_implementations)]
 
-use core::fmt::Write;
 use core::panic::PanicInfo;
+use core::{fmt::Write, time::Duration};
 
-use arch::{Api, ArchApi};
+use arch::{Api, ArchApi, HwTimerMode};
 
 use crate::kmon::Kmon;
 
@@ -15,9 +15,6 @@ mod bootinfo;
 mod framebuffer;
 mod kmon;
 mod memory;
-
-#[no_mangle]
-static mut TIMER_CALLS: u64 = 0;
 
 /// This is the kernel entrypoint function,
 /// the first thing it does is call: [isa_init](ArchApi::isa_init)
@@ -29,8 +26,9 @@ unsafe extern "C" fn main() -> ! {
     logln!("Bring up finished, starting kernel interactive prompt");
     // Setup handle_timer function to handle interrupt vector 32 for x86_64
     #[cfg(target_arch = "x86_64")]
-    arch_api.set_interrupt_handler(handle_timer, 32);
-    // Start the ISA specific timer(s)
+    arch_api.set_interrupt_handler(on_tick, 32);
+    // Start the ISA specific timer(s) with a rate of about every 10us (1MHz)
+    arch_api.setup_isa_timer(100_000, HwTimerMode::Recurrent, 0);
     arch_api.start_isa_timers();
     let port = arch_api.get_serial();
     let mut mon = Kmon::new(port);
@@ -40,12 +38,15 @@ unsafe extern "C" fn main() -> ! {
     loop {}
 }
 
-fn handle_timer(_: u64) {
+#[no_mangle]
+/// System monotonic time, this is a global variable that is updated every time the timer ticks.
+static mut SYSTEM_MONOTONIC: u64 = 0;
+
+/// This function handles timer ticks, inside of it you can dispatch schedulers
+/// or anything else that needs to be done on a timer tick.
+fn on_tick(_: u64) {
     unsafe {
-        TIMER_CALLS += 1;
-        if (TIMER_CALLS % 100) == 0 {
-            logln!("timers are working");
-        }
+        SYSTEM_MONOTONIC += 10;
     }
     ArchApi::end_of_interrupt();
 }

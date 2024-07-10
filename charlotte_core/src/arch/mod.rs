@@ -4,7 +4,6 @@
 //! with ISA specific code in a consistent and platform independent manner.
 
 use core::fmt::{Result, Write};
-
 use spin::{lazy::Lazy, mutex::TicketMutex};
 
 use crate::framebuffer::console::CONSOLE;
@@ -22,6 +21,11 @@ pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
         logger: <ArchApi as Api>::get_logger(),
     })
 });
+
+pub enum HwTimerMode {
+    OneShot,
+    Recurrent,
+}
 
 #[derive(Debug, Copy, Clone)]
 pub struct PagingParams {
@@ -56,8 +60,13 @@ pub trait Api {
     fn outb(port: u16, val: u8);
     #[allow(unused)]
     fn init_ap(&mut self);
-    #[allow(unused)]
+    /// Sets up the ISA specific timer(s)
+    /// ## Notes:
+    /// * for ISAs with only one timer timer_id is ignored
+    /// * some ISAs have timers that can't be as precise as say 10 tps, check the ISA manuals for details
+    fn setup_isa_timer(&mut self, tps: u32, mode: HwTimerMode, timer_id: u16);
     fn start_isa_timers(&self);
+    fn pause_isa_timers(&self);
     fn init_interrupts(&mut self);
     fn interrupts_enabled(&self) -> bool;
     #[allow(unused)]
