@@ -1,7 +1,7 @@
 use page_table_entry::*;
 
-use crate::arch::ISA_PARAMS;
 use crate::arch::x86_64::memory::*;
+use crate::arch::ISA_PARAMS;
 use crate::memory::address::*;
 use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
 
@@ -73,12 +73,12 @@ impl PageTable {
                 }
             }
             PageSize::Large => {
-                if !paddr.is_aligned_to( ISA_PARAMS.paging.page_size * LARGE_PAGE_NFRAMES) {
+                if !paddr.is_aligned_to(ISA_PARAMS.paging.page_size * LARGE_PAGE_NFRAMES) {
                     return Err(Error::InvalidPAddrAlignment);
                 }
             }
             PageSize::Huge => {
-                if !paddr.is_aligned_to( ISA_PARAMS.paging.page_size * HUGE_PAGE_NFRAMES) {
+                if !paddr.is_aligned_to(ISA_PARAMS.paging.page_size * HUGE_PAGE_NFRAMES) {
                     return Err(Error::InvalidPAddrAlignment);
                 }
             }

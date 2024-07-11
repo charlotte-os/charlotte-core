@@ -314,7 +314,7 @@ impl Api {
         let cr3 = unsafe { asm_get_cr3() };
         let mut pm = match PageMap::from_cr3(cr3) {
             Ok(pm) => pm,
-            Err(e) => panic!("Failed to create PageMap from CR3: {:?}", e)
+            Err(e) => panic!("Failed to create PageMap from CR3: {:?}", e),
         };
         logln!("PageMap created from current CR3 value.");
 
@@ -323,6 +323,8 @@ impl Api {
             Ok(frame) => frame,
             Err(e) => panic!("Failed to allocate frame: {:?}", e),
         };
+
+        //map to the beginning of the higher half of the virtual address space i.e. the beginning of kernelspace
         let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
             Ok(vaddr) => vaddr,
             Err(e) => {
@@ -360,12 +362,6 @@ impl Api {
             Ok(frame) => frame,
             Err(e) => panic!("Failed to allocate frame: {:?}", e),
         };
-        let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
-            Ok(vaddr) => vaddr,
-            Err(e) => {
-                panic!("Failed to create VirtualAddress: {:?}", e);
-            }
-        };
         pm.map_large_page(
             vaddr,
             large_frame,
@@ -394,15 +390,10 @@ impl Api {
         logln!("Starting huge page mapping test...");
         let huge_frame = match PHYSICAL_FRAME_ALLOCATOR
             .lock()
-            .allocate_contiguous(512 * 512, 4096 * 512 * 512) {
+            .allocate_contiguous(512 * 512, 4096 * 512 * 512)
+        {
             Ok(frame) => frame,
             Err(e) => panic!("Failed to allocate frame: {:?}", e),
-        };
-        let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
-            Ok(vaddr) => vaddr,
-            Err(e) => {
-                panic!("Failed to create VirtualAddress: {:?}", e);
-            }
         };
         pm.map_huge_page(
             vaddr,
