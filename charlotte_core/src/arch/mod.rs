@@ -96,6 +96,10 @@ pub trait MemoryMap {
     /// previously mapped to the given virtual address if successful.
     fn unmap_huge_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
 }
+pub enum HwTimerMode {
+    OneShot,
+    Recurrent,
+}
 
 #[derive(Debug, Copy, Clone)]
 pub struct PagingParams {
@@ -132,8 +136,13 @@ pub trait Api {
     fn outb(port: u16, val: u8);
     #[allow(unused)]
     fn init_ap(&mut self);
-    #[allow(unused)]
-    fn init_timers(&self);
+    /// Sets up the ISA specific timer(s)
+    /// ## Notes:
+    /// * for ISAs with only one timer timer_id is ignored
+    /// * some ISAs have timers that can't be as precise as say 10 tps, check the ISA manuals for details
+    fn setup_isa_timer(&mut self, tps: u32, mode: HwTimerMode, timer_id: u16);
+    fn start_isa_timers(&self);
+    fn pause_isa_timers(&self);
     fn init_interrupts(&mut self);
     fn interrupts_enabled(&self) -> bool;
     #[allow(unused)]
@@ -141,7 +150,9 @@ pub trait Api {
     #[allow(unused)]
     fn restore_interrupts(&mut self);
     #[allow(unused)]
-    fn end_of_interrupt(&self);
+    fn set_interrupt_handler(&mut self, h: fn(vector: u64), vector: u32);
+    #[allow(unused)]
+    fn end_of_interrupt();
 }
 
 pub trait Serial {

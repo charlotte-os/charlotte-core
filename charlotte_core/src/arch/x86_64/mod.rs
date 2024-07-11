@@ -22,7 +22,8 @@ use serial::{ComPort, SerialPort};
 use crate::acpi::{parse, AcpiInfo};
 use crate::arch::x86_64::interrupts::apic::Apic;
 use crate::arch::x86_64::memory::page_map::page_table::page_table_entry::PteFlags;
-use crate::arch::{IsaParams, MemoryMap, PagingParams};
+use crate::arch::{HwTimerMode, IsaParams, MemoryMap, PagingParams};
+use crate::arch::x86_64::interrupts::isa_handler::register_iv_handler;
 use crate::framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
 use crate::logln;
@@ -37,7 +38,6 @@ mod idt;
 mod interrupts;
 mod memory;
 mod serial;
-mod timers;
 
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api {
@@ -50,6 +50,14 @@ static BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
 static BSP_TSS: Lazy<Tss> = Lazy::new(|| Tss::new(addr_of!(BSP_RING0_INT_STACK) as u64));
 static BSP_GDT: Lazy<Gdt> = Lazy::new(|| Gdt::new(&BSP_TSS));
 static BSP_IDT: SpinMutex<Idt> = SpinMutex::new(Idt::new());
+pub const X86_ISA_PARAMS: IsaParams = IsaParams {
+    paging: PagingParams {
+        page_size: 0x1000,
+        page_shift: 0xC,
+        page_mask: !0xfff,
+    },
+};
+
 pub const X86_ISA_PARAMS: IsaParams = IsaParams {
     paging: PagingParams {
         page_size: 0x1000,
@@ -80,8 +88,10 @@ impl crate::arch::Api for Api {
             irq_flags: 0,
         };
         logln!("============================================================\n");
-        logln!("Enable the interrupts");
+
+        logln!("Enable interrupts");
         api.init_interrupts();
+        logln!("Bus frequency is: {}MHz", api.bsp_apic.tps / 10000000);
         logln!("============================================================\n");
 
         logln!("Memory self tests");
@@ -149,12 +159,12 @@ impl crate::arch::Api for Api {
 
     /// Read a byte from the specified port
     fn inb(port: u16) -> u8 {
-        unsafe { asm_inb(port) }
+        asm_inb(port)
     }
 
     /// Write a byte to the specified port
     fn outb(port: u16, val: u8) {
-        unsafe { asm_outb(port, val) }
+        asm_outb(port, val)
     }
 
     /// Initialize the bootstrap processor (BSP)
@@ -164,12 +174,31 @@ impl crate::arch::Api for Api {
         //! This routine is run by each application processor to initialize itself prior to being handed off to the scheduler.
     }
 
-    fn init_timers(&self) {
-        unimplemented!()
+    fn setup_isa_timer(&mut self, tps: u32, mode: HwTimerMode, _: u16) {
+        let mut divisor = 1u8;
+        let mut counter = 0u64;
+        while divisor < 128 {
+            counter = (self.bsp_apic.tps / divisor as u64) / (tps as u64 * 10);
+            if counter < u32::MAX as u64 {
+                break;
+            }
+            divisor <<= 1;
+        }
+        logln!(
+            "Setting up ISA timer with divisor: {}, counter: {}",
+            divisor,
+            counter
+        );
+        self.bsp_apic
+            .setup_timer(mode.into(), counter as u32, divisor.into());
     }
 
-    fn init_interrupts(&mut self) {
-        self.bsp_apic.init()
+    fn start_isa_timers(&self) {
+        self.bsp_apic.start_timer()
+    }
+
+    fn pause_isa_timers(&self) {
+        todo!()
     }
 
     fn interrupts_enabled(&self) -> bool {
@@ -177,14 +206,28 @@ impl crate::arch::Api for Api {
     }
 
     fn disable_interrupts(&mut self) {
-        self.irq_flags = asm_irq_disable();
+        irq_disable();
     }
 
     fn restore_interrupts(&mut self) {
-        asm_irq_restore(self.irq_flags);
+        irq_restore();
     }
 
-    fn end_of_interrupt(&self) {}
+    fn init_interrupts(&mut self) {
+        self.bsp_apic.enable(BSP_IDT.lock().borrow_mut());
+    }
+
+    fn set_interrupt_handler(&mut self, h: fn(vector: u64), vector: u32) {
+        if vector > u8::MAX as u32 {
+            panic!("X86_64 can only have from iv 32 to iv 255 set");
+        }
+        register_iv_handler(h, vector as u8);
+    }
+
+    #[inline(always)]
+    fn end_of_interrupt() {
+        Apic::signal_eoi();
+    }
 }
 
 impl Api {
@@ -246,8 +289,12 @@ impl Api {
         }
         let alloc3 = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
         logln!("alloc2: {:?}, alloc3: {:?}", alloc2, alloc3);
-        let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc2.unwrap());
-        let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc3.unwrap());
+        if let Err(e)= PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc2.unwrap()) {
+            logln!("Failed to deallocate frame: {:?}", e);
+        }
+        if let Err(e) = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc3.unwrap()) {
+            logln!("Failed to deallocate frame: {:?}", e);
+        }
         logln!("Single frame allocation and deallocation test complete.");
         logln!("Performing contiguous frame allocation and deallocation test.");
         let contiguous_alloc = PHYSICAL_FRAME_ALLOCATOR.lock().allocate_contiguous(256, 64);
@@ -278,10 +325,13 @@ impl Api {
         logln!("PageMap created from current CR3 value.");
 
         logln!("Starting page mapping test...");
-        let frame = PHYSICAL_FRAME_ALLOCATOR
+        let frame = match PHYSICAL_FRAME_ALLOCATOR
             .lock()
-            .allocate()
-            .expect("Failed to allocate frame.");
+            .allocate() {
+            Ok(frame) => frame,
+            Err(e) => 
+                panic!("Failed to allocate frame: {:?}", e)
+            };
         let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
             Ok(vaddr) => vaddr,
             Err(e) => {
@@ -312,10 +362,14 @@ impl Api {
         logln!("Page mapping test successful.");
 
         logln!("Starting large page mapping test...");
-        let large_frame = PHYSICAL_FRAME_ALLOCATOR
+        let large_frame = match PHYSICAL_FRAME_ALLOCATOR
             .lock()
             .allocate_contiguous(512, 4096 * 512)
-            .expect("Failed to allocate frames.");
+            .expect("Failed to allocate frames.") {
+            Ok(frame) => frame,
+            Err(e) =>
+                panic!("Failed to allocate frame: {:?}", e)
+            };
         let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
             Ok(vaddr) => vaddr,
             Err(e) => {

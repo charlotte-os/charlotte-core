@@ -80,14 +80,26 @@ extern "C" fn ih_divide_by_zero() {
 }
 
 #[no_mangle]
-extern "C" fn ih_general_protection_fault(_error_code: u64) {
+extern "C" fn ih_general_protection_fault(error_code: u64, rip: u64) {
     let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "A general protection fault has occurred in kernelspace! Panicking!"
-    )
-    .ignore();
+    let rip_adjusted = 0xffffffff80000000 - rip;
+    if error_code != 0 {
+        writeln!(
+            &mut logger,
+            "A general protection fault has occurred in kernel space with error code {:X}! Panicking!
+            this is usually the segment selector that caused the fault. RIP = {:X}",
+            error_code, rip_adjusted
+        )
+            .ignore();
+    } else {
+        writeln!(
+            &mut logger,
+            "A general protection fault has occurred in kernelspace! Panicking!
+            RIP = {:X}",
+            rip_adjusted,
+        )
+        .ignore();
+    }
 }
 
 #[no_mangle]
@@ -96,7 +108,7 @@ extern "C" fn ih_page_fault(error_code: u64) {
 
     writeln!(
         &mut logger,
-        "A page fault has occurred with error code {:x}",
+        "A page fault has occurred with error code {:32b}",
         error_code
     )
     .ignore();

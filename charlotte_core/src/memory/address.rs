@@ -140,7 +140,7 @@ impl Add<UAddr> for PhysicalAddress {
 #[repr(transparent)]
 pub struct VirtualAddress(UAddr);
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum VAddrError {
     InvalidForm(u64),
     InvalidAlignment(u64),
