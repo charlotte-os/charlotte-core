@@ -23,6 +23,7 @@ pub static VADDR_SIG_BITS: Lazy<u8> = Lazy::new(|| {
     vsig_bits as u8
 });
 
+pub static ARE_HUGE_PAGES_SUPPORTED: Lazy<bool> = Lazy::new(huge_pages_supported);
 pub static CPU_HAS_MSR: Lazy<bool> = Lazy::new(|| {
     let res = unsafe { __cpuid_count(0, 0) };
     res.edx & 1 << 5 != 0
@@ -188,4 +189,12 @@ pub fn get_tsc_frequency() -> u32 {
     }
 
     cpuid_res.ebx / cpuid_res.eax
+}
+
+/// Determines whether the current LP supports huge pages.
+/// Returns `true` if huge pages are supported, `false` otherwise.
+fn huge_pages_supported() -> bool {
+    let cpuid_result = unsafe { __cpuid_count(0x80000001, 0) };
+    let edx = cpuid_result.edx;
+    edx & (1 << 26) != 0
 }

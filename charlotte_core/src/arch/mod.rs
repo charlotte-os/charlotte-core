@@ -3,11 +3,14 @@
 //! instruction set architecture (ISA). It provides a set of traits and types that can be used to interact
 //! with ISA specific code in a consistent and platform independent manner.
 
-use core::fmt::{Result, Write};
+use core::fmt;
+use core::fmt::Write;
+use core::result::Result;
+
 use spin::{lazy::Lazy, mutex::TicketMutex};
 
 use crate::framebuffer::console::CONSOLE;
-use crate::memory::address::UAddr;
+use crate::memory::address::{PhysicalAddress, UAddr, VirtualAddress};
 
 #[cfg(target_arch = "aarch64")]
 pub mod aarch64;
@@ -22,6 +25,77 @@ pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
     })
 });
 
+pub trait MemoryMap {
+    type Error;
+    type Flags;
+
+    /// Loads the page map into the logical processor.
+    unsafe fn load(&self) -> Result<(), Self::Error>;
+
+    /// Maps a page at the given virtual address.
+    /// # Arguments
+    /// * `vaddr` - The virtual address to map the page to
+    /// * `paddr` - The physical base address of the page frame to be mapped
+    /// * `flags` - The flags to apply to the page table entry
+    fn map_page(
+        &mut self,
+        vaddr: VirtualAddress,
+        paddr: PhysicalAddress,
+        flags: Self::Flags,
+    ) -> Result<(), Self::Error>;
+
+    /// Unmaps a page from the given page map at the given virtual address.
+    /// # Arguments
+    /// * `vaddr` - The virtual address to unmap.
+    /// # Returns
+    /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
+    /// previously mapped to the given virtual address if successful.
+    fn unmap_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
+
+    /// Maps a large page (2 MiB) at the given virtual address.
+    /// # Arguments
+    /// * `vaddr` - The virtual address to map.
+    /// * `paddr` - The physical address to map.
+    /// * `flags` - The flags to apply to the page table entry.
+    /// # Returns
+    /// Returns an error of type `Self::Error` if mapping fails.
+    fn map_large_page(
+        &mut self,
+        vaddr: VirtualAddress,
+        paddr: PhysicalAddress,
+        flags: Self::Flags,
+    ) -> Result<(), Self::Error>;
+
+    /// Unmaps a large page from the given page map at the given virtual address.
+    /// # Arguments
+    /// * `vaddr` - The virtual address to unmap.
+    /// # Returns
+    /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
+    /// previously mapped to the given virtual address if successful.
+    fn unmap_large_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
+
+    /// Maps a huge page (1 GiB) at the given virtual address.
+    /// # Arguments
+    /// * `vaddr` - The virtual address to map.
+    /// * `paddr` - The physical address to map.
+    /// * `flags` - The flags to apply to the page table entry.
+    /// # Returns
+    /// Returns an error of type `Self::Error` if mapping fails.
+    fn map_huge_page(
+        &mut self,
+        vaddr: VirtualAddress,
+        paddr: PhysicalAddress,
+        flags: Self::Flags,
+    ) -> Result<(), Self::Error>;
+
+    /// Unmaps a huge page from the given page map at the given virtual address.
+    /// # Arguments
+    /// * `vaddr` - The virtual address to unmap.
+    /// # Returns
+    /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
+    /// previously mapped to the given virtual address if successful.
+    fn unmap_huge_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
+}
 pub enum HwTimerMode {
     OneShot,
     Recurrent,
@@ -53,6 +127,8 @@ pub trait Api {
     fn get_serial(&self) -> Self::Serial;
     fn get_paddr_width() -> u8;
     fn get_vaddr_width() -> u8;
+    fn validate_paddr(raw: usize) -> bool;
+    fn validate_vaddr(raw: u64) -> bool;
     #[allow(unused)]
     fn halt() -> !;
     fn panic() -> !;
@@ -90,7 +166,7 @@ pub struct Logger {
 }
 
 impl Write for Logger {
-    fn write_str(&mut self, s: &str) -> Result {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
         write!(self.logger, "{}", s).unwrap();
         write!(CONSOLE.lock(), "{}", s).unwrap();
         Ok(())

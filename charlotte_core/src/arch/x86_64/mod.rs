@@ -1,6 +1,7 @@
 //! # x86_64 Architecture Module
 //! This module implements the Arch interface for the x86_64 instruction set architecture (ISA).
 
+use core::convert::From;
 use core::fmt::Write;
 use core::str;
 use core::{
@@ -8,6 +9,7 @@ use core::{
     ptr::addr_of,
 };
 
+use memory::page_map::{asm_get_cr3, PageMap};
 use spin::lazy::Lazy;
 use spin::mutex::spin::SpinMutex;
 
@@ -19,10 +21,12 @@ use serial::{ComPort, SerialPort};
 use crate::acpi::{parse, AcpiInfo};
 use crate::arch::x86_64::interrupts::apic::Apic;
 use crate::arch::x86_64::interrupts::isa_handler::register_iv_handler;
-use crate::arch::{HwTimerMode, IsaParams, PagingParams};
+use crate::arch::x86_64::memory::page_map::page_table::page_table_entry::PteFlags;
+use crate::arch::{HwTimerMode, IsaParams, MemoryMap, PagingParams};
 use crate::framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
 use crate::logln;
+use crate::memory::address::{/*PhysicalAddress,*/ VirtualAddress};
 use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
 
 mod cpu;
@@ -31,6 +35,7 @@ mod gdt;
 mod global;
 mod idt;
 mod interrupts;
+mod memory;
 mod serial;
 
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
@@ -44,7 +49,6 @@ static BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
 static BSP_TSS: Lazy<Tss> = Lazy::new(|| Tss::new(addr_of!(BSP_RING0_INT_STACK) as u64));
 static BSP_GDT: Lazy<Gdt> = Lazy::new(|| Gdt::new(&BSP_TSS));
 static BSP_IDT: SpinMutex<Idt> = SpinMutex::new(Idt::new());
-
 pub const X86_ISA_PARAMS: IsaParams = IsaParams {
     paging: PagingParams {
         page_size: 0x1000,
@@ -81,10 +85,11 @@ impl crate::arch::Api for Api {
         logln!("Bus frequency is: {}MHz", api.bsp_apic.tps / 10000000);
         logln!("============================================================\n");
 
-        logln!("Memory self test");
+        logln!("Memory self tests");
         Self::pmm_self_test();
         logln!("============================================================\n");
-
+        Self::vmm_self_test();
+        logln!("============================================================\n");
         logln!("All x86_64 sanity checks passed, kernel main has control now");
         logln!("============================================================\n");
 
@@ -107,6 +112,30 @@ impl crate::arch::Api for Api {
     /// Get the number of significant virtual address bits supported by the current CPU
     fn get_vaddr_width() -> u8 {
         *VADDR_SIG_BITS
+    }
+
+    /// Validates a physical address in accordance with the x86_64 architecture
+    #[inline]
+    fn validate_paddr(raw: usize) -> bool {
+        // Non-significant bits must be zero
+        let unused_bitmask = !((1 << Self::get_paddr_width()) - 1);
+        raw & unused_bitmask == 0
+    }
+
+    /// Validates a virtual address in accordance with the x86_64 architecture
+    fn validate_vaddr(raw: u64) -> bool {
+        // Canonical form check
+        match Self::get_vaddr_width() {
+            48 => {
+                let masked = raw & 0xFFFF800000000000;
+                masked == 0 || masked == 0xFFFF800000000000
+            }
+            57 => {
+                let masked = raw & 0xFFFE000000000000;
+                masked == 0 || masked == 0xFFFE000000000000
+            }
+            _ => false,
+        }
     }
 
     /// Halt the calling LP
@@ -251,8 +280,12 @@ impl Api {
         }
         let alloc3 = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
         logln!("alloc2: {:?}, alloc3: {:?}", alloc2, alloc3);
-        let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc2.unwrap());
-        let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc3.unwrap());
+        if let Err(e) = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc2.unwrap()) {
+            logln!("Failed to deallocate frame: {:?}", e);
+        }
+        if let Err(e) = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc3.unwrap()) {
+            logln!("Failed to deallocate frame: {:?}", e);
+        }
         logln!("Single frame allocation and deallocation test complete.");
         logln!("Performing contiguous frame allocation and deallocation test.");
         let contiguous_alloc = PHYSICAL_FRAME_ALLOCATOR.lock().allocate_contiguous(256, 64);
@@ -274,5 +307,119 @@ impl Api {
         }
         logln!("Contiguous frame allocation and deallocation test complete.");
         logln!("Physical Memory Manager test suite finished.");
+    }
+
+    fn vmm_self_test() {
+        logln!("Beginning VMM Self Test...");
+        let cr3 = unsafe { asm_get_cr3() };
+        let mut pm = match PageMap::from_cr3(cr3) {
+            Ok(pm) => pm,
+            Err(e) => panic!("Failed to create PageMap from CR3: {:?}", e),
+        };
+        logln!("PageMap created from current CR3 value.");
+
+        logln!("Starting page mapping test...");
+        let frame = match PHYSICAL_FRAME_ALLOCATOR.lock().allocate() {
+            Ok(frame) => frame,
+            Err(e) => panic!("Failed to allocate frame: {:?}", e),
+        };
+
+        //map to the beginning of the higher half of the virtual address space i.e. the beginning of kernelspace
+        let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
+            Ok(vaddr) => vaddr,
+            Err(e) => {
+                panic!("Failed to create VirtualAddress: {:?}", e);
+            }
+        };
+        pm.map_page(
+            vaddr,
+            frame,
+            PteFlags::Write as u64 | PteFlags::Global as u64 | PteFlags::NoExecute as u64,
+        );
+        logln!(
+            "Mapped page at virtual address: {:?} to physical frame: {:?}",
+            vaddr,
+            frame
+        );
+        unsafe {
+            let ptr = <*mut u64>::from(vaddr);
+            ptr.write(0xdeadbeef);
+            logln!("Wrote 0xdeadbeef to virtual address: {:?}", vaddr);
+            let val = ptr.read();
+            logln!("Read value: 0x{:x} from virtual address: {:?}", val, vaddr);
+        }
+        let _ = pm.unmap_page(vaddr);
+        logln!("Unmapped page at virtual address: {:?}", vaddr);
+        let _ = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
+        logln!("Deallocated frame: {:?}", frame);
+        logln!("Page mapping test successful.");
+
+        logln!("Starting large page mapping test...");
+        let large_frame = match PHYSICAL_FRAME_ALLOCATOR
+            .lock()
+            .allocate_contiguous(512, 4096 * 512)
+        {
+            Ok(frame) => frame,
+            Err(e) => panic!("Failed to allocate frame: {:?}", e),
+        };
+        pm.map_large_page(
+            vaddr,
+            large_frame,
+            PteFlags::Write as u64 | PteFlags::Global as u64 | PteFlags::NoExecute as u64,
+        );
+        logln!(
+            "Mapped large page at virtual address: {:?} to physical frame: {:?}",
+            vaddr,
+            large_frame
+        );
+        unsafe {
+            let ptr = <*mut u64>::from(vaddr);
+            ptr.write(0xcafebabe);
+            logln!("Wrote 0xcafebabe to virtual address: {:?}", vaddr);
+            let val = ptr.read();
+            logln!("Read value: 0x{:x} from virtual address: {:?}", val, vaddr);
+        }
+        let _ = pm.unmap_large_page(vaddr);
+        logln!("Unmapped large page at virtual address: {:?}", vaddr);
+        let _ = PHYSICAL_FRAME_ALLOCATOR
+            .lock()
+            .deallocate_contiguous(large_frame, 512);
+        logln!("Deallocated large frame: {:?}", large_frame);
+        logln!("Large page mapping test successful.");
+
+        logln!("Starting huge page mapping test...");
+        let huge_frame = match PHYSICAL_FRAME_ALLOCATOR
+            .lock()
+            .allocate_contiguous(512 * 512, 4096 * 512 * 512)
+        {
+            Ok(frame) => frame,
+            Err(e) => panic!("Failed to allocate frame: {:?}", e),
+        };
+        pm.map_huge_page(
+            vaddr,
+            huge_frame,
+            PteFlags::Write as u64 | PteFlags::Global as u64 | PteFlags::NoExecute as u64,
+        );
+        logln!(
+            "Mapped huge page at virtual address: {:?} to physical frame: {:?}",
+            vaddr,
+            huge_frame
+        );
+        unsafe {
+            let ptr = <*mut u64>::from(vaddr);
+            ptr.write(0xdeadbeef);
+            logln!("Wrote 0xdeadbeef to virtual address: {:?}", vaddr);
+            let val = ptr.read();
+            logln!("Read value: 0x{:x} from virtual address: {:?}", val, vaddr);
+        }
+        let _ = pm.unmap_huge_page(vaddr);
+        logln!("Unmapped huge page at virtual address: {:?}", vaddr);
+        let _ = PHYSICAL_FRAME_ALLOCATOR
+            .lock()
+            .deallocate_contiguous(huge_frame, 512 * 512);
+        logln!("Deallocated huge frame: {:?}", huge_frame);
+        logln!("Huge page mapping test successful.");
+
+        logln!("VMM Self Test Complete.");
     }
 }

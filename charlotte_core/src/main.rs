@@ -2,8 +2,8 @@
 #![no_main]
 #![warn(missing_copy_implementations)]
 
+use core::fmt::Write;
 use core::panic::PanicInfo;
-use core::{fmt::Write, time::Duration};
 
 use arch::{Api, ArchApi, HwTimerMode};
 

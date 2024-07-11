@@ -10,7 +10,7 @@ pub struct Kmon<T: Serial> {
 
 impl<T: Serial> Kmon<T> {
     fn is_ascii_printable(c: u8) -> bool {
-        c >= 0x20 && c <= 0x7E
+        (0x20..=0x7E).contains(&c)
     }
 
     pub fn new(port: T) -> Self {

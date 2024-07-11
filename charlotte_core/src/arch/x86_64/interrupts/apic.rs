@@ -106,6 +106,19 @@ impl Apic {
         self.base_mapped_addr.unwrap_or(self.base_phys_addr)
     }
 
+    #[allow(unused)]
+    pub fn get_apic_addr(madt: &Madt) -> usize {
+        let mut addr = madt.local_apic_addr() as usize;
+        let mut itr = madt.iter();
+        for entry in itr {
+            if let MadtEntry::LocalApicAddressOverride(addr_o) = entry {
+                addr = addr_o.local_apic_address as usize;
+            }
+        }
+
+        addr
+    }
+
     pub fn write_apic_reg(&self, offset: u32, value: u32) {
         let addr = (self.get_addr() + offset as usize) as *mut u32;
         unsafe { ptr::write_volatile(addr, value) }
@@ -236,19 +249,6 @@ impl Apic {
 
     fn calculate_bus_speed(ticks: u64, duration: Duration) -> u64 {
         ticks / duration.as_millis() as u64
-    }
-
-    #[allow(unused)]
-    pub fn get_apic_addr(madt: &Madt) -> usize {
-        let mut addr = madt.local_apic_addr() as usize;
-        let mut itr = madt.iter();
-        for entry in itr {
-            if let MadtEntry::LocalApicAddressOverride(addr_o) = entry {
-                addr = addr_o.local_apic_address as usize;
-            }
-        }
-
-        addr
     }
 
     pub fn enable_apic(enable: bool) {
