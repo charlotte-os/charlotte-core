@@ -121,7 +121,7 @@ impl PageMap {
             cr3: PHYSICAL_FRAME_ALLOCATOR.lock().allocate()?.bits() as u64,
         })
     }
-    pub fn from_cr3(mut cr3: u64) -> Result<Self, Error> {
+    pub fn from_cr3(cr3: u64) -> Result<Self, Error> {
         // clear the PCID bits
         //cr3 &= !0xFFF;
 

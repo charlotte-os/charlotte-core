@@ -251,19 +251,6 @@ impl Apic {
         ticks / duration.as_millis() as u64
     }
 
-    #[allow(unused)]
-    pub fn get_apic_addr(madt: &Madt) -> usize {
-        let mut addr = madt.local_apic_addr() as usize;
-        let mut itr = madt.iter();
-        for entry in itr {
-            if let MadtEntry::LocalApicAddressOverride(addr_o) = entry {
-                addr = addr_o.local_apic_address as usize;
-            }
-        }
-
-        addr
-    }
-
     pub fn enable_apic(enable: bool) {
         let mut msr = read_msr(APIC_MSR);
 

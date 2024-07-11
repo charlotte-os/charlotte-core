@@ -1,7 +1,6 @@
 //! # x86_64 Architecture Module
 //! This module implements the Arch interface for the x86_64 instruction set architecture (ISA).
 
-use core::arch::asm;
 use core::convert::From;
 use core::fmt::Write;
 use core::str;
@@ -21,13 +20,13 @@ use serial::{ComPort, SerialPort};
 
 use crate::acpi::{parse, AcpiInfo};
 use crate::arch::x86_64::interrupts::apic::Apic;
+use crate::arch::x86_64::interrupts::isa_handler::register_iv_handler;
 use crate::arch::x86_64::memory::page_map::page_table::page_table_entry::PteFlags;
 use crate::arch::{HwTimerMode, IsaParams, MemoryMap, PagingParams};
-use crate::arch::x86_64::interrupts::isa_handler::register_iv_handler;
 use crate::framebuffer::colors::Color;
 use crate::framebuffer::framebuffer::FRAMEBUFFER;
 use crate::logln;
-use crate::memory::address::{PhysicalAddress, VirtualAddress};
+use crate::memory::address::{/*PhysicalAddress,*/ VirtualAddress};
 use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
 
 mod cpu;
@@ -50,14 +49,6 @@ static BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
 static BSP_TSS: Lazy<Tss> = Lazy::new(|| Tss::new(addr_of!(BSP_RING0_INT_STACK) as u64));
 static BSP_GDT: Lazy<Gdt> = Lazy::new(|| Gdt::new(&BSP_TSS));
 static BSP_IDT: SpinMutex<Idt> = SpinMutex::new(Idt::new());
-pub const X86_ISA_PARAMS: IsaParams = IsaParams {
-    paging: PagingParams {
-        page_size: 0x1000,
-        page_shift: 0xC,
-        page_mask: !0xfff,
-    },
-};
-
 pub const X86_ISA_PARAMS: IsaParams = IsaParams {
     paging: PagingParams {
         page_size: 0x1000,
@@ -289,7 +280,7 @@ impl Api {
         }
         let alloc3 = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
         logln!("alloc2: {:?}, alloc3: {:?}", alloc2, alloc3);
-        if let Err(e)= PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc2.unwrap()) {
+        if let Err(e) = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc2.unwrap()) {
             logln!("Failed to deallocate frame: {:?}", e);
         }
         if let Err(e) = PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc3.unwrap()) {
@@ -325,13 +316,10 @@ impl Api {
         logln!("PageMap created from current CR3 value.");
 
         logln!("Starting page mapping test...");
-        let frame = match PHYSICAL_FRAME_ALLOCATOR
-            .lock()
-            .allocate() {
+        let frame = match PHYSICAL_FRAME_ALLOCATOR.lock().allocate() {
             Ok(frame) => frame,
-            Err(e) => 
-                panic!("Failed to allocate frame: {:?}", e)
-            };
+            Err(e) => panic!("Failed to allocate frame: {:?}", e),
+        };
         let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
             Ok(vaddr) => vaddr,
             Err(e) => {
@@ -365,11 +353,10 @@ impl Api {
         let large_frame = match PHYSICAL_FRAME_ALLOCATOR
             .lock()
             .allocate_contiguous(512, 4096 * 512)
-            .expect("Failed to allocate frames.") {
+        {
             Ok(frame) => frame,
-            Err(e) =>
-                panic!("Failed to allocate frame: {:?}", e)
-            };
+            Err(e) => panic!("Failed to allocate frame: {:?}", e),
+        };
         let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
             Ok(vaddr) => vaddr,
             Err(e) => {
