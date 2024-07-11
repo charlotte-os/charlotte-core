@@ -312,7 +312,10 @@ impl Api {
     fn vmm_self_test() {
         logln!("Beginning VMM Self Test...");
         let cr3 = unsafe { asm_get_cr3() };
-        let mut pm = PageMap::from_cr3(cr3).expect("Failed to create PageMap from CR3 value.");
+        let mut pm = match PageMap::from_cr3(cr3) {
+            Ok(pm) => pm,
+            Err(e) => panic!("Failed to create PageMap from CR3: {:?}", e)
+        };
         logln!("PageMap created from current CR3 value.");
 
         logln!("Starting page mapping test...");
@@ -389,10 +392,12 @@ impl Api {
         logln!("Large page mapping test successful.");
 
         logln!("Starting huge page mapping test...");
-        let huge_frame = PHYSICAL_FRAME_ALLOCATOR
+        let huge_frame = match PHYSICAL_FRAME_ALLOCATOR
             .lock()
-            .allocate_contiguous(512 * 512, 4096 * 512 * 512)
-            .expect("Failed to allocate frames.");
+            .allocate_contiguous(512 * 512, 4096 * 512 * 512) {
+            Ok(frame) => frame,
+            Err(e) => panic!("Failed to allocate frame: {:?}", e),
+        };
         let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
             Ok(vaddr) => vaddr,
             Err(e) => {

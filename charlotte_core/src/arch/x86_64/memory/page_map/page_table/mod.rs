@@ -1,5 +1,6 @@
 use page_table_entry::*;
 
+use crate::arch::ISA_PARAMS;
 use crate::arch::x86_64::memory::*;
 use crate::memory::address::*;
 use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
@@ -21,16 +22,20 @@ pub enum PageTableLevel {
     PT = 1,
 }
 
+const N_PT_ENTRIES: usize = 512;
+const LARGE_PAGE_NFRAMES: u64 = 512;
+const HUGE_PAGE_NFRAMES: u64 = 512 * 512;
+
 #[repr(align(4096))]
 #[derive(Debug)]
 pub struct PageTable {
-    table: [PageTableEntry; 512],
+    table: [PageTableEntry; N_PT_ENTRIES],
 }
 
 impl PageTable {
     pub fn new() -> Self {
         Self {
-            table: [PageTableEntry::new(); 512],
+            table: [PageTableEntry::new(); N_PT_ENTRIES],
         }
     }
 
@@ -68,12 +73,12 @@ impl PageTable {
                 }
             }
             PageSize::Large => {
-                if !paddr.is_aligned_to(4096 * 512) {
+                if !paddr.is_aligned_to( ISA_PARAMS.paging.page_size * LARGE_PAGE_NFRAMES) {
                     return Err(Error::InvalidPAddrAlignment);
                 }
             }
             PageSize::Huge => {
-                if !paddr.is_aligned_to(4096 * 512 * 512) {
+                if !paddr.is_aligned_to( ISA_PARAMS.paging.page_size * HUGE_PAGE_NFRAMES) {
                     return Err(Error::InvalidPAddrAlignment);
                 }
             }
@@ -92,10 +97,10 @@ impl PageTable {
             PageSize::Standard => PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(page_paddr)?,
             PageSize::Large => PHYSICAL_FRAME_ALLOCATOR
                 .lock()
-                .deallocate_contiguous(page_paddr, 512)?,
+                .deallocate_contiguous(page_paddr, LARGE_PAGE_NFRAMES)?,
             PageSize::Huge => PHYSICAL_FRAME_ALLOCATOR
                 .lock()
-                .deallocate_contiguous(page_paddr, 512 * 512)?,
+                .deallocate_contiguous(page_paddr, HUGE_PAGE_NFRAMES)?,
         }
         Ok(page_paddr)
     }

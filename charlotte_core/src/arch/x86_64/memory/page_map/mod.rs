@@ -187,7 +187,7 @@ impl MemoryMap for PageMap {
         paddr: PhysicalAddress,
         flags: Self::Flags,
     ) -> Result<(), Self::Error> {
-        if vaddr.is_aligned_to(4096) == false {
+        if vaddr.is_aligned_to(crate::arch::ISA_PARAMS.paging.page_size) == false {
             Err(Error::InvalidVAddrAlignment)
         } else if vaddr.is_null() {
             Err(Error::InvalidAddress)
