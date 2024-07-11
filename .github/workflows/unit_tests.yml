@@ -26,7 +26,6 @@ jobs:
         with:
           toolchain: ${{ inputs.toolchain }}
           target: ${{ matrix.target }}
-          toolchain: ${{ inputs.toolchain }}
           cache-workspaces: ./charlotte_core
           cache: true
       - name: Run tests
