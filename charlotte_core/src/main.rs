@@ -6,7 +6,7 @@
 use core::fmt::Write;
 use core::panic::PanicInfo;
 
-use arch::{Api, ArchApi};
+use arch::{Api, ArchApi, HwTimerMode};
 
 use crate::kmon::Kmon;
 
@@ -23,15 +23,33 @@ mod memory;
 /// since that contains all the ISA specific initialization code.
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
-    let arch_api = ArchApi::isa_init();
-
+    let mut arch_api = ArchApi::isa_init();
     logln!("Bring up finished, starting kernel interactive prompt");
+    // Setup handle_timer function to handle interrupt vector 32 for x86_64
+    #[cfg(target_arch = "x86_64")]
+    arch_api.set_interrupt_handler(on_tick, 32);
+    // Start the ISA specific timer(s) with a rate of about every 10us (1MHz)
+    arch_api.setup_isa_timer(100_000, HwTimerMode::Recurrent, 0);
+    arch_api.start_isa_timers();
     let port = arch_api.get_serial();
     let mut mon = Kmon::new(port);
     mon.repl_loop();
 
     #[allow(clippy::empty_loop)]
     loop {}
+}
+
+#[no_mangle]
+/// System monotonic time, this is a global variable that is updated every time the timer ticks.
+static mut SYSTEM_MONOTONIC: u64 = 0;
+
+/// This function handles timer ticks, inside of it you can dispatch schedulers
+/// or anything else that needs to be done on a timer tick.
+fn on_tick(_: u64) {
+    unsafe {
+        SYSTEM_MONOTONIC += 10;
+    }
+    ArchApi::end_of_interrupt();
 }
 
 #[panic_handler]

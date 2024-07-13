@@ -1,4 +1,4 @@
-name: Benchmark
+name: Unit Tests
 on:
   workflow_call:
     inputs:
@@ -8,7 +8,7 @@ on:
         type: string
 
 jobs:
-  benchmark:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -16,15 +16,18 @@ jobs:
         target:
           - x86_64-unknown-none
       fail-fast: false
-
     steps:
       - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ inputs.toolchain }}
       - name: Install ${{ matrix.target }} target
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: ${{ inputs.toolchain }}
           target: ${{ matrix.target }}
           cache-workspaces: ./charlotte_core
-      - name: Run Benchmarks
-        run: cargo bench
+          cache: true
+      - name: Run tests
+        run: cargo test --all
         working-directory: ./charlotte_core

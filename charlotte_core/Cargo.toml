@@ -14,10 +14,13 @@ cc = "*"
 walkdir = "*"
 
 [dependencies]
-derive-getters = "0.3.0"
+derive-getters = "0.4.0"
 ignore-result = "*"
 limine = "0.2.0"
-spin = {version = "*", features = ["ticket_mutex"]}
+spin = { version = "*", features = ["ticket_mutex"] }
+
+[target.'cfg(target_arch = "x86_64")'.dependencies]
+x86_64 = "0.15.1"
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "9.4.0"
@@ -25,12 +28,14 @@ aarch64-cpu = "9.4.0"
 # Linting
 [lints.clippy]
 # Groups
+
 suspicious = { level = "deny", priority = 2 }
 perf = { level = "deny", priority = 2 }
 complexity = { level = "warn", priority = 1 }
 style = { level = "warn", priority = 1 }
 pedantic = { level = "warn", priority = -1 }
 
+enum_clike_unportable_variant = {level = "allow", priority = -10}
 manual_assert = "allow"
 module_name_repetitions = "allow"
 similar_names = "allow"

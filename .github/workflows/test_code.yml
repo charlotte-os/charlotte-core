@@ -1,0 +1,20 @@
+name: Test code
+on: [push, pull_request]
+
+jobs:
+  unit-test:
+    uses: ./.github/workflows/unit_tests.yml
+    secrets: inherit
+    with:
+      toolchain: nightly
+  style-check:
+    uses: ./.github/workflows/style_check.yml
+    secrets: inherit
+    with:
+      toolchain: nightly
+  benchmark:
+    needs: [unit-test, style-check]
+    uses: ./.github/workflows/benchmark.yml
+    secrets: inherit
+    with:
+      toolchain: nightly

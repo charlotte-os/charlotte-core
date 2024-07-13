@@ -1,3 +1,4 @@
+use core::arch::asm;
 use core::ptr::addr_of;
 
 #[derive(Debug)]
@@ -98,6 +99,8 @@ impl Idtr {
     }
 }
 
-extern "C" {
-    fn asm_load_idt(idtr: &Idtr);
+unsafe fn asm_load_idt(idtr: &Idtr) {
+    asm!("\
+        lidt [{}]
+    ", in(reg) idtr);
 }
