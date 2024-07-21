@@ -1,4 +1,7 @@
 # Charlotte Core
+![Testing](https://github.com/charlotte-os/charlotte-core/actions/workflows/test_code.yml/badge.svg)
+![Vulnerability](https://github.com/charlotte-os/charlotte-core/actions/workflows/cron_report.yml/badge.svg)
+
 ### The Kernel of CharlotteOS
 
 Charlotte Core is the kernel of CharlotteOS, a post Unix operating system. It is a monolithic kernel designed to provide a flexible and low level interface to programs running on top of it.
