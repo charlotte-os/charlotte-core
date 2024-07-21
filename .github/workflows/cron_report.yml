@@ -1,4 +1,4 @@
-name: Create code report
+name: Security check
 on:
   schedule:
     - cron: "0 6 * * 5,2"
