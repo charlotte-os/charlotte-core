@@ -1,8 +1,9 @@
 # Charlotte Core
+
 ![Testing](https://github.com/charlotte-os/charlotte-core/actions/workflows/test_code.yml/badge.svg)
 ![Vulnerability](https://github.com/charlotte-os/charlotte-core/actions/workflows/cron_report.yml/badge.svg)
 
-### The Kernel of CharlotteOS
+## The Kernel of CharlotteOS
 
 Charlotte Core is the kernel of CharlotteOS, a post Unix operating system. It is a monolithic kernel designed to provide a flexible and low level interface to programs running on top of it.
 
@@ -21,11 +22,14 @@ Charlotte Core is written in Rust and Assembly language
 - RISC-V64 devices with UEFI and ACPI (Possible but not planned as of now)
 
 #### Building
+
 The following commands are used to build the debug and release versions of the kernel.
+
 ```bash
 make build-x86_64-debug    # debug
 make build-x86_64-release  # release
 ```
+
 #### Testing
 
 ```bash
@@ -36,21 +40,26 @@ make run-x86_64-release  # For testing a release build in qemu
 The `x86_64` portion of any of the previous commands can be replaced with `aarch64` or `riscv64` to build the kernel for the Arm and RISC-V architectures respectively however it should be noted that support for these ISAs is much less complete than for x86_64 for the time being.
 
 #### GDB debug probe
+
 Follow the steps in the `Building` section above, replacing `make run-x86_64-debug` for `run-x86_64-debugprobe`, this will start qemu, but it will appear unresponsive
 this is because it's waiting for gdb to connect, on linux this can be achieved by in another terminal running:
+
 ```bash
 gdb charlotte_core/target/x86_64-unknown-none/debug/charlotte_core
 ```
 
 and once gdb is open:
-```
+
+```gdb
 (gdb) target remote localhost:1234
 make sure to set some breakpoints or the code will just go straight to the halt at the end of main currently
 (gdb) c
 ```
+
 *OR*
 Use the .gdbinit file present in the repo, to do this you need to allow gdb to load the .gdbinit file,
 this can be accomplished by adding `add-auto-load-safe-path [path to the repo here]/.gdbinit` to `$HOME/.config/gdb/gdbinit`, wit this done you just need to run:
+
 ```bash
 # in terminal 1
 make run-x86_64-debugprobe
@@ -59,6 +68,7 @@ gdb
 ```
 
 if you are currently in the repo main folder you may use the snippet bellow to add the loading allow to gdbinit
+
 ```bash
 mkdir -p $HOME/.config/gdb/;echo "add-auto-load-safe-path $(pwd)/.gdbinit" >> $HOME/.config/gdb/gdbinit
 ```
