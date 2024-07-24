@@ -10,6 +10,7 @@ use arch::{Api, ArchApi, HwTimerMode};
 use crate::kmon::Kmon;
 
 mod acpi;
+mod allocator;
 mod arch;
 mod bootinfo;
 mod framebuffer;
