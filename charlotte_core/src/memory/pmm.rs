@@ -22,6 +22,7 @@ pub struct MemoryMap {
     entries: &'static [&'static bootinfo::memory_map::Entry],
 }
 
+#[allow(unused)]
 impl MemoryMap {
     pub fn get() -> MemoryMap {
         MemoryMap {
@@ -152,7 +153,7 @@ impl PhysicalFrameAllocator {
             let bit_index = byte.trailing_ones() as usize;
             if bit_index < 8 {
                 *byte |= 1 << bit_index;
-                return Ok(self.index_to_address(byte_index, bit_index));
+                return Ok(PhysicalAddress::from_pfn(byte_index * 8 + bit_index));
             }
         }
         Err(Error::OutOfMemory)
@@ -205,6 +206,7 @@ impl PhysicalFrameAllocator {
         Err(Error::InsufficientContiguousMemoryAvailable)
     }
 
+    #[allow(unused)]
     pub fn deallocate_contiguous(
         &mut self,
         base: PhysicalAddress,
@@ -262,4 +264,8 @@ impl PhysicalFrameAllocator {
         let (byte, bit) = self.address_to_index(address);
         self.bitmap[byte as usize] &= !(1 << bit);
     }
+}
+
+fn address_to_index(address: PhysicalAddress) -> (usize, usize) {
+    (address.pfn() / 8, address.pfn() % 8)
 }

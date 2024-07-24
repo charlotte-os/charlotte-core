@@ -24,6 +24,7 @@ pub struct Bgrt {
     y_offset: u32,
 }
 
+#[allow(unused)]
 impl Bgrt {
     pub fn new(addr: usize) -> Option<Self> {
         let header = get_table(addr, *b"BGRT");
@@ -68,7 +69,7 @@ impl Bgrt {
 
     pub fn set_version(&mut self) {
         // version must be set to 1
-        self.version_id = 1
+        self.version_id = 1;
     }
 
     pub fn version(&self) -> u16 {

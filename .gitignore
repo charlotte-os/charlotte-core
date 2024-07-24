@@ -6,3 +6,4 @@ charlotte_core/target/**
 log.txt
 limine
 .idea
+__pycache__

@@ -20,6 +20,7 @@ pub struct SDTHeader {
     creator_revision: u32,
 }
 
+#[allow(unused)]
 impl SDTHeader {
     pub fn signature(&self) -> &str {
         str::from_utf8(&self.signature).unwrap()
@@ -79,9 +80,9 @@ pub fn get_table(address: usize, sig: [u8; 4]) -> Option<SDTHeader> {
         }) {
             logln!("Checksum is valid");
             return Some(*header);
-        } else {
-            logln!("Checksum is invalid");
         }
+
+        logln!("Checksum is invalid");
     }
     None
 }
@@ -94,8 +95,8 @@ pub fn get_table_any_sig(address: usize) -> Option<SDTHeader> {
     }) {
         logln!("Checksum is valid");
         return Some(*header);
-    } else {
-        logln!("Checksum is invalid");
     }
+
+    logln!("Checksum is invalid");
     None
 }

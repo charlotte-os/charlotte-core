@@ -25,19 +25,19 @@ impl SerialPort {
         };
         ArchApi::outb(port.io_port + 1, 0x00); // Disable all interrupts
         ArchApi::outb(port.io_port + 3, 0x80); // Enable DLAB (set baud rate divisor)
-        ArchApi::outb(port.io_port + 0, 0x03); // Set divisor to 3 (lo byte) 38400 baud
+        ArchApi::outb(port.io_port, 0x03); // Set divisor to 3 (lo byte) 38400 baud
         ArchApi::outb(port.io_port + 1, 0x00); //                  (hi byte)
         ArchApi::outb(port.io_port + 3, 0x03); // 8 bits, no parity, one stop bit
         ArchApi::outb(port.io_port + 2, 0xC7); // Enable FIFO, clear them, with 14-byte threshold
         ArchApi::outb(port.io_port + 4, 0x0B); // IRQs enabled, RTS/DSR set
         ArchApi::outb(port.io_port + 4, 0x1E); // Set in loopback mode, test the serial chip
-        ArchApi::outb(port.io_port + 0, 0xAE); // Test serial chip (send byte 0xAE and check if serial returns same byte)
+        ArchApi::outb(port.io_port, 0xAE); // Test serial chip (send byte 0xAE and check if serial returns same byte)
 
-        if ArchApi::inb(port.io_port) != 0xAE {
-            None
-        } else {
+        if ArchApi::inb(port.io_port) == 0xAE {
             ArchApi::outb(port.io_port + 4, 0x0F);
             Some(port)
+        } else {
+            None
         }
     }
     fn is_transmit_empty(&self) -> i32 {
@@ -51,7 +51,7 @@ impl SerialPort {
 impl Write for SerialPort {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         for c in s.chars() {
-            self.write_char(c)?
+            self.write_char(c)?;
         }
         Ok(())
     }
@@ -59,8 +59,8 @@ impl Write for SerialPort {
         while self.is_transmit_empty() == 0 {}
         if c.is_ascii() {
             if c == '\n' {
-                ArchApi::outb(self.io_port, '\r' as u8);
-                ArchApi::outb(self.io_port, '\n' as u8);
+                ArchApi::outb(self.io_port, b'\r');
+                ArchApi::outb(self.io_port, b'\n');
             } else {
                 ArchApi::outb(self.io_port, c as u8);
             }
@@ -77,6 +77,6 @@ impl Serial for SerialPort {
         ArchApi::inb(self.io_port) as char
     }
     fn put_char(&mut self, c: char) {
-        self.write_char(c).unwrap()
+        self.write_char(c).unwrap();
     }
 }

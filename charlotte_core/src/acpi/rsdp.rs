@@ -20,6 +20,7 @@ pub struct Rsdp {
     reserved: [u8; 3],
 }
 
+#[allow(unused)]
 impl Rsdp {
     /// Creates a new RSDP from an address
     pub fn new_from_address(address: usize) -> Self {
@@ -95,8 +96,9 @@ impl Rsdp {
             self.length as usize
         };
 
-        let bytes =
-            unsafe { core::slice::from_raw_parts(self as *const Rsdp as *const u8, length) };
+        let bytes = unsafe {
+            core::slice::from_raw_parts(core::ptr::from_ref::<Rsdp>(self).cast::<u8>(), length)
+        };
         let sum = bytes.iter().fold(0u8, |sum, &byte| sum.wrapping_add(byte));
 
         if sum != 0 {

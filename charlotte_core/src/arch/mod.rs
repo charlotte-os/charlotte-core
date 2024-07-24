@@ -120,7 +120,7 @@ pub trait Api {
 
     /// Each ISA implementation does something specific within this function,
     /// you should check the relevant implementation under each ISA folder linked bellow:
-    /// * [X86_64](x86_64::Api::isa_init)
+    /// * [`X86_64`](x86_64::Api::isa_init)
     fn isa_init() -> Self;
 
     fn get_logger() -> Self::DebugLogger;
@@ -155,6 +155,7 @@ pub trait Api {
     fn end_of_interrupt();
 }
 
+#[allow(unused)]
 pub trait Serial {
     fn read_char(&mut self) -> char;
     fn put_char(&mut self, c: char);

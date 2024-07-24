@@ -22,7 +22,7 @@ impl Idt {
         is_present: bool,
     ) {
         let gate = &mut self.gates[index];
-        let isr_addr = isr_ptr as u64;
+        let isr_addr = isr_ptr as usize;
 
         gate.addr0 = u16::try_from(isr_addr & 0xFFFF).unwrap();
         gate.segment_selector = segment_selector;
@@ -39,7 +39,7 @@ impl Idt {
             gate.flags &= !(0b1u8 << 7);
         }
         gate.addr1 = ((isr_addr & (0xFFFF << 16)) >> 16) as u16;
-        gate.addr2 = ((isr_addr & (0xFFFFFFFF << 32)) >> 32) as u32;
+        gate.addr2 = ((isr_addr & (0xFFFF_FFFF << 32)) >> 32) as u32;
         gate.reserved = 0u32;
     }
     #[allow(unused)]

@@ -20,19 +20,22 @@ pub mod tables;
 
 /// Stores the data for all the ACPI tables.
 #[derive(Clone, Copy)]
+#[allow(unused)]
 pub struct AcpiInfo {
     rsdp: Rsdp,
     sdt: Sdt,
     madt: Madt,
-    #[allow(unused)]
     fadt: Fadt,
     bgrt: Bgrt,
-    #[allow(unused)]
     srat: Option<Srat>,
 }
 
+#[allow(unused)]
+// This lint is ignored here because this is a copy that will happen only once during bootstrtap,
+// all further usage is done by reference.
+#[allow(clippy::large_types_passed_by_value)]
 impl AcpiInfo {
-    /// Creates a new AcpiTables.
+    /// Creates a new `AcpiTables`.
     pub fn new(
         rsdp: Rsdp,
         sdt: Sdt,

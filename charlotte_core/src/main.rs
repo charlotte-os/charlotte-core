@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![warn(missing_copy_implementations)]
+#![cfg(target_pointer_width = "64")]
 
 use core::fmt::Write;
 use core::panic::PanicInfo;
@@ -17,7 +18,7 @@ mod kmon;
 mod memory;
 
 /// This is the kernel entrypoint function,
-/// the first thing it does is call: [isa_init](ArchApi::isa_init)
+/// the first thing it does is call: [`isa_init`](ArchApi::isa_init)
 /// you should check the documentation on that function for details,
 /// since that contains all the ISA specific initialization code.
 #[no_mangle]
@@ -52,8 +53,8 @@ fn on_tick(_: u64) {
 }
 
 #[panic_handler]
-fn rust_panic(_info: &PanicInfo) -> ! {
+fn rust_panic(info: &PanicInfo) -> ! {
     logln!("A kernel panic has occurred due to a Rust runtime panic.");
-    logln!("PanicInfo: {:?}", _info);
+    logln!("PanicInfo: {:?}", info);
     ArchApi::panic()
 }

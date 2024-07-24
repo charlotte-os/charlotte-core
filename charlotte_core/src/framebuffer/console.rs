@@ -157,15 +157,15 @@ impl Console {
 
     /// Flush the console to the framebuffer
     fn flush(&self) {
-        let scale: usize = FRAMEBUFFER.lock().get_scale();
+        let scale: u8 = FRAMEBUFFER.lock().get_scale();
         for y in 0..CONSOLE_HEIGHT {
             for x in 0..CONSOLE_WIDTH {
                 // Draw the character to the framebuffer
                 FRAMEBUFFER.lock().draw_char(
                     /* Add a 1 pixel margin between characters */
-                    x * FONT_WIDTH * scale + 1,
+                    (x * FONT_WIDTH) as u64 * u64::from(scale) + 1,
                     /* Add a 1 pixel margin between lines */
-                    y * FONT_HEIGHT * scale + 1,
+                    (y * FONT_HEIGHT) as u64 * u64::from(scale) + 1,
                     self.buffer.chars[y][x].character,
                     self.buffer.chars[y][x].color,
                     self.buffer.chars[y][x].background_color,
@@ -173,16 +173,18 @@ impl Console {
             }
         }
     }
-
-    pub fn clear_inner_styling(&self) {
-        INNER_STYLE_SETTINGS.lock().clear();
-    }
 }
 
 static INNER_STYLE_SETTINGS: TicketMutex<InnerPrintStyle> =
     TicketMutex::new(InnerPrintStyle::new());
 
+#[allow(unused)]
+pub fn clear_inner_styling() {
+    INNER_STYLE_SETTINGS.lock().clear();
+}
+
 /// Inner style settings for print macros
+#[allow(clippy::struct_field_names)]
 struct InnerPrintStyle {
     text_color: Option<u32>,
     background_color: Option<u32>,

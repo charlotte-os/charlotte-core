@@ -27,12 +27,13 @@ pub struct Sdt {
     addr_width: usize,
 }
 
+#[allow(unused)]
 impl Sdt {
     pub fn new(rsdp: &Rsdp) -> Option<Self> {
         let sdt_address = if rsdp.xsdt_address().is_some() {
             rsdp.xsdt_address().unwrap()
         } else {
-            rsdp.rsdt_address() as u64
+            u64::from(rsdp.rsdt_address())
         };
         let sdt = tables::get_table(sdt_address as usize, *b"XSDT");
         if let Some(header) = sdt {
@@ -102,6 +103,7 @@ fn populate_sub_tables(
     addr_width: usize,
 ) -> [Option<SdtEntry>; 32] {
     let mut sub_tables: [Option<SdtEntry>; 32] = [None; 32];
+    #[allow(clippy::needless_range_loop)]
     for i in 0..n_entries {
         let mut ptr: usize = 0;
         // We need to grab each half independently since the XSDT uses 64-bit pointers
