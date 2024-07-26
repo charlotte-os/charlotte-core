@@ -5,5 +5,5 @@ on:
 
 jobs:
   security-audit:
-    uses: charlotte-os/devops/core/security_audit.yml@main
+    uses: charlotte-os/devops/.github/workflows/core/security_audit.yml@main
     secrets: inherit
