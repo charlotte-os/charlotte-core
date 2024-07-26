@@ -3,18 +3,18 @@ on: [push, pull_request]
 
 jobs:
   unit-test:
-    uses: charlotte-os/devops/core/unit_tests.yml@main
+    uses: charlotte-os/devops/.github/workflows/core/unit_tests.yml@main
     secrets: inherit
     with:
       toolchain: nightly
   style-check:
-    uses: charlotte-os/devops/core/style_check.yml@main
+    uses: charlotte-os/devops/.github/workflows/core/style_check.yml@main
     secrets: inherit
     with:
       toolchain: nightly
   benchmark:
     needs: [unit-test, style-check]
-    uses: charlotte-os/devops/core/benchmark.yml@main
+    uses: charlotte-os/devops/.github/workflows/core/benchmark.yml@main
     secrets: inherit
     with:
       toolchain: nightly
