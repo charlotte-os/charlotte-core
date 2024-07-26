@@ -32,5 +32,8 @@ suspicious = { level = "deny", priority = -1 }
 perf = { level = "deny", priority = -1 }
 complexity = { level = "warn", priority = -1 }
 style = { level = "warn", priority = -1 }
+
+undocumented_unsafe_blocks = { level = "warn" }
+
 # Relax some lints because we don't support 32-bit targets
-enum_clike_unportable_variant = {level = "allow", priority = -10}
+enum_clike_unportable_variant = { level = "allow", priority = -10 }
