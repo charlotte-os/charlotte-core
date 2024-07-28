@@ -1,6 +1,6 @@
 # Contributor License Agreement
 
-Thank you for your interest in contributing to [Project Name] ("Project"). By contributing to this Project, you agree to the following terms:
+Thank you for your interest in contributing to CharlotteOS ("Project"). By contributing to this Project, you agree to the following terms:
 
 1. **Licensing of Contributions:**
    - You agree to license your contributions under the same licenses as the Project, which currently include the GNU General Public License version 3.0 (GPL 3.0) for executables and the GNU Lesser General Public License version 3.0 (LGPL 3.0) for libraries.
