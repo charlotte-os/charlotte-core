@@ -136,7 +136,7 @@ run-riscv64-debug: ovmf-riscv64 charlotte_core-riscv64-debug.iso
 	qemu-system-riscv64 -M virt -cpu rv64 \
 		-device ramfb -device qemu-xhci -device usb-kbd -m 2G -drive if=pflash,unit=0,format=raw,file=ovmf-riscv64/OVMF.fd \
 		-device virtio-scsi-pci,id=scsi -device scsi-cd,drive=cd0 -drive id=cd0,format=raw,file=charlotte_core-riscv64-debug.iso
-run-riscv64-debug: ovmf-riscv64 charlotte_core-riscv64-debug.iso
+run-riscv64-debug-log: ovmf-riscv64 charlotte_core-riscv64-debug.iso
 	qemu-system-riscv64 -M virt -cpu rv64 \
 		-device ramfb -device qemu-xhci -device usb-kbd -m 2G -drive if=pflash,unit=0,format=raw,file=ovmf-riscv64/OVMF.fd \
 		-device virtio-scsi-pci,id=scsi -device scsi-cd,drive=cd0 -drive id=cd0,format=raw,file=charlotte_core-riscv64-debug.iso \
