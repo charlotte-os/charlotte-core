@@ -8,7 +8,7 @@ install-requirements:
 
 limine:
 	@if [ ! -d "limine" ]; then \
-		git clone https://github.com/limine-bootloader/limine.git --branch=v8.x-branch-binary --depth=1;\
+		git clone https://github.com/limine-bootloader/limine.git --branch=v8.x-binary --depth=1;\
 	fi
 	make -C limine
 
