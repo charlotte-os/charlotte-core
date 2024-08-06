@@ -22,3 +22,6 @@ pub static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest::new();
 
 /// This request is used to obtain RSDP data
 pub static RSDP_REQUEST: RsdpRequest = RsdpRequest::new();
+
+/// This request is used to obtain the starting address of the kernel
+pub static KERNEL_ADDRESS_REQUEST: KernelAddressRequest = KernelAddressRequest::new();
