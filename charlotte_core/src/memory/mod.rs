@@ -4,5 +4,6 @@
 //! all virtual address spaces.
 
 pub mod address;
+pub mod allocator;
 pub mod pmm;
 pub mod span_printer;

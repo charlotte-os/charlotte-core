@@ -116,6 +116,7 @@ pub struct IsaParams {
 pub trait Api {
     type Api: Api;
     type DebugLogger: Write;
+    type MemoryMap: MemoryMap;
     type Serial: Serial;
 
     /// Each ISA implementation does something specific within this function,

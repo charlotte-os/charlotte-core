@@ -62,6 +62,8 @@ impl crate::arch::Api for Api {
     type Api = Api;
     /// Define the logger type
     type DebugLogger = SerialPort;
+    /// Define the memory map type
+    type MemoryMap = memory::page_map::PageMap;
     type Serial = SerialPort;
 
     fn isa_init() -> Self {
