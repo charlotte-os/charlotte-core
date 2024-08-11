@@ -8,7 +8,7 @@ use crate::framebuffer::{
 };
 
 pub const CONSOLE_WIDTH: usize = 80;
-pub const CONSOLE_HEIGHT: usize = 25;
+pub const CONSOLE_HEIGHT: usize = 50;
 
 pub static CONSOLE: TicketMutex<Console> = TicketMutex::new(Console::new());
 
@@ -157,7 +157,7 @@ impl Console {
 
     /// Flush the console to the framebuffer
     fn flush(&self) {
-        let scale: usize = FRAMEBUFFER.lock().get_scale();
+        let scale: usize = 1;
         for y in 0..CONSOLE_HEIGHT {
             for x in 0..CONSOLE_WIDTH {
                 // Draw the character to the framebuffer

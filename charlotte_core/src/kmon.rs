@@ -33,7 +33,7 @@ impl<T: Serial> Kmon<T> {
 
     fn handle_char(&mut self, c: char) {
         if Self::is_ascii_printable(c as u8) {
-            log!("\x7F{}", c);
+            log!("{}", c);
             log!("_\x08");
             self.recv_buf[self.recv_buf_pos] = c;
             self.recv_buf_pos += 1;
