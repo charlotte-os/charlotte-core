@@ -1,7 +1,7 @@
 use core::sync::atomic::{AtomicPtr, Ordering};
 
 use crate::bootinfo::FRAMEBUFFER_REQUEST;
-use crate::framebuffer::chars::{get_char_bitmap, FONT_HEIGHT, FONT_WIDTH};
+use crate::framebuffer::chars::{FONT, FONT_HEIGHT, FONT_WIDTH};
 // External crate for bootloader-specific functions and types.
 extern crate limine;
 use limine::framebuffer::Framebuffer;
@@ -147,12 +147,12 @@ impl FrameBufferInfo {
         for c in text.chars() {
             match c {
                 '\n' => {
-                    y += FONT_HEIGHT * self.scale + 1;
+                    y += FONT_HEIGHT + 1;
                     x = start_x;
                 }
                 _ => {
                     self.draw_char(x, y, c, color, background_color);
-                    x += FONT_WIDTH * self.scale;
+                    x += FONT_WIDTH;
                 }
             }
         }
@@ -167,21 +167,23 @@ impl FrameBufferInfo {
     /// * `bitmap` - A reference to the bitmap array representing the character.
     /// * `color` - The color of the character in ARGB format.
     pub fn draw_char(&self, x: usize, y: usize, chracter: char, color: u32, background_color: u32) {
-        let bitmap = get_char_bitmap(chracter);
-        for (row, &bits) in bitmap.iter().enumerate() {
-            for col in 0..FONT_WIDTH {
-                let is_set = (bits >> (FONT_WIDTH - 1 - col)) & 1 == 1;
-                let pixel_color = if is_set { color } else { background_color };
-                /* Instead of a pixel, create a square with sides that are the size of self.scale */
-                for dy in 0..self.scale {
-                    for dx in 0..self.scale {
-                        self.draw_pixel(
-                            x + col * self.scale + dx,
-                            y + row * self.scale + dy,
-                            pixel_color,
-                        );
-                    }
+        let char_int: usize = chracter as usize;
+        let first_byte_index = char_int * 16;
+        let mut do_draw : bool;
+        let mut colour_buffer : u32;
+        for by in 0..16 {
+            for bi in 0..8 {
+                do_draw = ((FONT[first_byte_index + by] >> (7 - bi)) & 1) != 0;
+                if do_draw {
+                    colour_buffer = color;
+                } else {
+                    colour_buffer = background_color;
                 }
+                self.draw_pixel(
+                    x + bi,
+                    y + by,
+                    colour_buffer
+                );
             }
         }
     }
