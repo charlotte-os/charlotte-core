@@ -7,6 +7,8 @@ use ignore_result::Ignore;
 use super::serial::{ComPort::COM1, SerialPort};
 use crate::arch::x86_64::idt::*;
 
+use crate::arch::*;
+
 pub fn load_exceptions(idt: &mut Idt) {
     idt.set_gate(0, isr_divide_by_zero, 1 << 3, true, true);
     idt.set_gate(1, isr_debug, 1 << 3, true, false);
@@ -66,6 +68,7 @@ extern "C" fn ih_double_fault(_error_code: u64) {
     let mut logger = SerialPort::try_new(COM1).unwrap();
 
     writeln!(&mut logger, "A double fault has occurred! Panicking!").ignore();
+    ArchApi::panic();
 }
 
 #[no_mangle]

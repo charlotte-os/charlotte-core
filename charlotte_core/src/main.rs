@@ -24,12 +24,14 @@ mod memory;
 unsafe extern "C" fn main() -> ! {
     let mut arch_api = ArchApi::isa_init();
     logln!("Bring up finished, starting kernel interactive prompt");
-    // Setup handle_timer function to handle interrupt vector 32 for x86_64
+
+//This code currently causes a triple fault if allowed to run. A fix is needed!
+/*     // Setup handle_timer function to handle interrupt vector 32 for x86_64
     #[cfg(target_arch = "x86_64")]
     arch_api.set_interrupt_handler(on_tick, 32);
     // Start the ISA specific timer(s) with a rate of about every 10us (1MHz)
     arch_api.setup_isa_timer(100_000, HwTimerMode::Recurrent, 0);
-    arch_api.start_isa_timers();
+    arch_api.start_isa_timers(); */
     let port = arch_api.get_serial();
     let mut mon = Kmon::new(port);
     mon.repl_loop();

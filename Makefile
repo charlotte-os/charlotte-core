@@ -21,7 +21,7 @@ build-x86_64-debug: limine
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/x86_64-unknown-none/debug/charlotte_core \
-		limine.cfg limine/limine-uefi-cd.bin iso_root/
+		limine.conf limine/limine-uefi-cd.bin iso_root/
 	mkdir -p iso_root/EFI/BOOT
 	cp -v limine/BOOTX64.EFI iso_root/EFI/BOOT/
 	xorriso -as mkisofs \
@@ -51,7 +51,7 @@ build-x86_64-release: limine
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/x86_64-unknown-none/release/charlotte_core \
-		limine.cfg limine/limine-uefi-cd.bin iso_root/
+		limine.conf limine/limine-uefi-cd.bin iso_root/
 	mkdir -p iso_root/EFI/BOOT
 	cp -v limine/BOOTX64.EFI iso_root/EFI/BOOT/
 	xorriso -as mkisofs \
@@ -78,7 +78,7 @@ charlotte_core-aarch64-debug.iso: build-aarch64-debug
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/aarch64-unknown-none/debug/charlotte_core \
-		limine.cfg limine/limine-uefi-cd.bin iso_root/
+		limine.conf limine/limine-uefi-cd.bin iso_root/
 	mkdir -p iso_root/EFI/BOOT
 	cp -v limine/BOOTAA64.EFI iso_root/EFI/BOOT/
 	xorriso -as mkisofs \
@@ -100,7 +100,7 @@ charlotte_core-aarch64-release.iso: build-aarch64-release
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/aarch64-unknown-none/release/charlotte_core \
-		limine.cfg limine/limine-uefi-cd.bin iso_root/
+		limine.conf limine/limine-uefi-cd.bin iso_root/
 	mkdir -p iso_root/EFI/BOOT
 	cp -v limine/BOOTAA64.EFI iso_root/EFI/BOOT/
 	xorriso -as mkisofs \
@@ -123,7 +123,7 @@ charlotte_core-riscv64-debug.iso: build-riscv64-debug
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/riscv64gc-unknown-none-elf/debug/charlotte_core \
-		limine.cfg limine/limine-uefi-cd.bin iso_root/
+		limine.conf limine/limine-uefi-cd.bin iso_root/
 	mkdir -p iso_root/EFI/BOOT
 	cp -v limine/BOOTRISCV64.EFI iso_root/EFI/BOOT/
 	xorriso -as mkisofs \
@@ -148,7 +148,7 @@ charlotte_core-riscv64-release.iso: build-riscv64-release
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/riscv64gc-unknown-none-elf/release/charlotte_core \
-		limine.cfg limine/limine-uefi-cd.bin iso_root/
+		limine.conf limine/limine-uefi-cd.bin iso_root/
 	mkdir -p iso_root/EFI/BOOT
 	cp -v limine/BOOTRISCV64.EFI iso_root/EFI/BOOT/
 	xorriso -as mkisofs \
