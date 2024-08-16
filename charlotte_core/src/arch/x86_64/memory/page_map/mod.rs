@@ -14,6 +14,9 @@ use crate::logln;
 use crate::memory::address::VirtualAddress;
 use crate::memory::{address::PhysicalAddress, pmm::PHYSICAL_FRAME_ALLOCATOR};
 
+static N_FRAMES_PDPT: usize = 512 * 512;
+static N_FRAMES_PD: usize = 512;
+
 struct Walker<'a> {
     page_map: &'a PageMap,
     pml4: Option<&'a mut PageTable>,
@@ -154,6 +157,19 @@ impl PageMap {
                 pcid = in(reg) pcid.as_ptr(),
             }
         }
+    }
+
+    fn is_region_available(&self, base: VirtualAddress, n_frames: usize) -> bool {
+        let n_pdpt_entries = n_frames / N_FRAMES_PDPT;
+        let pdpt_rem: usize = n_frames % N_FRAMES_PDPT;
+        let n_pd_entries = pdpt_rem / N_FRAMES_PD;
+        let pd_rem: usize = pdpt_rem % N_FRAMES_PD;
+        let n_pt_entries = pd_rem;
+
+        let mut walker = Walker::new(self);
+        
+
+        true
     }
 }
 
