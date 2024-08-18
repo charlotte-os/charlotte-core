@@ -35,7 +35,7 @@ mod gdt;
 mod global;
 mod idt;
 mod interrupts;
-mod memory;
+pub mod memory;
 mod serial;
 
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.

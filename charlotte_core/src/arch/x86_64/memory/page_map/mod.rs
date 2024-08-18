@@ -158,19 +158,6 @@ impl PageMap {
             }
         }
     }
-
-    fn is_region_available(&self, base: VirtualAddress, n_frames: usize) -> bool {
-        let n_pdpt_entries = n_frames / N_FRAMES_PDPT;
-        let pdpt_rem: usize = n_frames % N_FRAMES_PDPT;
-        let n_pd_entries = pdpt_rem / N_FRAMES_PD;
-        let pd_rem: usize = pdpt_rem % N_FRAMES_PD;
-        let n_pt_entries = pd_rem;
-
-        let mut walker = Walker::new(self);
-        
-
-        true
-    }
 }
 
 impl MemoryMap for PageMap {
