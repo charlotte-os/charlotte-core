@@ -87,7 +87,11 @@ impl KernelAllocator {
     }
 
     /// Allocates non-contiguous page frames and maps them to a contiguous virtual address range.
-    fn map_pages_at(&mut self, base: VirtualAddress, n_frames: usize) -> Result<(), Error> {
+    ///
+    /// # Arguments
+    /// * `base` - The base virtual address to map the pages to
+    /// * `n_frames` - The number of page frames to allocate and map
+    fn map_pages_at(base: VirtualAddress, n_frames: usize) -> Result<(), Error> {
         let mut pfa = PHYSICAL_FRAME_ALLOCATOR.lock();
         let mut frame = PhysicalAddress::try_from(0).unwrap();
 
