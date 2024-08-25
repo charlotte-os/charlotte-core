@@ -11,8 +11,8 @@ use core::ptr::addr_of_mut;
 use crate::arch::x86_64::cpu::ARE_HUGE_PAGES_SUPPORTED;
 use crate::arch::{Api, ArchApi, MemoryMap};
 use crate::logln;
-use crate::memory::address::VirtualAddress;
-use crate::memory::{address::PhysicalAddress, pmm::PHYSICAL_FRAME_ALLOCATOR};
+use crate::virtual_memory::virtual_address::VirtualAddress;
+use crate::physical_memory::{physical_address::PhysicalAddress, PHYSICAL_FRAME_ALLOCATOR};
 
 struct Walker<'a> {
     page_map: &'a PageMap,

@@ -29,14 +29,8 @@ use crate::logln;
 use crate::memory::address::{/*PhysicalAddress,*/ VirtualAddress};
 use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
 
-mod cpu;
-mod exceptions;
-mod gdt;
-mod global;
-mod idt;
-mod interrupts;
-mod memory;
-mod serial;
+pub mod cpu;
+pub mod global;
 
 /// The Api struct is used to provide an implementation of the ArchApi trait for the x86_64 architecture.
 pub struct Api {

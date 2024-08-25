@@ -14,7 +14,12 @@ mod arch;
 mod bootinfo;
 mod framebuffer;
 mod kmon;
-mod memory;
+mod logger;
+mod physical_memory;
+#[cfg(target_arch = "x86_64")]
+mod segmentation;
+mod serial;
+mod virtual_memory;
 
 /// This is the kernel entrypoint function,
 /// the first thing it does is call: [isa_init](ArchApi::isa_init)

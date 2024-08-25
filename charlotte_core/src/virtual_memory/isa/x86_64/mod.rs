@@ -2,8 +2,9 @@ pub mod page_map;
 
 use core::arch::x86_64::__cpuid_count;
 
-use crate::memory::address::{PhysicalAddress, VirtualAddress};
-use crate::memory::pmm::Error as PmmError;
+use crate::physical_memory::physical_address::PhysicalAddress;
+use crate::virtual_memory::virtual_address::VirtualAddress;
+use crate::physical_memory::Error as PmmError;
 use spin::lazy::Lazy;
 
 /// The number of significant binary digits in a physical address

@@ -1,9 +1,9 @@
 use page_table_entry::*;
 
-use crate::arch::x86_64::memory::*;
 use crate::arch::ISA_PARAMS;
-use crate::memory::address::*;
-use crate::memory::pmm::PHYSICAL_FRAME_ALLOCATOR;
+use crate::physical_memory::physical_address::*;
+use crate::physical_memory::PHYSICAL_FRAME_ALLOCATOR;
+use crate::virtual_memory::virtual_address::*;
 
 pub mod page_table_entry;
 

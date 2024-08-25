@@ -1,5 +1,9 @@
+pub mod physical_address;
+
 use crate::bootinfo;
-use crate::memory::address::{PhysicalAddress, UAddr, VirtualAddress};
+use crate::virtual_memory::virtual_address::VirtualAddress;
+use physical_address::{PhysicalAddress, UAddr};
+
 
 use core::slice::from_raw_parts_mut;
 

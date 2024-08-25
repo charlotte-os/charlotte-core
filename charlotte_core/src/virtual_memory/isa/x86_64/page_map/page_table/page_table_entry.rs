@@ -1,7 +1,6 @@
+use crate::physical_memory::physical_address::*;
 use super::PageSize;
 
-use crate::arch::x86_64::memory::*;
-use crate::memory::address::*;
 
 static ADDR_MASK: Lazy<u64> = Lazy::new(|| {
     // Create a mask that will clear all bits in a PTE that are not address bits
