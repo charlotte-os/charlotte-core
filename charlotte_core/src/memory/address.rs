@@ -15,7 +15,15 @@ compile_error! {"Unsupported ISA pointer width"}
 #[cfg(target_pointer_width = "64")]
 pub type UAddr = u64;
 
-pub trait MemoryAddress: Sized + Add<UAddr, Output = Self> + Rem<UAddr, Output = UAddr> + Copy + TryFrom<UAddr> + Into<UAddr> + Step{
+pub trait MemoryAddress:
+    Sized
+    + Add<UAddr, Output = Self>
+    + Rem<UAddr, Output = UAddr>
+    + Copy
+    + TryFrom<UAddr>
+    + Into<UAddr>
+    + Step
+{
     fn is_aligned(&self, alignment: UAddr) -> bool;
     fn is_page_aligned(&self) -> bool;
     fn is_vaddress() -> bool;
@@ -91,7 +99,6 @@ impl PhysicalAddress {
 }
 
 impl MemoryAddress for PhysicalAddress {
-
     fn is_aligned(&self, alignment: UAddr) -> bool {
         self.is_aligned_to(alignment)
     }
@@ -194,7 +201,6 @@ impl Sub<NonZeroUsize> for PhysicalAddress {
     fn sub(self, val: NonZeroUsize) -> Self::Output {
         Self::new(self.0 - val.get() as UAddr)
     }
-    
 }
 
 impl Rem<UAddr> for PhysicalAddress {

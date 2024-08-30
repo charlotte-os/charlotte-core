@@ -12,7 +12,7 @@ use core::ptr::addr_of_mut;
 use crate::arch::x86_64::cpu::ARE_HUGE_PAGES_SUPPORTED;
 use crate::arch::{Api, ArchApi, MemoryMap};
 use crate::logln;
-use crate::memory::address::{MemoryAddress, VirtualAddress, UAddr};
+use crate::memory::address::{MemoryAddress, UAddr, VirtualAddress};
 use crate::memory::{address::PhysicalAddress, pmm::PHYSICAL_FRAME_ALLOCATOR};
 use page_table::PageTableLevel;
 
@@ -376,7 +376,13 @@ impl MemoryMap for PageMap {
     /// # Returns
     /// Returns the base address of the region if one is found, or an error of type `Self::Error` if
     /// no region is found or if an error occurs during the search.
-    fn find_available_region(&self, size: NonZeroUsize, alignment: UAddr, start: VirtualAddress, end: VirtualAddress) -> Result<VirtualAddress, Self::Error> {
+    fn find_available_region(
+        &self,
+        size: NonZeroUsize,
+        alignment: UAddr,
+        start: VirtualAddress,
+        end: VirtualAddress,
+    ) -> Result<VirtualAddress, Self::Error> {
         if size.get() < 4096 {
             return Err(Error::SubPageSizeNotAllowed);
         }
@@ -401,7 +407,7 @@ impl MemoryMap for PageMap {
 
         for addr in (start.aligned_after(alignment)..end).step_by(alignment as usize) {
             if self.is_range_available(addr, size) {
-                return Ok(addr)
+                return Ok(addr);
             }
         }
         Err(Error::VAddrRangeUnavailable)

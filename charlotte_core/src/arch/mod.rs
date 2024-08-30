@@ -107,7 +107,13 @@ pub trait MemoryMap {
     /// # Returns
     /// Returns the base address of the region if one is found, or an error of type `Self::Error` if
     /// no region is found or if an error occurs during the search.
-    fn find_available_region(&self, size: NonZeroUsize, alignment: UAddr, start: VirtualAddress, end: VirtualAddress) -> Result<VirtualAddress, Self::Error>;
+    fn find_available_region(
+        &self,
+        size: NonZeroUsize,
+        alignment: UAddr,
+        start: VirtualAddress,
+        end: VirtualAddress,
+    ) -> Result<VirtualAddress, Self::Error>;
 }
 pub enum HwTimerMode {
     OneShot,
