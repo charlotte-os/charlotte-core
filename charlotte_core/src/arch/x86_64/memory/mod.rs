@@ -39,6 +39,7 @@ pub enum Error {
     OpNotSupportedAtThisLevel,
     AlredyHasPcid,
     InvalidPcid,
+    SubPageSizeNotAllowed,
     PmmError(PmmError),
 }
 

@@ -1,4 +1,6 @@
-use core::ops::Add;
+use core::iter::Step;
+use core::num::NonZeroUsize;
+use core::ops::{Add, AddAssign, Rem, Sub};
 
 use crate::arch::{Api, ArchApi, ISA_PARAMS};
 use crate::memory::pmm::DIRECT_MAP;
@@ -13,11 +15,18 @@ compile_error! {"Unsupported ISA pointer width"}
 #[cfg(target_pointer_width = "64")]
 pub type UAddr = u64;
 
-pub trait MemoryAddress {
-    type MemoryAddress: MemoryAddress;
+pub trait MemoryAddress: Sized + Add<UAddr, Output = Self> + Rem<UAddr, Output = UAddr> + Copy + TryFrom<UAddr> + Into<UAddr> + Step{
     fn is_aligned(&self, alignment: UAddr) -> bool;
     fn is_page_aligned(&self) -> bool;
     fn is_vaddress() -> bool;
+    fn aligned_after(&self, alignment: UAddr) -> Self {
+        if self.is_aligned(alignment) {
+            *self
+        } else {
+            let diff: UAddr = alignment - (*self % alignment as UAddr);
+            *self + diff
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
@@ -82,7 +91,6 @@ impl PhysicalAddress {
 }
 
 impl MemoryAddress for PhysicalAddress {
-    type MemoryAddress = PhysicalAddress;
 
     fn is_aligned(&self, alignment: UAddr) -> bool {
         self.is_aligned_to(alignment)
@@ -127,12 +135,110 @@ impl<T> From<PhysicalAddress> for *mut T {
     }
 }
 
+impl From<PhysicalAddress> for UAddr {
+    #[inline]
+    fn from(addr: PhysicalAddress) -> Self {
+        addr.0
+    }
+}
+
 impl Add<UAddr> for PhysicalAddress {
     type Output = Self;
 
     #[inline]
     fn add(self, val: UAddr) -> Self::Output {
         Self::new(self.0 + val)
+    }
+}
+
+impl Add<usize> for PhysicalAddress {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, val: usize) -> Self::Output {
+        Self::new(self.0 + val as UAddr)
+    }
+}
+
+impl Add<NonZeroUsize> for PhysicalAddress {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, val: NonZeroUsize) -> Self::Output {
+        Self::new(self.0 + val.get() as UAddr)
+    }
+}
+
+impl Sub<UAddr> for PhysicalAddress {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, val: UAddr) -> Self::Output {
+        Self::new(self.0 - val)
+    }
+}
+
+impl Sub<usize> for PhysicalAddress {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, val: usize) -> Self::Output {
+        Self::new(self.0 - val as UAddr)
+    }
+}
+
+impl Sub<NonZeroUsize> for PhysicalAddress {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, val: NonZeroUsize) -> Self::Output {
+        Self::new(self.0 - val.get() as UAddr)
+    }
+    
+}
+
+impl Rem<UAddr> for PhysicalAddress {
+    type Output = UAddr;
+
+    #[inline]
+    fn rem(self, val: UAddr) -> Self::Output {
+        self.0 % val
+    }
+}
+
+impl Rem<usize> for PhysicalAddress {
+    type Output = UAddr;
+
+    #[inline]
+    fn rem(self, val: usize) -> Self::Output {
+        self.0 % val as UAddr
+    }
+}
+
+impl Rem<NonZeroUsize> for PhysicalAddress {
+    type Output = UAddr;
+
+    #[inline]
+    fn rem(self, val: NonZeroUsize) -> Self::Output {
+        self.0 % val.get() as UAddr
+    }
+}
+
+impl Step for PhysicalAddress {
+    fn steps_between(start: &Self, end: &Self) -> Option<usize> {
+        if end.0 >= start.0 {
+            Some((end.0 - start.0) as usize)
+        } else {
+            None
+        }
+    }
+
+    fn forward_checked(start: Self, count: usize) -> Option<Self> {
+        start.0.checked_add(count as UAddr).map(Self)
+    }
+
+    fn backward_checked(start: Self, count: usize) -> Option<Self> {
+        start.0.checked_sub(count as UAddr).map(Self)
     }
 }
 
@@ -197,8 +303,6 @@ impl VirtualAddress {
 }
 
 impl MemoryAddress for VirtualAddress {
-    type MemoryAddress = VirtualAddress;
-
     fn is_aligned(&self, alignment: UAddr) -> bool {
         self.is_aligned_to(alignment)
     }
@@ -209,6 +313,24 @@ impl MemoryAddress for VirtualAddress {
 
     fn is_vaddress() -> bool {
         true
+    }
+}
+
+impl Step for VirtualAddress {
+    fn steps_between(start: &Self, end: &Self) -> Option<usize> {
+        if end.0 >= start.0 {
+            Some((end.0 - start.0) as usize)
+        } else {
+            None
+        }
+    }
+
+    fn forward_checked(start: Self, count: usize) -> Option<Self> {
+        start.0.checked_add(count as UAddr).map(Self)
+    }
+
+    fn backward_checked(start: Self, count: usize) -> Option<Self> {
+        start.0.checked_sub(count as UAddr).map(Self)
     }
 }
 
@@ -264,11 +386,81 @@ impl Add<usize> for VirtualAddress {
     }
 }
 
+impl Add<NonZeroUsize> for VirtualAddress {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, val: NonZeroUsize) -> Self::Output {
+        Self(self.0 + val.get() as UAddr)
+    }
+}
+
 impl Add<UAddr> for VirtualAddress {
     type Output = Self;
 
     #[inline]
     fn add(self, val: UAddr) -> Self::Output {
         Self(self.0 + val)
+    }
+}
+
+impl AddAssign<usize> for VirtualAddress {
+    #[inline]
+    fn add_assign(&mut self, val: usize) {
+        self.0 += val as UAddr;
+    }
+}
+
+impl Sub<usize> for VirtualAddress {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, val: usize) -> Self::Output {
+        Self(self.0 - val as UAddr)
+    }
+}
+
+impl Sub<NonZeroUsize> for VirtualAddress {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, val: NonZeroUsize) -> Self::Output {
+        Self(self.0 - val.get() as UAddr)
+    }
+}
+
+impl Sub<UAddr> for VirtualAddress {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, val: UAddr) -> Self::Output {
+        Self(self.0 - val)
+    }
+}
+
+impl Rem<UAddr> for VirtualAddress {
+    type Output = UAddr;
+
+    #[inline]
+    fn rem(self, val: UAddr) -> Self::Output {
+        self.0 % val
+    }
+}
+
+impl Rem<usize> for VirtualAddress {
+    type Output = UAddr;
+
+    #[inline]
+    fn rem(self, val: usize) -> Self::Output {
+        self.0 % val as UAddr
+    }
+}
+
+impl Rem<NonZeroUsize> for VirtualAddress {
+    type Output = UAddr;
+
+    #[inline]
+    fn rem(self, val: NonZeroUsize) -> Self::Output {
+        self.0 % val.get() as UAddr
     }
 }

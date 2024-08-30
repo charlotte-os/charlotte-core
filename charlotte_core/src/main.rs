@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 #![warn(missing_copy_implementations)]
+#![feature(step_trait)]
 
 use core::fmt::Write;
 use core::panic::PanicInfo;

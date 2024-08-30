@@ -5,6 +5,7 @@
 
 use core::fmt;
 use core::fmt::Write;
+use core::num::NonZeroUsize;
 use core::result::Result;
 
 use spin::{lazy::Lazy, mutex::TicketMutex};
@@ -95,6 +96,18 @@ pub trait MemoryMap {
     /// Returns an error of type `Self::Error` if unmapping fails or the physical address that was
     /// previously mapped to the given virtual address if successful.
     fn unmap_huge_page(&mut self, vaddr: VirtualAddress) -> Result<PhysicalAddress, Self::Error>;
+
+    /// Finds an available region of memory within the given range that is large enough to hold the
+    /// requested size.
+    /// # Arguments
+    /// * `size` - The size of the region to find.
+    /// * `alignment` - The alignment of the region to find.
+    /// * `start` - The start of the range to search.
+    /// * `end` - The end of the range to search.
+    /// # Returns
+    /// Returns the base address of the region if one is found, or an error of type `Self::Error` if
+    /// no region is found or if an error occurs during the search.
+    fn find_available_region(&self, size: NonZeroUsize, alignment: UAddr, start: VirtualAddress, end: VirtualAddress) -> Result<VirtualAddress, Self::Error>;
 }
 pub enum HwTimerMode {
     OneShot,

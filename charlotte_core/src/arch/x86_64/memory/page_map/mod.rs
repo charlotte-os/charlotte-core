@@ -6,13 +6,15 @@ use super::Error;
 
 use core::arch::{asm, global_asm};
 use core::fmt::Write;
+use core::num::NonZeroUsize;
 use core::ptr::addr_of_mut;
 
 use crate::arch::x86_64::cpu::ARE_HUGE_PAGES_SUPPORTED;
 use crate::arch::{Api, ArchApi, MemoryMap};
 use crate::logln;
-use crate::memory::address::VirtualAddress;
+use crate::memory::address::{MemoryAddress, VirtualAddress, UAddr};
 use crate::memory::{address::PhysicalAddress, pmm::PHYSICAL_FRAME_ALLOCATOR};
+use page_table::PageTableLevel;
 
 static N_FRAMES_PDPT: usize = 512 * 512;
 static N_FRAMES_PD: usize = 512;
@@ -157,6 +159,57 @@ impl PageMap {
                 pcid = in(reg) pcid.as_ptr(),
             }
         }
+    }
+    fn is_range_available(&self, start: VirtualAddress, size: NonZeroUsize) -> bool {
+        let mut walker = Walker::new(self);
+        let mut vaddr = start;
+        let mut rem_size = size.get();
+        let n_huge_pages = size.get() / N_FRAMES_PDPT;
+        rem_size = size.get() % N_FRAMES_PDPT;
+        let n_large_pages = rem_size / N_FRAMES_PD;
+        rem_size = rem_size % N_FRAMES_PD;
+        let n_pages = rem_size / 4096 + 1;
+
+        for _ in 0..n_huge_pages {
+            if walker.walk_pml4(vaddr, 0).is_err() {
+                return false;
+            }
+            if walker.walk_pdpt(vaddr, 0).is_err() {
+                return false;
+            }
+            if walker.walk_pd(vaddr, 0).is_err() {
+                return false;
+            }
+            if walker.walk_pd(vaddr, 0).is_err() {
+                return false;
+            }
+            vaddr += N_FRAMES_PDPT * 4096;
+        }
+        for _ in 0..n_large_pages {
+            if walker.walk_pml4(vaddr, 0).is_err() {
+                return false;
+            }
+            if walker.walk_pdpt(vaddr, 0).is_err() {
+                return false;
+            }
+            if walker.walk_pd(vaddr, 0).is_err() {
+                return false;
+            }
+            vaddr += N_FRAMES_PD * 4096;
+        }
+        for _ in 0..n_pages {
+            if walker.walk_pml4(vaddr, 0).is_err() {
+                return false;
+            }
+            if walker.walk_pdpt(vaddr, 0).is_err() {
+                return false;
+            }
+            if walker.walk_pd(vaddr, 0).is_err() {
+                return false;
+            }
+            vaddr += 4096;
+        }
+        true
     }
 }
 
@@ -311,6 +364,47 @@ impl MemoryMap for PageMap {
                     .unmap_page(page_table::PageSize::Huge, vaddr.pdpt_index())
             }
         }
+    }
+
+    /// Finds an available region of memory within the given range that is large enough to hold the
+    /// requested size.
+    /// # Arguments
+    /// * `size` - The size of the region to find.
+    /// * `alignment` - The alignment of the region to find.
+    /// * `start` - The start of the range to search.
+    /// * `end` - The end of the range to search.
+    /// # Returns
+    /// Returns the base address of the region if one is found, or an error of type `Self::Error` if
+    /// no region is found or if an error occurs during the search.
+    fn find_available_region(&self, size: NonZeroUsize, alignment: UAddr, start: VirtualAddress, end: VirtualAddress) -> Result<VirtualAddress, Self::Error> {
+        if size.get() < 4096 {
+            return Err(Error::SubPageSizeNotAllowed);
+        }
+        //determine how many pages of each size are needed
+        let mut rem_size = size.get();
+        let n_huge_pages = size.get() / N_FRAMES_PDPT;
+        rem_size = size.get() % N_FRAMES_PDPT;
+        let n_large_pages = rem_size / N_FRAMES_PD;
+        rem_size = rem_size % N_FRAMES_PD;
+        let n_pages = rem_size / 4096 + 1;
+
+        //scan the page map for a region of memory that is n + 1 of the largest non-zero page size in the specified region
+        let scan_level: PageTableLevel = if n_huge_pages > 0 {
+            page_table::PageTableLevel::PDPT
+        } else if n_large_pages > 0 {
+            page_table::PageTableLevel::PD
+        } else {
+            page_table::PageTableLevel::PT
+        };
+
+        let ret: Result<VirtualAddress, Error>;
+
+        for addr in (start.aligned_after(alignment)..end).step_by(alignment as usize) {
+            if self.is_range_available(addr, size) {
+                return Ok(addr)
+            }
+        }
+        Err(Error::VAddrRangeUnavailable)
     }
 }
 
