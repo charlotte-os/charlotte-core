@@ -63,7 +63,7 @@ impl<T: Serial> Kmon<T> {
     }
 
     pub fn repl_loop(&mut self) {
-        log!("=================== [Serial Prompt v1.0] ===================\n");
+        log!("=================== Serial Prompt v1.0 =====================\n");
         self.print_term_begin();
         loop {
             let c = self.port.read_char();
