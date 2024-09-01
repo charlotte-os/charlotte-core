@@ -14,7 +14,7 @@ jobs:
       toolchain: nightly
   emulate:
     needs: [unit-test, style-check]
-    uses: ./github/workflows/emulate.yml
+    uses: ./.github/workflows/emulate.yml
     secrets: inherit
     with:
       toolchain: nightly
