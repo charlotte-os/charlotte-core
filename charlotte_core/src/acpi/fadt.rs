@@ -96,7 +96,7 @@ impl GenericAddress {
 
 /// Fixed ACPI Description Table (FADT)
 /// The FADT is a table that provides an ACPI-compliant OS with the information it needs to
-/// to enact power management related actions.
+/// enact power management related actions.
 #[repr(C)]
 #[derive(Copy, Clone, Getters, Debug)]
 pub struct Fadt {

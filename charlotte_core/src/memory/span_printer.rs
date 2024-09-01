@@ -1,6 +1,7 @@
 //! Print a span of memory starting at some address with some width
+#![allow(clippy::collapsible_else_if)]
 
-use core::{fmt::Write, usize};
+use core::fmt::Write;
 
 use crate::{log, logln};
 

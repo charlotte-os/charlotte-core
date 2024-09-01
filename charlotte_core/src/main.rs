@@ -2,110 +2,59 @@
 #![no_main]
 #![warn(missing_copy_implementations)]
 
+use core::fmt::Write;
+use core::panic::PanicInfo;
+
+use arch::{Api, ArchApi, HwTimerMode};
+
+use crate::kmon::Kmon;
+
 mod acpi;
 mod arch;
 mod bootinfo;
 mod framebuffer;
+mod kmon;
 mod memory;
 
-use core::fmt::Write;
-
-use arch::{Api, ArchApi};
-
-use framebuffer::colors::Color;
-use framebuffer::console::CONSOLE;
-
-use crate::framebuffer::framebuffer::FRAMEBUFFER;
-
-use memory::pmm::*;
-
+/// This is the kernel entrypoint function,
+/// the first thing it does is call: [isa_init](ArchApi::isa_init)
+/// you should check the documentation on that function for details,
+/// since that contains all the ISA specific initialization code.
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
-    let mut arch_api = ArchApi::new_arch_api();
+    let mut arch_api = ArchApi::isa_init();
+    logln!("Bring up finished, starting kernel interactive prompt");
 
-    FRAMEBUFFER.lock().clear_screen(Color::BLACK);
-    println!("Hello, world!");
+//This code currently causes a triple fault if allowed to run. A fix is needed!
+/*     // Setup handle_timer function to handle interrupt vector 32 for x86_64
+    #[cfg(target_arch = "x86_64")]
+    arch_api.set_interrupt_handler(on_tick, 32);
+    // Start the ISA specific timer(s) with a rate of about every 10us (1MHz)
+    arch_api.setup_isa_timer(100_000, HwTimerMode::Recurrent, 0);
+    arch_api.start_isa_timers(); */
+    let port = arch_api.get_serial();
+    let mut mon = Kmon::new(port);
+    mon.repl_loop();
 
-    logln!("Initializing BSP");
-    ArchApi::init_bsp();
-    logln!("BSP Initialized");
-
-    logln!("Initializing ACPI");
-    let acpi_static_tables = acpi::init_acpi();
-    logln!("ACPI Initialized");
-    arch_api.init_acpi_tables(&acpi_static_tables);
-
-    logln!("Initialize interrupts");
-    arch_api.init_interrupts();
-    logln!("Interrupts enabled: {}", arch_api.interrupts_enabled());
-
-    logln!("All tests in main passed.");
-
-    logln!(
-        "Number of Significant Physical Address Bits Supported: {}",
-        ArchApi::get_paddr_width()
-    );
-    logln!(
-        "Number of Significant Virtual Address Bits Supported: {}",
-        ArchApi::get_vaddr_width()
-    );
-
-    let memory_map = MemoryMap::get();
-    logln!(
-        "Physical Address Space Size: {} MiB",
-        memory_map.total_memory() / 1024 / 1024
-    );
-    logln!(
-        "Total Physical Memory: {} MiB",
-        memory_map.usable_memory() / 1024 / 1024
-    );
-
-    logln!("Testing Physical Memory Manager");
-    logln!("Performing single frame allocation and deallocation test.");
-    let alloc = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
-    let alloc2 = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
-    match alloc {
-        Ok(frame) => {
-            logln!("Allocated frame with physical base address: {:?}", frame);
-            PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
-            logln!("Deallocated frame with physical base address: {:?}", frame);
-        }
-        Err(e) => {
-            logln!("Failed to allocate frame: {:?}", e);
-        }
-    }
-    let alloc3 = PHYSICAL_FRAME_ALLOCATOR.lock().allocate();
-    logln!("alloc2: {:?}, alloc3: {:?}", alloc2, alloc3);
-    PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc2.unwrap());
-    PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(alloc3.unwrap());
-    logln!("Single frame allocation and deallocation test complete.");
-    logln!("Performing contiguous frame allocation and deallocation test.");
-    let contiguous_alloc = PHYSICAL_FRAME_ALLOCATOR.lock().allocate_contiguous(256, 64);
-    match contiguous_alloc {
-        Ok(frame) => {
-            logln!(
-                "Allocated physically contiguous region with physical base address: {:?}",
-                frame
-            );
-            PHYSICAL_FRAME_ALLOCATOR.lock().deallocate(frame);
-            logln!(
-                "Deallocated physically contiguous region with physical base address: {:?}",
-                frame
-            );
-        }
-        Err(e) => {
-            logln!("Failed to allocate contiguous frames: {:?}", e);
-        }
-    }
-    logln!("Contiguous frame allocation and deallocation test complete.");
-    logln!("Physical Memory Manager test suite finished.");
-
-    logln!("Infinite loop at end");
+    #[allow(clippy::empty_loop)]
     loop {}
 }
 
+#[no_mangle]
+/// System monotonic time, this is a global variable that is updated every time the timer ticks.
+static mut SYSTEM_MONOTONIC: u64 = 0;
+
+/// This function handles timer ticks, inside of it you can dispatch schedulers
+/// or anything else that needs to be done on a timer tick.
+fn on_tick(_: u64) {
+    unsafe {
+        SYSTEM_MONOTONIC += 10;
+    }
+    ArchApi::end_of_interrupt();
+}
+
 #[panic_handler]
-fn rust_panic(_info: &core::panic::PanicInfo) -> ! {
+fn rust_panic(_info: &PanicInfo) -> ! {
     logln!("A kernel panic has occurred due to a Rust runtime panic.");
     logln!("PanicInfo: {:?}", _info);
     ArchApi::panic()

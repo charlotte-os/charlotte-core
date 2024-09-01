@@ -1,12 +1,14 @@
 use core::sync::atomic::{AtomicPtr, Ordering};
 
 use crate::bootinfo::FRAMEBUFFER_REQUEST;
-use crate::framebuffer::chars::{get_char_bitmap, FONT_HEIGHT, FONT_WIDTH};
+use crate::framebuffer::chars::{FONT, FONT_HEIGHT, FONT_WIDTH};
 // External crate for bootloader-specific functions and types.
 extern crate limine;
 use limine::framebuffer::Framebuffer;
 use spin::lazy::Lazy;
 use spin::mutex::TicketMutex;
+
+use super::console::{CONSOLE_HEIGHT, CONSOLE_WIDTH};
 
 /// Global access to the framebuffer
 pub static FRAMEBUFFER: Lazy<TicketMutex<FrameBufferInfo>> =
@@ -20,6 +22,7 @@ pub struct FrameBufferInfo {
     height: usize,
     pitch: usize,
     bpp: usize,
+    scale: usize,
 }
 
 /// including its memory address, dimensions, pixel format, etc.
@@ -37,13 +40,18 @@ impl FrameBufferInfo {
     ///
     /// * `framebuffer` - A reference to a limine `Framebuffer` struct.
     pub fn new(framebuffer: &Framebuffer) -> Self {
-        Self {
+        let mut framebuffer = Self {
             address: AtomicPtr::new(framebuffer.addr() as *mut u32),
             width: framebuffer.width() as usize,
             height: framebuffer.height() as usize,
             pitch: framebuffer.pitch() as usize,
             bpp: framebuffer.bpp() as usize,
-        }
+            scale: 1,
+        };
+
+        /* Initialize framebuffer scale automatically */
+        framebuffer.calc_scale();
+        framebuffer
     }
 
     /// Draws a line between two points using Bresenham's line algorithm.
@@ -159,14 +167,19 @@ impl FrameBufferInfo {
     /// * `bitmap` - A reference to the bitmap array representing the character.
     /// * `color` - The color of the character in ARGB format.
     pub fn draw_char(&self, x: usize, y: usize, chracter: char, color: u32, background_color: u32) {
-        let bitmap = get_char_bitmap(chracter);
-        for (row, &bits) in bitmap.iter().enumerate() {
-            for col in 0..FONT_WIDTH {
-                if (bits >> (FONT_WIDTH - 1 - col)) & 1 == 1 {
-                    self.draw_pixel(x + col, y + row, color);
+        let char_int: usize = chracter as usize;
+        let first_byte_index = char_int * 16;
+        let mut do_draw: bool;
+        let mut colour_buffer: u32;
+        for by in 0..16 {
+            for bi in 0..8 {
+                do_draw = ((FONT[first_byte_index + by] >> (7 - bi)) & 1) != 0;
+                if do_draw {
+                    colour_buffer = color;
                 } else {
-                    self.draw_pixel(x + col, y + row, background_color);
+                    colour_buffer = background_color;
                 }
+                self.draw_pixel(x + bi, y + by, colour_buffer);
             }
         }
     }
@@ -242,6 +255,23 @@ impl FrameBufferInfo {
             vertices[0],
             vertices[1],
         );
+    }
+
+    /// Return the framebuffer scaling multiplier
+    pub fn get_scale(&self) -> usize {
+        self.scale
+    }
+
+    /// Automatically select scaling based on resolution
+    /// Call this whenever resolution of the monitor changes!
+    pub fn calc_scale(&mut self) {
+        let scale_width = self.width / (CONSOLE_WIDTH * FONT_WIDTH);
+        let scale_height = self.height / (CONSOLE_HEIGHT * FONT_HEIGHT);
+        self.scale = if (scale_height > scale_width) {
+            scale_width
+        } else {
+            scale_height
+        };
     }
 }
 

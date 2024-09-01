@@ -1,12 +1,14 @@
 #x86_64
 
+default: run-x86_64-debug
+
 install-requirements:
 	chmod +x ./tools/install-requirements.sh
 	./tools/install-requirements.sh
 
 limine:
 	@if [ ! -d "limine" ]; then \
-		git clone https://github.com/limine-bootloader/limine.git --branch=v5.x-branch-binary --depth=1;\
+		git clone https://github.com/limine-bootloader/limine.git --branch=v8.x-binary --depth=1;\
 	fi
 	make -C limine
 
@@ -19,7 +21,7 @@ build-x86_64-debug: limine
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/x86_64-unknown-none/debug/charlotte_core \
-		limine.cfg limine/limine-uefi-cd.bin iso_root/
+		limine.conf limine/limine-uefi-cd.bin iso_root/
 	mkdir -p iso_root/EFI/BOOT
 	cp -v limine/BOOTX64.EFI iso_root/EFI/BOOT/
 	xorriso -as mkisofs \
@@ -32,9 +34,6 @@ build-x86_64-debug: limine
 run-x86_64-debug: ovmf-x86_64 build-x86_64-debug
 	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial stdio
 
-run-x86_64-debugprobe: ovmf-x86_64 build-x86_64-debug
-	qemu-system-x86_64 -s -S -enable-kvm -M q35 -cpu host -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial stdio
-
 run-x86_64-debug-multicore: ovmf-x86_64 build-x86_64-debug
 	qemu-system-x86_64 -enable-kvm -M q35 -smp 8 -cpu host -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial stdio
 
@@ -42,7 +41,7 @@ run-x86_64-debug-numa: ovmf-x86_64 build-x86_64-debug
 	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 8G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial stdio -smp 4 -object memory-backend-ram,size=4G,id=m0 -object memory-backend-ram,size=4G,id=m1 -numa node,memdev=m0,cpus=0-1,nodeid=0 -numa node,memdev=m1,cpus=2-3,nodeid=1
 
 run-x86_64-extdb: ovmf-x86_64 build-x86_64-debug
-	qemu-system-x86_64 -s -S -M q35 -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d
+	qemu-system-x86_64 -enable-kvm -s -S -M q35 -m 2G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial stdio
 
 run-x86_64-log: ovmf-x86_64 build-x86_64-debug
 	qemu-system-x86_64 -enable-kvm -M q35 -cpu host -m 12G -bios ovmf-x86_64/OVMF.fd -cdrom charlotte_core-x86_64-debug.iso -boot d -serial file:log_x86_64.txt
@@ -52,7 +51,7 @@ build-x86_64-release: limine
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/x86_64-unknown-none/release/charlotte_core \
-		limine.cfg limine/limine-uefi-cd.bin iso_root/
+		limine.conf limine/limine-uefi-cd.bin iso_root/
 	mkdir -p iso_root/EFI/BOOT
 	cp -v limine/BOOTX64.EFI iso_root/EFI/BOOT/
 	xorriso -as mkisofs \
@@ -79,7 +78,7 @@ charlotte_core-aarch64-debug.iso: build-aarch64-debug
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/aarch64-unknown-none/debug/charlotte_core \
-		limine.cfg limine/limine-uefi-cd.bin iso_root/
+		limine.conf limine/limine-uefi-cd.bin iso_root/
 	mkdir -p iso_root/EFI/BOOT
 	cp -v limine/BOOTAA64.EFI iso_root/EFI/BOOT/
 	xorriso -as mkisofs \
@@ -101,7 +100,7 @@ charlotte_core-aarch64-release.iso: build-aarch64-release
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/aarch64-unknown-none/release/charlotte_core \
-		limine.cfg limine/limine-uefi-cd.bin iso_root/
+		limine.conf limine/limine-uefi-cd.bin iso_root/
 	mkdir -p iso_root/EFI/BOOT
 	cp -v limine/BOOTAA64.EFI iso_root/EFI/BOOT/
 	xorriso -as mkisofs \
@@ -124,7 +123,7 @@ charlotte_core-riscv64-debug.iso: build-riscv64-debug
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/riscv64gc-unknown-none-elf/debug/charlotte_core \
-		limine.cfg limine/limine-uefi-cd.bin iso_root/
+		limine.conf limine/limine-uefi-cd.bin iso_root/
 	mkdir -p iso_root/EFI/BOOT
 	cp -v limine/BOOTRISCV64.EFI iso_root/EFI/BOOT/
 	xorriso -as mkisofs \
@@ -137,7 +136,7 @@ run-riscv64-debug: ovmf-riscv64 charlotte_core-riscv64-debug.iso
 	qemu-system-riscv64 -M virt -cpu rv64 \
 		-device ramfb -device qemu-xhci -device usb-kbd -m 2G -drive if=pflash,unit=0,format=raw,file=ovmf-riscv64/OVMF.fd \
 		-device virtio-scsi-pci,id=scsi -device scsi-cd,drive=cd0 -drive id=cd0,format=raw,file=charlotte_core-riscv64-debug.iso
-run-riscv64-debug: ovmf-riscv64 charlotte_core-riscv64-debug.iso
+run-riscv64-debug-log: ovmf-riscv64 charlotte_core-riscv64-debug.iso
 	qemu-system-riscv64 -M virt -cpu rv64 \
 		-device ramfb -device qemu-xhci -device usb-kbd -m 2G -drive if=pflash,unit=0,format=raw,file=ovmf-riscv64/OVMF.fd \
 		-device virtio-scsi-pci,id=scsi -device scsi-cd,drive=cd0 -drive id=cd0,format=raw,file=charlotte_core-riscv64-debug.iso \
@@ -149,7 +148,7 @@ charlotte_core-riscv64-release.iso: build-riscv64-release
 	rm -rf iso_root
 	mkdir -p iso_root
 	cp -v charlotte_core/target/riscv64gc-unknown-none-elf/release/charlotte_core \
-		limine.cfg limine/limine-uefi-cd.bin iso_root/
+		limine.conf limine/limine-uefi-cd.bin iso_root/
 	mkdir -p iso_root/EFI/BOOT
 	cp -v limine/BOOTRISCV64.EFI iso_root/EFI/BOOT/
 	xorriso -as mkisofs \

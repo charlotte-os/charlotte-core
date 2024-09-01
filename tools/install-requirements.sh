@@ -1,16 +1,19 @@
 #!/bin/sh
 
+## Functions and constants
+## -----------------------
+
 # POSIX ONLY - This script is supposed to run on nearly any distros
 # (well at least popular ones)
 
 # CHANGE THIS when there are new requirements
 # WARNING: A package might be named differently on different distributions
-required_packages_common="nasm xorriso make curl"
+required_packages_common="xorriso make curl"
 
 # Here are the requirements with different names on different distros
 required_packages_ubuntu="qemu-system"
 required_packages_debian="qemu-system-x86"
-required_packages_arch="qemu"
+required_packages_arch="qemu libisoburn"
 required_packages_fedora="qemu"
 required_packages_macos="qemu"
 
@@ -37,11 +40,34 @@ wrapper() {
 # Install Rust and Rust nightly toolchain
 install_rust_nightly() {
     printf "[    ] Rust nightly toolchain:\n"
-    wrapper "    Download Rust installer" $(curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs >> rust-installer.sh)
-    wrapper "    Make Rust installer executable" chmod +x ./rust-installer.sh
-    wrapper "    Install Rust nightly" ./rust-installer.sh -y --profile minimal --default-toolchain nightly
-    wrapper "    Remove Rust installer" rm rust-installer.sh
+    # Test if the nightly toolchain is not already installed, if it is leave it alone
+    cd charlotte_core || exit 1
+    if [ "$(rustc --version | grep nightly)" = '' ]; then
+      wrapper "    Nightly not found, it will be installed now"
+      wrapper "    Download Rust installer" $(curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs >> /tmp/rust-installer.sh)
+      wrapper "    Make Rust installer executable" chmod +x /tmp/rust-installer.sh
+      wrapper "    Install Rust nightly" /tmp/rust-installer.sh -y --profile minimal
+      wrapper "    Remove Rust installer" rm /tmp/rust-installer.sh
+    else
+      wrapper "    Found nightly rust installed on this system" rustc --version
+    fi
+    cd .. || exit 1
 }
+
+
+## Main execution
+#----------------
+
+CONTINUE="n"
+echo "This script is gonna do the following:"
+echo "  Check if you have rust nightly installed and if not install it."
+echo "  Install the packages you need to build and run the project. [will use sudo]"
+printf "Continue?[y/N]:"
+read -r CONTINUE
+
+if [ "$CONTINUE" != "${CONTINUE,,}" ]; then
+  exit 1
+fi
 
 
 # Detect OS and distribution

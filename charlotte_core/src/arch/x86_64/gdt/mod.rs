@@ -1,3 +1,4 @@
+mod gdt;
 pub mod tss;
 
 use core::{mem::size_of, ptr};

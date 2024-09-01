@@ -1,0 +1,34 @@
+name: Emulate
+on:
+  workflow_call:
+    inputs:
+      toolchain:
+        description: Rust toolchain
+        required: true
+        type: string
+
+jobs:
+  emulate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # TODO: Keep this updated
+        arch:
+          - x86_64
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Install ${{ matrix.arch }}-unknown-none target
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ inputs.toolchain }}
+          target: ${{ matrix.arch }}-unknown-none
+          components: clippy, rustfmt
+          rustflags: -W warnings
+          cache: true
+          cache-workspaces: ./charlotte_core
+      - name: Run Charlotte OS on ${{ matrix.arch }} emulator
+        run: make run-${{ matrix.arch }}-debug
