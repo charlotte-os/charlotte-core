@@ -13,7 +13,7 @@ pub struct TestDescription {
 macro_rules! test_assert {
     ($cond:expr) => {
         if !$cond {
-            print!("\nCondition failed: `{}` at {}:{}", stringify!($cond), file!(), line!());
+            logln!("\nCondition failed: `{}` at {}:{}", stringify!($cond), file!(), line!());
             return false;
         }
     };
@@ -23,8 +23,8 @@ macro_rules! test_assert {
 macro_rules! test_assert_ne {
     ($e1:expr, $e2:expr) => {
         if $e1 == $e2 {
-            print!("\nTest assert failure at {}:{:?} ", file!(), line!());
-            print!("Condition failed: `{:?} != {:?}`", $e1, $e2);
+            logln!("\nTest assert failure at {}:{:?} ", file!(), line!());
+            logln!("Condition failed: `{:?} != {:?}`", $e1, $e2);
             return false;
         }
     };
@@ -34,10 +34,9 @@ macro_rules! test_assert_ne {
 macro_rules! test_assert_eq {
     ($e1:expr, $e2:expr) => {
         if $e1 != $e2 {
-            print!("\nTest assert failure at {}:{:?} ", file!(), line!());
-            print!("Condition failed: `{:?} == {:?}`\n", $e1, $e2);
-            *__failure = true;
-            return;
+            logln!("\nTest assert failure at {}:{:?} ", file!(), line!());
+            logln!("Condition failed: `{:?} == {:?}`\n", $e1, $e2);
+            return false;
         }
     };
 }
@@ -60,9 +59,9 @@ pub fn tests_runner(_tests: &[()]) {
     for i in kernel_tests {
         crate::logln!("Running test {}::{}", i.module, i.name);
 
-        let failure = (i.func)();
+        let success = (i.func)();
 
-        if failure {
+        if !success {
             crate::logln!("[FAIL]\n");
         } else {
             crate::logln!("[SUCCESS]\n");
