@@ -23,6 +23,9 @@ mod memory;
 /// since that contains all the ISA specific initialization code.
 #[no_mangle]
 unsafe extern "C" fn main() -> ! {
+    // Trigger a double fault to test the double fault handler
+    core::arch::asm!("int 8");
+
     let mut arch_api = ArchApi::isa_init();
     logln!("Bring up finished, starting kernel interactive prompt");
 

@@ -4,7 +4,7 @@ use page_table::PageTable;
 
 use super::Error;
 
-use core::arch::{asm, global_asm};
+use core::arch::asm;
 use core::fmt::Write;
 use core::num::NonZeroUsize;
 use core::ptr::addr_of_mut;
@@ -14,7 +14,6 @@ use crate::arch::{Api, ArchApi, MemoryMap};
 use crate::logln;
 use crate::memory::address::{MemoryAddress, UAddr, VirtualAddress};
 use crate::memory::{address::PhysicalAddress, pmm::PHYSICAL_FRAME_ALLOCATOR};
-use page_table::PageTableLevel;
 
 static N_FRAMES_PDPT: usize = 512 * 512;
 static N_FRAMES_PD: usize = 512;
@@ -163,9 +162,8 @@ impl PageMap {
     fn is_range_available(&self, start: VirtualAddress, size: NonZeroUsize) -> bool {
         let mut walker = Walker::new(self);
         let mut vaddr = start;
-        let mut rem_size = size.get();
         let n_huge_pages = size.get() / N_FRAMES_PDPT;
-        rem_size = size.get() % N_FRAMES_PDPT;
+        let mut rem_size = size.get() % N_FRAMES_PDPT;
         let n_large_pages = rem_size / N_FRAMES_PD;
         rem_size = rem_size % N_FRAMES_PD;
         let n_pages = rem_size / 4096 + 1;
@@ -383,39 +381,64 @@ impl MemoryMap for PageMap {
         start: VirtualAddress,
         end: VirtualAddress,
     ) -> Result<VirtualAddress, Self::Error> {
+        /*Input Validation*/
         if size.get() < 4096 {
             return Err(Error::SubPageSizeNotAllowed);
         }
-        //determine how many pages of each size are needed
-        let mut rem_size = size.get();
-        let n_huge_pages = size.get() / N_FRAMES_PDPT;
-        rem_size = size.get() % N_FRAMES_PDPT;
-        let n_large_pages = rem_size / N_FRAMES_PD;
-        rem_size = rem_size % N_FRAMES_PD;
-        let n_pages = rem_size / 4096 + 1;
-
-        //scan the page map for a region of memory that is n + 1 of the largest non-zero page size in the specified region
-        let scan_level: PageTableLevel = if n_huge_pages > 0 {
-            page_table::PageTableLevel::PDPT
-        } else if n_large_pages > 0 {
-            page_table::PageTableLevel::PD
-        } else {
-            page_table::PageTableLevel::PT
-        };
-
-        let ret: Result<VirtualAddress, Error>;
-
+        if alignment < 4096 {
+            return Err(Error::InvalidArgument);
+        }
+        if start.is_aligned_to(alignment) == false {
+            return Err(Error::InvalidVAddrAlignment);
+        }
+        /*Search all possible regions of the specified range that could work and return the first one that does*/
         for addr in (start.aligned_after(alignment)..end).step_by(alignment as usize) {
             if self.is_range_available(addr, size) {
                 return Ok(addr);
             }
         }
+        // If no region is found, return an error
         Err(Error::VAddrRangeUnavailable)
     }
 }
 
-global_asm!(include_str!("mod.asm"));
-
-extern "C" {
-    pub fn asm_get_cr3() -> u64;
+#[inline]
+pub fn get_cr3() -> u64 {
+    let cr3: u64;
+    unsafe {
+        asm! {
+            "mov {0}, cr3",
+            out(reg) cr3,
+        }
+    }
+    cr3
+}
+#[inline]
+fn get_cr4() -> u64 {
+    let cr4: u64;
+    unsafe {
+        asm! {
+            "mov {0}, cr4",
+            out(reg) cr4,
+        }
+    }
+    cr4
+}
+#[inline]
+fn load_page_map(cr3: u64) {
+    unsafe {
+        asm! {
+            "mov cr3, {0}",
+            in(reg) cr3,
+        }
+    }
+}
+#[inline]
+fn invalidate_tlb_entry(vaddr: VirtualAddress) {
+    unsafe {
+        asm! {
+            "invlpg [{0}]",
+            in(reg) vaddr.bits(),
+        }
+    }
 }

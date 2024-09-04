@@ -9,7 +9,7 @@ use core::{
     ptr::addr_of,
 };
 
-use memory::page_map::{asm_get_cr3, PageMap};
+use memory::page_map::{get_cr3, PageMap};
 use spin::lazy::Lazy;
 use spin::mutex::spin::SpinMutex;
 
@@ -313,7 +313,7 @@ impl Api {
 
     fn vmm_self_test() {
         logln!("Beginning VMM Self Test...");
-        let cr3 = unsafe { asm_get_cr3() };
+        let cr3 = unsafe { get_cr3() };
         let mut pm = match PageMap::from_cr3(cr3) {
             Ok(pm) => pm,
             Err(e) => panic!("Failed to create PageMap from CR3: {:?}", e),

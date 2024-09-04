@@ -9,14 +9,19 @@ name = "charlotte_core"
 test = false
 bench = false
 
+[profile.release]
+panic = "abort"
+[profile.dev]
+panic = "abort"
+
 [build-dependencies]
 cc = "*"
 walkdir = "*"
 
 [dependencies]
-derive-getters = "0.4.0"
+derive-getters = "*"
 ignore-result = "*"
-limine = "0.2.0"
+limine = "^0.3.0"
 spin = { version = "*", features = ["ticket_mutex"] }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies]

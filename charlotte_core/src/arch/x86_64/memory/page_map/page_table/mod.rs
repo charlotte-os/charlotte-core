@@ -26,8 +26,8 @@ const N_PT_ENTRIES: usize = 512;
 const LARGE_PAGE_NFRAMES: u64 = 512;
 const HUGE_PAGE_NFRAMES: u64 = 512 * 512;
 
-#[repr(align(4096))]
-#[derive(Debug)]
+#[repr(C, align(4096))]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct PageTable {
     table: [PageTableEntry; N_PT_ENTRIES],
 }
