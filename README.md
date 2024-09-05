@@ -23,11 +23,7 @@ substantial amount of code from Charlotte Core. A fork of Charlotte Core is avai
 
 - x86-64 PCs with UEFI and ACPI (Under active development)
 - Aarch64 devices with UEFI and ACPI (Planned)
-<<<<<<< Updated upstream
-- RISC-V64 devices with UEFI and ACPI (Possible but not planned as of now)
-=======
 - RISC-V64 devices with UEFI and ACPI (Possible)
->>>>>>> Stashed changes
 
 #### Building
 
