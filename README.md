@@ -56,9 +56,6 @@ gdb charlotte_core/target/x86_64-unknown-none/debug/charlotte_core
 and once gdb is open:
 
 ```gdb
-=======
-```bash
->>>>>>> Stashed changes
 (gdb) target remote localhost:1234
 make sure to set some breakpoints or the code will just go straight to the halt at the end of main currently
 (gdb) c
