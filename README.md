@@ -1,4 +1,4 @@
-# `cbof`
+# `cbof` cute ball of fluff
 ### The Kernel of CharlotteOS
 
 ![Testing](https://github.com/charlotte-os/charlotte-core/actions/workflows/test_code.yml/badge.svg)
