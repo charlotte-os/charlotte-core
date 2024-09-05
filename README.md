@@ -6,7 +6,7 @@
 ![Vulnerability](https://github.com/charlotte-os/charlotte-core/actions/workflows/cron_report.yml/badge.svg)
 
 
-`cbof` is the kernel of CharlotteOS. It is a monolithic kernel that is designed to provide a flexible and low level interface to program running ontop of it.
+`cbof` (short for cute bundle of floof!) is the kernel of CharlotteOS. It is a monolithic kernel that is designed to provide a flexible and low level interface to program running ontop of it.
 
 ### Status
 `cbof` is the successor to Charlotte Core our previous kernel in development. The kernel was redeveloped due to a
