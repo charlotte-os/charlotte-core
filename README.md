@@ -82,10 +82,12 @@ further reference [Qemu GDB docs](https://qemu-project.gitlab.io/qemu/system/gdb
 
 ### Documentation
 
-Detailed documentation will eventually be available in this repository's GitHub wiki and at CharlotteOS's website: https://www.charlotte-os.org/
+Detailed documentation is available in this repository's GitHub wiki and at CharlotteOS's website: https://www.charlotte-os.org/
 
 ### Contributing
 
 Contributions are always welcome and highly appreciated. Please create a new branch for your work and submit a pull request on GitHub. Make sure to rebase all your changes on master to maintain a linear commit history avoiding merge commits to the extent possible. Feel free to grab any unassigned issues in the GitHub issue tracker for this repository.
+
+For any PR or Issue it must follow our [RFC rules](https://github.com/charlotte-os/developer-docs/blob/main/RFC%20template.md)
 
 Also please join [our community on Discord](https://discord.com/invite/vE7bCCKx4X) to stay up to date with the latest on CharlotteOS development.
