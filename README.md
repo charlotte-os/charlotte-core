@@ -88,6 +88,6 @@ Detailed documentation is available in this repository's GitHub wiki and at Char
 
 Contributions are always welcome and highly appreciated. Please create a new branch for your work and submit a pull request on GitHub. Make sure to rebase all your changes on master to maintain a linear commit history avoiding merge commits to the extent possible. Feel free to grab any unassigned issues in the GitHub issue tracker for this repository.
 
-For any PR or Issue it must follow our [RFC rules](https://github.com/charlotte-os/developer-docs/blob/main/RFC%20template.md)
+For any PR or Issue it must have well documented code and function if merged into main, if it is instead decided to be merged into its own branch, it will have to be well documented but does not have to work.
 
 Also please join [our community on Discord](https://discord.com/invite/vE7bCCKx4X) to stay up to date with the latest on CharlotteOS development.
