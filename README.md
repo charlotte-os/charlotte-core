@@ -1,18 +1,10 @@
-<<<<<<< Updated upstream
-# Charlotte Core
+# `cbof`
+### The Kernel of CharlotteOS
 
 ![Testing](https://github.com/charlotte-os/charlotte-core/actions/workflows/test_code.yml/badge.svg)
 ![Vulnerability](https://github.com/charlotte-os/charlotte-core/actions/workflows/cron_report.yml/badge.svg)
 
-## The Kernel of CharlotteOS
-
-Charlotte Core is the kernel of CharlotteOS, a post Unix operating system. It is a monolithic kernel designed to provide a flexible and low level interface to programs running on top of it.
-=======
-# `cbof`
-### The Kernel of CharlotteOS
-
 `cbof` is the kernel of CharlotteOS. It is a monolithic kernel that is designed to provide a flexible and low level interface to program running ontop of it.
->>>>>>> Stashed changes
 
 ### Status
 `cbof` is the successor to Charlotte Core our previous kernel in development. The kernel was redeveloped due to a
@@ -30,11 +22,7 @@ substantial amount of code from Charlotte Core. A fork of Charlotte Core is avai
 
 - x86-64 PCs with UEFI and ACPI (Under active development)
 - Aarch64 devices with UEFI and ACPI (Planned)
-<<<<<<< Updated upstream
-- RISC-V64 devices with UEFI and ACPI (Possible but not planned as of now)
-=======
 - RISC-V64 devices with UEFI and ACPI (Possible)
->>>>>>> Stashed changes
 
 #### Building
 
@@ -64,12 +52,8 @@ gdb charlotte_core/target/x86_64-unknown-none/debug/charlotte_core
 ```
 
 and once gdb is open:
-<<<<<<< Updated upstream
 
 ```gdb
-=======
-```bash
->>>>>>> Stashed changes
 (gdb) target remote localhost:1234
 make sure to set some breakpoints or the code will just go straight to the halt at the end of main currently
 (gdb) c
