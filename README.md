@@ -1,5 +1,6 @@
 # `cbof`
-### The Kernel of CharlotteOS
+
+## The Kernel of CharlotteOS
 
 ![Testing](https://github.com/charlotte-os/charlotte-core/actions/workflows/test_code.yml/badge.svg)
 ![Vulnerability](https://github.com/charlotte-os/charlotte-core/actions/workflows/cron_report.yml/badge.svg)
@@ -7,6 +8,7 @@
 `cbof` is the kernel of CharlotteOS. It is a monolithic kernel that is designed to provide a flexible and low level interface to program running ontop of it.
 
 ### Status
+
 `cbof` is the successor to Charlotte Core our previous kernel in development. The kernel was redeveloped due to a
 lack of sufficient modularity, compatibility with the C ABI in all public interfaces, and improper code organization
 which could not be easily refactored in place. `cbof` is the result of that redevelopment though it does reuse a
@@ -20,9 +22,9 @@ substantial amount of code from Charlotte Core. A fork of Charlotte Core is avai
 
 ### Target Platforms
 
-- x86-64 PCs with UEFI and ACPI (Under active development)
-- Aarch64 devices with UEFI and ACPI (Planned)
-- RISC-V64 devices with UEFI and ACPI (Possible)
+- x86_64-unknown-none
+- aarch64-unknown-none
+  - Firmware must support either UEFI and ACPI or EBBR
 
 #### Building
 
@@ -80,7 +82,7 @@ further reference [Qemu GDB docs](https://qemu-project.gitlab.io/qemu/system/gdb
 
 ### Documentation
 
-Detailed documentation will eventually be available in this repository's GitHub wiki and at CharlotteOS's website: https://www.charlotte-os.org/
+Detailed documentation will eventually be available in this repository's GitHub wiki and at [CharlotteOS's website](https://www.charlotte-os.org/).
 
 ### Contributing
 
