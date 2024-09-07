@@ -18,7 +18,6 @@ mod uart;
 use core::fmt::Write;
 use cpu_control::{CpuControl, CpuControlIfce};
 
-
 /// # The kernel entry point
 /// This function is the entry point for the kernel. It is called by the bootloader.
 /// ## Returns
@@ -38,7 +37,7 @@ pub extern "C" fn main() -> ! {
 
     /*Intialize the system here*/
 
-    // halt the BSP 
+    // halt the BSP
     // This is a placeholder until a thread scheduler is implemented
     // Once a scheduler is available the BSP will be handed off to it at this point
     CpuControlIfce::halt()
