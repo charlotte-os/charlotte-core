@@ -16,6 +16,12 @@ ovmf-x86_64:
 	mkdir -p ovmf-x86_64
 	cd ovmf-x86_64 && curl -o OVMF.fd https://retrage.github.io/edk2-nightly/bin/RELEASEX64_OVMF.fd
 
+build-x86_64-docs:
+	cd cbof && cargo doc --target x86_64-unknown-none --no-deps --document-private-items
+
+open-x86_64-docs: build-x86_64-docs
+	xdg-open cbof/target/x86_64-unknown-none/doc/cbof/index.html
+
 build-x86_64-debug: limine
 	cd cbof && cargo build --target x86_64-unknown-none
 	rm -rf iso_root
