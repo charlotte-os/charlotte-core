@@ -1,10 +1,6 @@
-mod isa;
+///! # CPU Control
+///! An interface used to control the state of the calling LP in an architecture agnostic manner
 
-pub trait CpuControl {
-    fn enable_interrupts();
-    fn disable_interrupts();
-    fn halt() -> !;
-}
+pub mod isa;
+pub use isa::*;
 
-#[cfg(target_arch = "x86_64")]
-pub type CpuControlIfce = isa::x86_64::CpuControlX86_64;

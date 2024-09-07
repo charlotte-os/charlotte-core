@@ -3,6 +3,7 @@ use core::ops::Add;
 
 /// The standard IO ports for the serial ports on the PC platform
 #[allow(unused)]
+#[repr(C)]
 pub enum ComPort {
     COM1 = 0x3F8,
     COM2 = 0x2F8,
@@ -16,7 +17,7 @@ pub enum ComPort {
 
 /// A struct representing an IO port
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[repr(transparent)]
+#[repr(C)]
 pub struct IoPort {
     port: u16,
 }
@@ -27,13 +28,13 @@ impl IoPort {
     /// * `port` - The port number
     /// ## Returns
     /// A new IoPort struct
-    pub fn new(port: u16) -> Self {
+    pub extern "C" fn new(port: u16) -> Self {
         IoPort { port }
     }
     /// # Read a byte from an IO port
     /// ## Returns
     /// The byte read from the port
-    pub unsafe fn read(&self) -> u8 {
+    pub unsafe extern "C" fn read(&self) -> u8 {
         let result: u8;
         unsafe {
             asm!("in al, dx",
@@ -46,7 +47,7 @@ impl IoPort {
     /// ## Arguments
     /// * `&self` - The IO port to write to
     /// * `value` - The byte to write to the port
-    pub unsafe fn write(&self, value: u8) {
+    pub unsafe extern "C" fn write(&self, value: u8) {
         unsafe {
             asm!("out dx, al",
                 in("dx") self.port,
@@ -56,7 +57,7 @@ impl IoPort {
     /// # Get the port number
     /// ## Returns
     /// The port number
-    pub fn number(&self) -> u16 {
+    pub extern "C" fn number(&self) -> u16 {
         self.port
     }
 }
@@ -64,6 +65,7 @@ impl IoPort {
 /// A struct representing a serial port address
 /// This can be either a memory-mapped IO address (linear address) or an IO port
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(C)]
 pub enum SerialAddr {
     Mmio(*mut u8),
     IoPort(IoPort),
@@ -73,7 +75,7 @@ impl SerialAddr {
     /// # Read a byte from the given address or IO port
     /// ## Returns
     /// The byte read from the address or port
-    pub fn read(&mut self) -> u8 {
+    pub unsafe extern "C" fn read(&mut self) -> u8 {
         match self {
             SerialAddr::Mmio(addr) => unsafe { addr.read_volatile() },
             SerialAddr::IoPort(port) => unsafe { port.read() },
@@ -83,11 +85,14 @@ impl SerialAddr {
     /// ## Arguments
     /// * `&mut self` - The address or port to write to
     /// * `value` - The byte to write to the address or port
-    pub fn write(&mut self, value: u8) {
+    pub unsafe extern "C" fn write(&mut self, value: u8) {
         match self {
             SerialAddr::Mmio(addr) => unsafe { addr.write_volatile(value) },
             SerialAddr::IoPort(port) => unsafe { port.write(value) },
         }
+    }
+    pub extern "C" fn offset(self, offset: u16) -> SerialAddr {
+        self + offset
     }
 }
 

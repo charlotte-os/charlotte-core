@@ -1,27 +1,26 @@
-use limine::smp::Cpu;
-use x86_64::instructions::hlt;
+///! x86_64 implementation of the CPU control interface
 
-use crate::cpu_control::CpuControl;
+use core::arch::asm;
 
-pub struct CpuControlX86_64;
 
-impl CpuControl for CpuControlX86_64 {
-    #[inline]
-    fn enable_interrupts() {
-        unsafe {
-            x86_64::instructions::interrupts::enable();
-        }
+#[inline(always)]
+pub extern "C" fn enable_interrupts() {
+    unsafe {
+        asm!("sti");
     }
-    #[inline]
-    fn disable_interrupts() {
-        unsafe {
-            x86_64::instructions::interrupts::disable();
-        }
+}
+#[inline(always)]
+pub extern "C" fn disable_interrupts() {
+    unsafe {
+        asm!("cli");
     }
-    #[inline]
-    fn halt() -> ! {
-        loop {
-            hlt();
+}
+#[inline(always)]
+pub extern "C" fn halt() -> ! {
+    loop {
+        unsafe {
+            asm!("hlt");
         }
     }
 }
+
