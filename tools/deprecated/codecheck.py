@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Code sanity checker for charlotte_core"""
+"""Code sanity checker for cbof"""
 
 import os
 import subprocess
@@ -36,7 +36,7 @@ def check_style():
                 "fmt",
                 "--check",
                 "--manifest-path",
-                "charlotte_core/Cargo.toml",
+                "cbof/Cargo.toml",
             ],
             check=True,
             stderr=subprocess.PIPE,
@@ -50,7 +50,7 @@ def check_style():
 
 def check_code():
     """Check the project"""
-    grep_res = run_grep("allow(unused)", "./charlotte_core/src")
+    grep_res = run_grep("allow(unused)", "./cbof/src")
 
     for target in TARGETS:
         print(f"Checking target: {target}")
@@ -63,7 +63,7 @@ def check_code():
                     "--target",
                     target,
                     "--manifest-path",
-                    "charlotte_core/Cargo.toml",
+                    "cbof/Cargo.toml",
                 ],
                 check=True,
                 stderr=subprocess.PIPE,

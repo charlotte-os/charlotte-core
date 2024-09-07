@@ -50,7 +50,7 @@ Follow the steps in the `Building` section above, replacing `make run-x86_64-deb
 this is because it's waiting for gdb to connect, on linux this can be achieved by in another terminal running:
 
 ```bash
-gdb charlotte_core/target/x86_64-unknown-none/debug/charlotte_core
+gdb cbof/target/x86_64-unknown-none/debug/cbof
 ```
 
 and once gdb is open:

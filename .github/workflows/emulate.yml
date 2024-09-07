@@ -29,6 +29,6 @@ jobs:
           components: clippy, rustfmt
           rustflags: -W warnings
           cache: true
-          cache-workspaces: ./charlotte_core
+          cache-workspaces: ./cbof
       - name: Run Charlotte OS on ${{ matrix.arch }} emulator
         run: make run-${{ matrix.arch }}-debug

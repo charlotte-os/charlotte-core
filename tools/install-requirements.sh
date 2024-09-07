@@ -41,7 +41,7 @@ wrapper() {
 install_rust_nightly() {
     printf "[    ] Rust nightly toolchain:\n"
     # Test if the nightly toolchain is not already installed, if it is leave it alone
-    cd charlotte_core || exit 1
+    cd cbof || exit 1
     if [ "$(rustc --version | grep nightly)" = '' ]; then
       wrapper "    Nightly not found, it will be installed now"
       wrapper "    Download Rust installer" $(curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs >> /tmp/rust-installer.sh)
