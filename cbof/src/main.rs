@@ -10,6 +10,7 @@ mod graphics;
 mod interrupts;
 mod memory;
 mod monitor;
+mod acpi;
 // Only include  and run the self-test batteries in debug builds
 #[cfg(debug_assertions)]
 mod self_test_batteries;
