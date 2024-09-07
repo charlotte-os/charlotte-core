@@ -40,7 +40,6 @@ dependencies = [
  "ignore-result",
  "limine",
  "spin",
- "uart",
  "walkdir",
  "x86_64",
 ]
@@ -166,16 +165,6 @@ name = "tock-registers"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "696941a0aee7e276a165a978b37918fd5d22c55c3d6bda197813070ca9c0f21c"
-
-[[package]]
-name = "uart"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf797cf07dd88b21255bcc3b1bb84606e9bae30e4f5b61e22e2565bdafa3e309"
-dependencies = [
- "bit_field",
- "bitflags",
-]
 
 [[package]]
 name = "unicode-ident"
