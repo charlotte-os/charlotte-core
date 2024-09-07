@@ -3,6 +3,7 @@
 #![warn(missing_copy_implementations)]
 #![feature(naked_functions)]
 
+mod acpi;
 mod boot_protocol;
 pub mod common;
 mod cpu_control;
@@ -10,7 +11,6 @@ mod graphics;
 mod interrupts;
 mod memory;
 mod monitor;
-mod acpi;
 // Only include  and run the self-test batteries in debug builds
 #[cfg(debug_assertions)]
 mod self_test_batteries;
