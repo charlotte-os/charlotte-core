@@ -24,7 +24,9 @@ substantial amount of code from Charlotte Core. A fork of Charlotte Core is avai
 
 - x86_64-unknown-none
 - aarch64-unknown-none
-  - Firmware must support either UEFI and ACPI or EBBR
+- riscv64gc-unknown-none-elf
+
+* Device firmware is required to either implement both UEFI and ACPI or the EBBR standard on all targets
 
 #### Building
 
