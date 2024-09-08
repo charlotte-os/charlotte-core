@@ -3,6 +3,7 @@
 #![warn(missing_copy_implementations)]
 #![feature(naked_functions)]
 
+mod acpi;
 mod boot_protocol;
 pub mod common;
 mod cpu_control;

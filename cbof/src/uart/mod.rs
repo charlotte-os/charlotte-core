@@ -1,11 +1,13 @@
 pub mod isa;
 
-use core::{ffi::c_int, fmt::{self, Write}};
+use core::{
+    ffi::c_int,
+    fmt::{self, Write},
+};
 
 pub use isa::*;
 
 use crate::common::c_abi;
-
 
 #[repr(C)]
 pub enum Error {
@@ -35,7 +37,7 @@ impl SerialPort {
             },
             SerialAddr::IoPort(port) => SerialPort {
                 base: SerialAddr::IoPort(port),
-            }
+            },
         };
         // Safety: The serial port is tested before being returned
         // Writes to these ports could do anything if the base is invalid
@@ -66,9 +68,7 @@ impl SerialPort {
     /// Non-zero if the buffer is empty, zero if it is not
     fn is_transmit_empty(&self) -> i32 {
         // Safety: The serial port is tested in the constructor
-        unsafe {
-            ((self.base + 5).read() & 0x20).into()
-        }
+        unsafe { ((self.base + 5).read() & 0x20).into() }
     }
     /// # Check if data has been received
     /// ## Returns
@@ -77,9 +77,7 @@ impl SerialPort {
     /// in the line status register
     fn received(&self) -> bool {
         // Safety: The serial port is tested in the constructor
-        unsafe {
-            ((self.base + 5).read() & 1) != 0
-        }
+        unsafe { ((self.base + 5).read() & 1) != 0 }
     }
     /// # Write a null-terminated C string to the serial port
     /// ## Arguments

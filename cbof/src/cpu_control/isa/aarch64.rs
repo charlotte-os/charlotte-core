@@ -1,5 +1,4 @@
 ///! aarch64 implementation of the CPU control interface
-
 use core::arch::asm;
 
 /// # Enable interrupts
