@@ -3,19 +3,19 @@
 #![warn(missing_copy_implementations)]
 #![feature(naked_functions)]
 
-mod boot_protocol;
+mod boot_info;
 pub mod common;
 mod cpu_control;
+mod framebuffer;
 mod graphics;
 mod interrupts;
+mod logging;
 mod memory;
 mod monitor;
 // Only include  and run the self-test batteries in debug builds
 #[cfg(debug_assertions)]
 mod self_test_batteries;
 mod uart;
-
-use core::fmt::Write;
 
 /// # The kernel entry point
 /// This function is the entry point for the kernel. It is called by the bootloader.
@@ -26,18 +26,7 @@ use core::fmt::Write;
 pub extern "C" fn main() -> ! {
     // This function is the entry point, since the linker looks for a function
     // named `main` because of the linker script.
-
-    // Create a serial port and use it for logging
-    let mut com =
-        // Safety: The conventional COM1 serial port IO port range is known to be valid on the PC platform
-        unsafe {
-            uart::SerialPort::try_new(uart::SerialAddr::IoPort(uart::IoPort::new(
-                uart::ComPort::COM1 as u16,
-            )))
-            .unwrap()
-        };
-    writeln!(com, "Entered cbof").unwrap();
-
+    logln!("Entered cbof!");
     /*Intialize the system here*/
 
     // halt the BSP

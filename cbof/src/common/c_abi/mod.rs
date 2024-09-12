@@ -1,3 +1,5 @@
+use core::panic;
+
 ///! This module contains the C ABI types and functions used to make calls across
 ///! C ABI boundaries
 
@@ -16,6 +18,14 @@ impl<T, E> Result<T, E> {
         match self {
             Result::Ok(val) => val,
             Result::Err(_) => panic!("Called unwrap on an Err value"),
+        }
+    }
+
+    pub fn expect(self, msg: &'static str) -> T {
+        if let Self::Ok(val) = self {
+            val
+        } else {
+            panic!("{}", msg)
         }
     }
 }

@@ -1,13 +1,12 @@
 pub mod isa;
 
-use core::{ffi::c_int, fmt::{self, Write}};
+use core::fmt::{self, Write};
 
 pub use isa::*;
 
 use crate::common::c_abi;
 
-
-#[repr(C)]
+#[derive(Debug)]
 pub enum Error {
     None,
     InvalidPort,
@@ -28,15 +27,8 @@ impl SerialPort {
     /// * `base` - The base address of the serial port
     /// ## Returns
     /// A new SerialPort if successful, otherwise None
-    pub unsafe extern "C" fn try_new(base: SerialAddr) -> c_abi::Result<SerialPort, Error> {
-        let mut port = match base {
-            SerialAddr::Mmio(ptr) => SerialPort {
-                base: SerialAddr::Mmio(ptr),
-            },
-            SerialAddr::IoPort(port) => SerialPort {
-                base: SerialAddr::IoPort(port),
-            }
-        };
+    pub unsafe fn try_new(base: SerialAddr) -> Result<SerialPort, Error> {
+        let mut port = SerialPort { base: base };
         // Safety: The serial port is tested before being returned
         // Writes to these ports could do anything if the base is invalid
         // thus this entire function is unsafe
@@ -53,11 +45,11 @@ impl SerialPort {
 
             if port.base.read() != 0xAE {
                 // If self-test failed, return an error
-                c_abi::Result::Err(Error::SerialPortSelfTestFailed)
+                Err(Error::SerialPortSelfTestFailed)
             } else {
                 // If self-test passed, set normal operation mode
                 (port.base + 4).write(0x0F);
-                c_abi::Result::Ok(port)
+                Ok(port)
             }
         }
     }
@@ -66,9 +58,7 @@ impl SerialPort {
     /// Non-zero if the buffer is empty, zero if it is not
     fn is_transmit_empty(&self) -> i32 {
         // Safety: The serial port is tested in the constructor
-        unsafe {
-            ((self.base + 5).read() & 0x20).into()
-        }
+        unsafe { ((self.base + 5).read() & 0x20).into() }
     }
     /// # Check if data has been received
     /// ## Returns
@@ -77,9 +67,7 @@ impl SerialPort {
     /// in the line status register
     fn received(&self) -> bool {
         // Safety: The serial port is tested in the constructor
-        unsafe {
-            ((self.base + 5).read() & 1) != 0
-        }
+        unsafe { ((self.base + 5).read() & 1) != 0 }
     }
     /// # Write a null-terminated C string to the serial port
     /// ## Arguments

@@ -1,9 +1,23 @@
 use core::arch::asm;
 use core::ops::Add;
 
+use super::super::SerialPort;
+
+use spin::Lazy;
+use spin::Mutex;
+
+pub static com1: Lazy<Mutex<SerialPort>> = Lazy::new(||
+    Mutex::new(
+        unsafe {
+            SerialPort::try_new(SerialAddr::IoPort(IoPort::new(ComPort::COM1 as u16)))
+                .expect("Failed to initialize COM1 serial port!")
+        }
+    )
+);
+
 /// The standard IO ports for the serial ports on the PC platform
-#[allow(unused)]
-#[repr(C)]
+#[derive(Debug)]
+#[repr(u16)]
 pub enum ComPort {
     COM1 = 0x3F8,
     COM2 = 0x2F8,
@@ -62,12 +76,31 @@ impl IoPort {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+struct MmioRegister {
+    vaddr: usize,
+}
+
+impl From<*mut u8> for MmioRegister {
+    fn from(value: *mut u8) -> Self {
+        MmioRegister {
+            vaddr: value as usize,
+        }
+    }
+}
+
+impl From<MmioRegister> for *mut u8 {
+    fn from(value: MmioRegister) -> Self {
+        value.vaddr as *mut u8
+    }
+}
+
 /// A struct representing a serial port address
 /// This can be either a memory-mapped IO address (linear address) or an IO port
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(C)]
 pub enum SerialAddr {
-    Mmio(*mut u8),
+    Mmio(MmioRegister),
     IoPort(IoPort),
 }
 
@@ -77,7 +110,7 @@ impl SerialAddr {
     /// The byte read from the address or port
     pub unsafe extern "C" fn read(&mut self) -> u8 {
         match self {
-            SerialAddr::Mmio(addr) => unsafe { addr.read_volatile() },
+            SerialAddr::Mmio(addr) => unsafe { <*mut u8>::from(*addr).read_volatile() },
             SerialAddr::IoPort(port) => unsafe { port.read() },
         }
     }
@@ -87,7 +120,7 @@ impl SerialAddr {
     /// * `value` - The byte to write to the address or port
     pub unsafe extern "C" fn write(&mut self, value: u8) {
         match self {
-            SerialAddr::Mmio(addr) => unsafe { addr.write_volatile(value) },
+            SerialAddr::Mmio(addr) => unsafe { <*mut u8>::from(*addr).write_volatile(value) },
             SerialAddr::IoPort(port) => unsafe { port.write(value) },
         }
     }
@@ -108,7 +141,7 @@ impl Add<u16> for SerialAddr {
     fn add(self, rhs: u16) -> Self::Output {
         match self {
             SerialAddr::Mmio(addr) => {
-                SerialAddr::Mmio((addr as *mut u8).wrapping_add(rhs as usize))
+                SerialAddr::Mmio(<*mut u8>::from(addr).wrapping_add(rhs as usize).into())
             }
             SerialAddr::IoPort(port) => SerialAddr::IoPort(IoPort::new(port.number() + rhs)),
         }
