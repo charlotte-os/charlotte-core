@@ -1,7 +1,7 @@
 use core::fmt;
 use spin::mutex::TicketMutex;
 
-use crate::framebuffer::{
+use crate::graphics::framebuffer::{
     chars::{FONT_HEIGHT, FONT_WIDTH},
     colors::Color,
     framebuffer::FRAMEBUFFER,
@@ -249,7 +249,6 @@ impl fmt::Write for Console {
         Ok(())
     }
 }
-
 
 /// Print to the kernel console
 #[macro_export]

@@ -1,7 +1,7 @@
 use core::sync::atomic::{AtomicPtr, Ordering};
 
 use crate::boot_info::FRAMEBUFFER_REQUEST;
-use crate::framebuffer::chars::{FONT, FONT_HEIGHT, FONT_WIDTH};
+use crate::graphics::framebuffer::chars::{FONT, FONT_HEIGHT, FONT_WIDTH};
 // External crate for bootloader-specific functions and types.
 extern crate limine;
 use limine::framebuffer::Framebuffer;

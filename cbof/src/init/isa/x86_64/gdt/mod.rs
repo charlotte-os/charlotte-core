@@ -1,7 +1,15 @@
-mod gdt;
+//! # Global Descriptor Table (GDT)
+//!
+//! The GDT is a table of segment descriptors that the CPU uses to determine the memory access rights of a segment. In long mode,
+//! the GDT is still used to define the memory access rights of the segments, but the base and limit fields are ignored.
+//! It also contains a Task State Segment (TSS) descriptor that points to a structure used to store the stack pointer for each privilege
+//! level, the Interrupt Stack Table (IST) and the IO permission bitmap which is used to restrict access to IO ports from userspace.
+//! This kernel does not use the IST so it is zeroed out. The IOPB initially does not allow any IO ports to be accessed from userspace
+//! however it can and will be used to allow userspace drivers to access IO ports as part of the context switch process.
+
 pub mod tss;
 
-use core::{mem::size_of, ptr};
+use core::{arch::global_asm, mem::size_of, ptr};
 
 use tss::Tss;
 
@@ -119,6 +127,10 @@ impl Gdt {
             asm_load_tss();
         }
     }
+}
+
+global_asm! {
+    include_str!("gdt.asm")
 }
 
 extern "C" {

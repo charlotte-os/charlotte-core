@@ -3,8 +3,6 @@
 
 use core::panic;
 
-
-
 /// C ABI compatible Result type
 #[repr(C)]
 pub enum Result<T, E> {

@@ -6,14 +6,12 @@ use super::super::SerialPort;
 use spin::Lazy;
 use spin::Mutex;
 
-pub static com1: Lazy<Mutex<SerialPort>> = Lazy::new(||
-    Mutex::new(
-        unsafe {
-            SerialPort::try_new(SerialAddr::IoPort(IoPort::new(ComPort::COM1 as u16)))
-                .expect("Failed to initialize COM1 serial port!")
-        }
-    )
-);
+pub static com1: Lazy<Mutex<SerialPort>> = Lazy::new(|| {
+    Mutex::new(unsafe {
+        SerialPort::try_new(SerialAddr::IoPort(IoPort::new(ComPort::COM1 as u16)))
+            .expect("Failed to initialize COM1 serial port!")
+    })
+});
 
 /// The standard IO ports for the serial ports on the PC platform
 #[derive(Debug)]

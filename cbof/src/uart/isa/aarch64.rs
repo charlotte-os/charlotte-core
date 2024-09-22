@@ -3,7 +3,7 @@
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct SerialAddr {
-    addr: u64
+    addr: u64,
 }
 
 impl SerialAddr {
@@ -38,4 +38,3 @@ impl core::ops::Add<usize> for SerialAddr {
         SerialAddr::new(self.addr + rhs as u64)
     }
 }
-

@@ -7,7 +7,7 @@ macro_rules! log {
         use core::fmt::Write;
         use ignore_result::Ignore;
 
-        write!(crate::framebuffer::console::CONSOLE.lock(), "{}", format_args!($($arg)*)).ignore();
+        write!(crate::graphics::framebuffer::console::CONSOLE.lock(), "{}", format_args!($($arg)*)).ignore();
         #[cfg(target_arch = "x86_64")]
         write!(crate::uart::com1.lock(), "{}", format_args!($($arg)*)).ignore();
     }};
@@ -19,7 +19,7 @@ macro_rules! logln {
         use core::fmt::Write;
         use ignore_result::Ignore;
 
-        writeln!(crate::framebuffer::console::CONSOLE.lock(), "{}", format_args!($($arg)*)).ignore();
+        writeln!(crate::graphics::framebuffer::console::CONSOLE.lock(), "{}", format_args!($($arg)*)).ignore();
         #[cfg(target_arch = "x86_64")]
         writeln!(crate::uart::com1.lock(), "{}", format_args!($($arg)*)).ignore();
     }};
