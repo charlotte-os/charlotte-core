@@ -1,7 +1,11 @@
+//! # The CBOF kernel
+
 #![no_std]
 #![no_main]
 #![warn(missing_copy_implementations)]
+#![deny(missing_docs)]
 #![feature(naked_functions)]
+#![feature(trivial_bounds)]
 
 mod boot_info;
 pub mod common;

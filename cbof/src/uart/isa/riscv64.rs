@@ -38,4 +38,3 @@ impl core::ops::Add<usize> for SerialAddr {
         SerialAddr::new(self.addr + rhs as u64)
     }
 }
-

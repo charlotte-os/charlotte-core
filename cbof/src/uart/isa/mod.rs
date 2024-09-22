@@ -11,8 +11,8 @@ cfg_if! {
         mod aarch64;
         pub use aarch64::*;
     } else if #[cfg(target_arch = "riscv64")] {
-/*         mod riscv64;
-        pub use riscv64::*; */
+        mod riscv64;
+        pub use riscv64::*;
     } else {
         compile_error!("Unsupported target architecture");
     }

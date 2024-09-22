@@ -250,6 +250,8 @@ impl fmt::Write for Console {
     }
 }
 
+
+/// Print to the kernel console
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {
@@ -257,7 +259,7 @@ macro_rules! print {
         CONSOLE.lock().clear_inner_styling();
     }
 }
-
+/// Print to the kernel console with a newline
 #[macro_export]
 macro_rules! println {
     ($($arg:tt)*) => {

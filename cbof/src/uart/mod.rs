@@ -7,6 +7,7 @@ pub use isa::*;
 use crate::common::c_abi;
 
 #[derive(Debug)]
+#[repr(u8)]
 pub enum Error {
     None,
     InvalidPort,
@@ -15,8 +16,8 @@ pub enum Error {
 }
 
 /// A struct representing a serial port controlled by a UART
-#[derive(Debug, Clone, Copy)]
 #[repr(C)]
+#[derive(Debug, Clone, Copy)]
 pub struct SerialPort {
     base: SerialAddr,
 }
@@ -27,7 +28,7 @@ impl SerialPort {
     /// * `base` - The base address of the serial port
     /// ## Returns
     /// A new SerialPort if successful, otherwise None
-    pub unsafe fn try_new(base: SerialAddr) -> Result<SerialPort, Error> {
+    pub unsafe extern "C" fn try_new(base: SerialAddr) -> c_abi::Result<SerialPort, Error> {
         let mut port = SerialPort { base: base };
         // Safety: The serial port is tested before being returned
         // Writes to these ports could do anything if the base is invalid
@@ -45,11 +46,11 @@ impl SerialPort {
 
             if port.base.read() != 0xAE {
                 // If self-test failed, return an error
-                Err(Error::SerialPortSelfTestFailed)
+                c_abi::Result::Err(Error::SerialPortSelfTestFailed)
             } else {
                 // If self-test passed, set normal operation mode
                 (port.base + 4).write(0x0F);
-                Ok(port)
+                c_abi::Result::Ok(port)
             }
         }
     }

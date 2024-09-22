@@ -20,6 +20,7 @@ ignore-result = ">=0.2.0"
 limine = ">=0.3.0"
 spin = { version = ">=0.9.8", features = ["ticket_mutex"] }
 
+
 [target.'cfg(target_arch = "x86_64")'.dependencies]
 x86_64 = "*"
 
@@ -39,7 +40,7 @@ perf = { level = "deny", priority = -1 }
 complexity = { level = "warn", priority = -1 }
 style = { level = "warn", priority = -1 }
 
-undocumented_unsafe_blocks = { level = "warn" }
+undocumented_unsafe_blocks = { level = "deny" }
 
 # Relax some lints because we don't support 32-bit targets
 enum_clike_unportable_variant = { level = "allow", priority = -10 }
