@@ -1,32 +1,28 @@
-# `cbof`
+# `Charlotte Core`
 
 ## The Kernel of CharlotteOS
 
 ![Testing](https://github.com/charlotte-os/charlotte-core/actions/workflows/test_code.yml/badge.svg)
 ![Vulnerability](https://github.com/charlotte-os/charlotte-core/actions/workflows/cron_report.yml/badge.svg)
 
-`cbof` is the kernel of CharlotteOS. It is a monolithic kernel that is designed to provide a flexible and low level interface to program running ontop of it.
+`Charlotte Core` is the kernel of CharlotteOS. It is a hybrid kernel that is designed to provide a flexible and low level interface to software running ontop of it.
 
 ### Status
 
-`cbof` is the successor to Charlotte Core our previous kernel in development. The kernel was redeveloped due to a
-lack of sufficient modularity, compatibility with the C ABI in all public interfaces, and improper code organization
-which could not be easily refactored in place. `cbof` is the result of that redevelopment though it does reuse a
-substantial amount of code from Charlotte Core. A fork of Charlotte Core is available as an archive in the CharlotteOS GitHub organization.
+`Charlotte Core` is the successor to Charlotte Core our previous kernel in development. The kernel was redeveloped due to a
+lack of sufficient modularity and improper code organization which could not be easily refactored in place. `Charlotte Core` as it exists today is the result of that redevelopment though it does reuse a substantial amount of code from it's previous incarnation. A fork of the old Charlotte Core is available as an archive in the CharlotteOS GitHub organization.
 
-`cbof` is in very early development and does not yet support a userspace. Run it at your own risk.
+`Charlotte Core` is in very early development and does not yet support a userspace. Run it at your own risk.
 
 ### Implementation Languages
 
-`cbof` is written in Rust and Assembly language
+`Charlotte Core` is written in Rust and Assembly language
 
 ### Target Platforms
 
-- x86_64-unknown-none
-- aarch64-unknown-none
-- riscv64gc-unknown-none-elf
+- x86_64 devices with UEFI and ACPI
+- RISC-V64GC devices with either UEFI and ACPI or the standard RISC-V bootflow using U-Boot and SBI
 
-* Device firmware is required to either implement both UEFI and ACPI or the EBBR standard on all targets
 
 #### Building
 
@@ -44,7 +40,7 @@ make run-x86_64-debug    # For testing a debug build in qemu
 make run-x86_64-release  # For testing a release build in qemu
 ```
 
-The `x86_64` portion of any of the previous commands can be replaced with `aarch64` or `riscv64` to build the kernel for the Arm and RISC-V architectures respectively however it should be noted that support for these ISAs is much less complete than for x86_64 for the time being.
+The `x86_64` portion of any of the previous commands can be replaced with `riscv64` to build the kernel for the RISC-V architecture.
 
 #### GDB debug probe
 
