@@ -1,6 +1,10 @@
 use core::arch::asm;
 use core::ptr::addr_of;
 
+use spin::{Lazy, Mutex};
+
+pub static BSP_IDT: Lazy<Mutex<Idt>> = Lazy::new(|| Mutex::new(Idt::new()));
+
 #[derive(Debug)]
 #[repr(C, align(16))]
 pub struct Idt {
@@ -100,7 +104,8 @@ impl Idtr {
 }
 
 unsafe fn asm_load_idt(idtr: &Idtr) {
-    asm!("\
-        lidt [{}]
-    ", in(reg) idtr);
+    asm!(
+        "lidt [{}]",
+        in(reg) idtr
+    );
 }

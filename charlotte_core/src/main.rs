@@ -51,7 +51,17 @@ pub extern "C" fn main() -> ! {
 
 /// # The panic handler
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
-    //TODO: Halt all LPs and print panic message
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    if let Some(location) = info.location() {
+        logln!("panic occurred in file '{}' at line {} with massage: '{}'",
+            location.file(),
+            location.line(),
+            info.message()
+        );
+    } else {
+        logln!("panic occurred from an unknown location with message: '{}'",
+            info.message()
+        );
+    }
     cpu_control::halt()
 }

@@ -1,3 +1,3 @@
 //! Common components to be used throughout the kernel
+pub mod isa;
 
-pub mod c_abi;

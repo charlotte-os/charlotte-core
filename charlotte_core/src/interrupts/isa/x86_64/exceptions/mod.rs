@@ -1,13 +1,9 @@
 mod exceptions;
 
-use core::fmt::Write;
+use crate::logln;
 
-use ignore_result::Ignore;
+use super::idt::*;
 
-use super::serial::{ComPort::COM1, SerialPort};
-use crate::arch::x86_64::idt::*;
-
-use crate::arch::*;
 
 pub fn load_exceptions(idt: &mut Idt) {
     idt.set_gate(0, isr_divide_by_zero, 1 << 3, true, true);
@@ -65,238 +61,156 @@ extern "C" {
 
 #[no_mangle]
 extern "C" fn ih_double_fault(_error_code: u64) {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(&mut logger, "A double fault has occurred! Panicking!").ignore();
-    ArchApi::panic();
+    logln!("A double fault has occurred! Panicking!");
+    panic!("A double fault has occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_divide_by_zero() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "A divide by zero has occurred in kernelspace! Panicking!"
-    )
-    .ignore();
+    logln!("A divide by zero has occurred in kernelspace! Panicking!");
+    panic!("A divide by zero has occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_general_protection_fault(error_code: u64, rip: u64) {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
     let rip_adjusted = 0xffffffff80000000 - rip;
     if error_code != 0 {
-        writeln!(
-            &mut logger,
+        logln!(
             "A general protection fault has occurred in kernel space with error code {:X}! Panicking!
             this is usually the segment selector that caused the fault. RIP = {:X}",
             error_code, rip_adjusted
-        )
-            .ignore();
+        );
     } else {
-        writeln!(
-            &mut logger,
-            "A general protection fault has occurred in kernelspace! Panicking!
-            RIP = {:X}",
-            rip_adjusted,
-        )
-        .ignore();
+        logln!(
+            "A general protection fault has occurred in kernel space! Panicking! RIP = {:X}",
+            rip_adjusted
+        );
     }
+    panic!("A general protection fault has occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_page_fault(error_code: u64) {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "A page fault has occurred with error code {:32b}",
-        error_code
-    )
-    .ignore();
+    logln!("A page fault has occurred with error code {:32b}", error_code);
+    panic!("A page fault has occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_segment_not_present(error_code: u64) {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "Segment Not Present Fault: error code {:x}",
-        error_code
-    )
-    .ignore();
+    logln!("Segment Not Present Fault: error code {:x}", error_code);
+    panic!("Segment Not Present Fault has occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_debug() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(&mut logger, "Debug Exception Occurred!").ignore();
+    logln!("Debug Exception Occurred!");
+    panic!("Debug Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_non_maskable_interrupt() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(&mut logger, "Non-maskable Interrupt Occurred!").ignore();
+    logln!("Non-maskable Interrupt Occurred!");
+    panic!("Non-maskable Interrupt Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_breakpoint() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(&mut logger, "Breakpoint Exception Occurred!").ignore();
+    logln!("Breakpoint Exception Occurred!");
+    panic!("Breakpoint Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_overflow() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(&mut logger, "Overflow Exception Occurred!").ignore();
+    logln!("Overflow Exception Occurred!");
+    panic!("Overflow Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_bound_range_exceeded() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(&mut logger, "Bound Range Exceeded Exception Occurred!").ignore();
+    logln!("Bound Range Exceeded Exception Occurred!");
+    panic!("Bound Range Exceeded Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_invalid_opcode() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(&mut logger, "Invalid Opcode Exception Occurred!").ignore();
+    logln!("Invalid Opcode Exception Occurred!");
+    panic!("Invalid Opcode Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_device_not_available() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(&mut logger, "Device Not Available Exception Occurred!").ignore();
+    logln!("Device Not Available Exception Occurred!");
+    panic!("Device Not Available Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_invalid_tss(error_code: u64) {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "Invalid TSS Exception Occurred! Error code: {:x}",
-        error_code
-    )
-    .ignore();
+    logln!("Invalid TSS Exception Occurred! Error code: {:x}", error_code);
+    panic!("Invalid TSS Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_stack_segment_fault(error_code: u64) {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "Stack-Segment Fault Occurred! Error code: {:x}",
-        error_code
-    )
-    .ignore();
+    logln!("Stack-Segment Fault Occurred! Error code: {:x}", error_code);
+    panic!("Stack-Segment Fault Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_reserved() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "Unexpected Reserved Vector 15 Exception Occurred!"
-    )
-    .ignore();
+    logln!("Unexpected Reserved Vector 15 Exception Occurred!");
+    panic!("Unexpected Reserved Vector 15 Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_x87_floating_point() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(&mut logger, "x87 Floating-Point Exception Occurred!").ignore();
+    logln!("x87 Floating-Point Exception Occurred!");
+    panic!("x87 Floating-Point Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_alignment_check(error_code: u64) {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "Alignment Check Exception Occurred! Error code: {:x}",
-        error_code
-    )
-    .ignore();
+    logln!("Alignment Check Exception Occurred! Error code: {:x}", error_code);
+    panic!("Alignment Check Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_machine_check() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "Machine Check Exception Occurred! System is halted for safety."
-    )
-    .ignore();
-    // After logging, the system might be halted by the assembly handler (ih_machine_check does not return).
+    logln!("Machine Check Exception Occurred! System is halted for safety.");
+    panic!("Machine Check Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_simd_floating_point() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(&mut logger, "SIMD Floating-Point Exception Occurred!").ignore();
+    logln!("SIMD Floating-Point Exception Occurred!");
+    panic!("SIMD Floating-Point Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_virtualization() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(&mut logger, "Virtualization Exception Occurred!").ignore();
+    logln!("Virtualization Exception Occurred!");
+    panic!("Virtualization Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_control_protection(error_code: u64) {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "Control Protection Exception Occurred! Error code: {:x}",
-        error_code
-    )
-    .ignore();
+    logln!("Control Protection Exception Occurred! Error code: {:x}", error_code);
+    panic!("Control Protection Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_hypervisor_injection() {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(&mut logger, "Hypervisor Injection Exception Occurred!").ignore();
+    logln!("Hypervisor Injection Exception Occurred!");
+    panic!("Hypervisor Injection Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_vmm_communication(error_code: u64) {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "VMM Communication Exception Occurred! Error code: {:x}",
-        error_code
-    )
-    .ignore();
+    logln!("VMM Communication Exception Occurred! Error code: {:x}", error_code);
+    panic!("VMM Communication Exception Occurred!");
 }
 
 #[no_mangle]
 extern "C" fn ih_security_exception(error_code: u64) {
-    let mut logger = SerialPort::try_new(COM1).unwrap();
-
-    writeln!(
-        &mut logger,
-        "Security Exception Occurred! Error code: {:x}",
-        error_code
-    )
-    .ignore();
+    logln!("Security Exception Occurred! Error code: {:x}", error_code);
+    panic!("Security Exception Occurred!");
 }

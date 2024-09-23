@@ -4,8 +4,6 @@ use core::fmt::{self, Write};
 
 pub use isa::*;
 
-use crate::common::c_abi;
-
 #[derive(Debug)]
 #[repr(u8)]
 pub enum Error {
@@ -28,7 +26,7 @@ impl SerialPort {
     /// * `base` - The base address of the serial port
     /// ## Returns
     /// A new SerialPort if successful, otherwise None
-    pub unsafe extern "C" fn try_new(base: SerialAddr) -> c_abi::Result<SerialPort, Error> {
+    pub unsafe extern "C" fn try_new(base: SerialAddr) -> Result<SerialPort, Error> {
         let mut port = SerialPort { base: base };
         // Safety: The serial port is tested before being returned
         // Writes to these ports could do anything if the base is invalid
@@ -46,11 +44,11 @@ impl SerialPort {
 
             if port.base.read() != 0xAE {
                 // If self-test failed, return an error
-                c_abi::Result::Err(Error::SerialPortSelfTestFailed)
+                Result::Err(Error::SerialPortSelfTestFailed)
             } else {
                 // If self-test passed, set normal operation mode
                 (port.base + 4).write(0x0F);
-                c_abi::Result::Ok(port)
+                Result::Ok(port)
             }
         }
     }
@@ -76,15 +74,15 @@ impl SerialPort {
     /// * `s` - The null-terminated C string to write
     /// ## Returns
     /// Ok(()) if successful, Err(Error::WriteFailed) otherwise
-    pub extern "C" fn write_cstr(&mut self, s: *const u8) -> c_abi::Result<(), Error> {
+    pub extern "C" fn write_cstr(&mut self, s: *const u8) -> Result<(), Error> {
         let mut i = 0;
         while unsafe { *s.add(i) } != 0 {
             if let Err(e) = self.write_char(unsafe { *s.add(i) } as char) {
-                return c_abi::Result::Err(Error::WriteFailed);
+                return Result::Err(Error::WriteFailed);
             }
             i += 1;
         }
-        c_abi::Result::Ok(())
+        Result::Ok(())
     }
 }
 
