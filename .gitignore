@@ -6,3 +6,4 @@ cbof/target/**
 log.txt
 limine
 .idea
+.vscode/**
