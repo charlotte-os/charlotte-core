@@ -35,7 +35,7 @@ use init::InitApi;
 pub extern "C" fn main() -> ! {
     // This function is the entry point, since the linker looks for a function
     // named `main` because of the linker script.
-    logln!("Entering cbof!");
+    logln!("Entering Charlotte Core!");
     /*Intialize the system*/
     logln!("Initializing system...");
     init::InitApiImpl::init_system();

@@ -1,1 +1,0 @@
-{"rustc":4970992720194516544,"features":"","declared_features":"","target":0,"profile":0,"path":0,"deps":[[3724066173518481949,"build_script_build",false,3912787341624564181]],"local":[{"RerunIfChanged":{"output":"x86_64-unknown-none/debug/build/charlotte_core-692464b87a1d55e9/output","paths":["linker/x86_64.ld","asm"]}}],"rustflags":[],"metadata":0,"config":0,"compile_kind":0}
