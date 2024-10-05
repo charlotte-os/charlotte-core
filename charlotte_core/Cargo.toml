@@ -15,7 +15,6 @@ panic = "abort"
 panic = "abort"
 
 [build-dependencies]
-cc = "*"
 walkdir = "*"
 
 [dependencies]

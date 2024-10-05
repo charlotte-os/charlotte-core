@@ -26,9 +26,17 @@ pub static LOGGER: Lazy<TicketMutex<Logger>> = Lazy::new(|| {
     })
 });
 
+pub enum MemType {
+    KernelReadWrite,
+    KernelReadOnly,
+    KernelReadExecute,
+}
+
 pub trait MemoryMap {
     type Error;
     type Flags;
+
+    fn get_flags(mem_type: MemType) -> Self::Flags;
 
     /// Loads the page map into the logical processor.
     unsafe fn load(&self) -> Result<(), Self::Error>;
@@ -118,13 +126,6 @@ pub trait MemoryMap {
 pub enum HwTimerMode {
     OneShot,
     Recurrent,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct PagingParams {
-    pub page_size: UAddr,
-    pub page_shift: UAddr,
-    pub page_mask: UAddr,
 }
 
 #[derive(Debug, Copy, Clone)]

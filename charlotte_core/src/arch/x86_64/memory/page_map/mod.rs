@@ -1,5 +1,6 @@
 pub mod page_table;
 
+use page_table::page_table_entry::PteFlags;
 use page_table::PageTable;
 
 use super::Error;
@@ -214,6 +215,29 @@ impl PageMap {
 impl MemoryMap for PageMap {
     type Error = Error;
     type Flags = u64;
+
+    fn get_flags(mem_type: crate::arch::MemType) -> Self::Flags {
+        match mem_type {
+            crate::arch::MemType::KernelReadWrite => {
+                PteFlags::PRESENT as u64
+                | PteFlags::WRITABLE as u64
+                | PteFlags::NO_EXECUTE as u64
+                | PteFlags::GLOBAL as u64
+                | PteFlags::WriteThrough as u64
+            },
+            crate::arch::MemType::KernelReadOnly => {
+                PteFlags::PRESENT as u64
+                | PteFlags::NO_EXECUTE as u64
+                | PteFlags::GLOBAL as u64
+                | PteFlags::WriteThrough as u64
+            },
+            crate::arch::MemType::KernelReadExecute => {
+                PteFlags::PRESENT as u64
+                | PteFlags::GLOBAL as u64
+                | PteFlags::WriteThrough as u64
+            },
+        }
+    }
 
     /// Loads the page map into the logical processor.
     unsafe fn load(&self) -> Result<(), Self::Error> {
