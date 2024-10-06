@@ -60,7 +60,7 @@ impl PageTableEntry {
         if self.is_present() == false {
             Err(Error::EntryNotPresent)
         } else {
-            Ok(PhysicalAddress::from(self.entry & *ADDR_MASK))
+            Ok(PhysicalAddress::from((self.entry & *ADDR_MASK) as usize))
         }
     }
 
@@ -70,7 +70,7 @@ impl PageTableEntry {
         } else if !paddr.is_page_aligned() {
             Err(Error::InvalidPAddrAlignment)
         } else {
-            self.entry = (paddr.bits() & *ADDR_MASK) | (flags & FLAG_MASK);
+            self.entry = (paddr.bits() as u64 & *ADDR_MASK) | (flags & FLAG_MASK);
             Ok(())
         }
     }
@@ -91,7 +91,7 @@ impl PageTableEntry {
             } else {
                 HUGE_AND_LARGE_PAGE_FLAG_MASK
             };
-            self.entry = (paddr.bits() & *ADDR_MASK) | (flags & flag_mask);
+            self.entry = (paddr.bits() as u64 & *ADDR_MASK) | (flags & flag_mask);
             Ok(())
         }
     }

@@ -49,7 +49,7 @@ static BSP_RING0_INT_STACK: [u8; 4096] = [0u8; 4096];
 static BSP_TSS: Lazy<Tss> = Lazy::new(|| Tss::new(addr_of!(BSP_RING0_INT_STACK) as u64));
 static BSP_GDT: Lazy<Gdt> = Lazy::new(|| Gdt::new(&BSP_TSS));
 static BSP_IDT: SpinMutex<Idt> = SpinMutex::new(Idt::new());
-pub const X86_ISA_PARAMS: IsaParams = IsaParams {
+pub const ISA_PARAMS: IsaParams = IsaParams {
     paging: PagingParams {
         page_size: 0x1000,
         page_shift: 0xC,
@@ -96,6 +96,12 @@ impl crate::arch::Api for Api {
         logln!("============================================================\n");
 
         api
+    }
+
+    #[inline]
+    fn get_memory_map() -> Self::MemoryMap {
+        memory::page_map::PageMap::from_cr3(memory::page_map::get_cr3())
+            .expect("unable to create a page map structure from the address in the current CR3 value")
     }
 
     /// Get a new logger instance
@@ -327,7 +333,7 @@ impl Api {
         };
 
         //map to the beginning of the higher half of the virtual address space i.e. the beginning of kernelspace
-        let vaddr = match VirtualAddress::try_from(0xFFFF800000000000) {
+        let vaddr = match VirtualAddress::try_from(0xFFFF800000000000usize) {
             Ok(vaddr) => vaddr,
             Err(e) => {
                 panic!("Failed to create VirtualAddress: {:?}", e);

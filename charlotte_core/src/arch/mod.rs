@@ -11,7 +11,7 @@ use core::result::Result;
 use spin::{lazy::Lazy, mutex::TicketMutex};
 
 use crate::framebuffer::console::CONSOLE;
-use crate::memory::address::{PhysicalAddress, UAddr, VirtualAddress};
+use crate::memory::address::{PhysicalAddress, VirtualAddress};
 
 #[cfg(target_arch = "aarch64")]
 pub mod aarch64;
@@ -118,7 +118,7 @@ pub trait MemoryMap {
     fn find_available_region(
         &self,
         size: NonZeroUsize,
-        alignment: UAddr,
+        alignment: usize,
         start: VirtualAddress,
         end: VirtualAddress,
     ) -> Result<VirtualAddress, Self::Error>;
@@ -133,6 +133,13 @@ pub struct IsaParams {
     pub paging: PagingParams,
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct PagingParams {
+    pub page_size: usize,
+    pub page_shift: usize,
+    pub page_mask: usize,
+}
+
 pub trait Api {
     type Api: Api;
     type DebugLogger: Write;
@@ -144,6 +151,7 @@ pub trait Api {
     /// * [X86_64](x86_64::Api::isa_init)
     fn isa_init() -> Self;
 
+    fn get_memory_map() -> Self::MemoryMap;
     fn get_logger() -> Self::DebugLogger;
     fn get_serial(&self) -> Self::Serial;
     fn get_paddr_width() -> u8;
@@ -217,8 +225,8 @@ pub type ArchApi = aarch64::Api;
 pub type ArchApi = riscv64::Api;
 
 #[cfg(target_arch = "x86_64")]
-pub const ISA_PARAMS: IsaParams = x86_64::X86_ISA_PARAMS;
+pub const ISA_PARAMS: IsaParams = x86_64::ISA_PARAMS;
 #[cfg(target_arch = "aarch64")]
-pub static MEMORY_PARAMS: PagingParams = aarch64::ISA_MEMORY_PARAMS;
+pub static ISA_PARAMS: IsaParams = aarch64::ISA_PARAMS;
 #[cfg(target_arch = "riscv64")]
-pub static MEMORY_PARAMS: PagingParams = riscv64::ISA_MEMORY_PARAMS;
+pub static ISA_PARAMS: IsaParams = riscv64::ISA_PARAMS;

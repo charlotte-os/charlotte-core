@@ -13,7 +13,7 @@ use core::ptr::addr_of_mut;
 use crate::arch::x86_64::cpu::ARE_HUGE_PAGES_SUPPORTED;
 use crate::arch::{Api, ArchApi, MemoryMap};
 use crate::logln;
-use crate::memory::address::{MemoryAddress, UAddr, VirtualAddress};
+use crate::memory::address::{MemoryAddress, VirtualAddress};
 use crate::memory::{address::PhysicalAddress, pmm::PHYSICAL_FRAME_ALLOCATOR};
 
 static N_FRAMES_PDPT: usize = 512 * 512;
@@ -137,7 +137,7 @@ impl PageMap {
         }
     }
     pub fn get_pml4_paddr(&self) -> PhysicalAddress {
-        PhysicalAddress::from(self.cr3 & !0xFFF)
+        PhysicalAddress::from((self.cr3 & !0xFFF) as usize)
     }
     pub fn get_pcid(&self) -> u16 {
         (self.cr3 & 0xFFF) as u16
@@ -219,21 +219,21 @@ impl MemoryMap for PageMap {
     fn get_flags(mem_type: crate::arch::MemType) -> Self::Flags {
         match mem_type {
             crate::arch::MemType::KernelReadWrite => {
-                PteFlags::PRESENT as u64
-                | PteFlags::WRITABLE as u64
-                | PteFlags::NO_EXECUTE as u64
-                | PteFlags::GLOBAL as u64
+                PteFlags::Present as u64
+                | PteFlags::Write as u64
+                | PteFlags::NoExecute as u64
+                | PteFlags::Global as u64
                 | PteFlags::WriteThrough as u64
             },
             crate::arch::MemType::KernelReadOnly => {
-                PteFlags::PRESENT as u64
-                | PteFlags::NO_EXECUTE as u64
-                | PteFlags::GLOBAL as u64
+                PteFlags::Present as u64
+                | PteFlags::NoExecute as u64
+                | PteFlags::Global as u64
                 | PteFlags::WriteThrough as u64
             },
             crate::arch::MemType::KernelReadExecute => {
-                PteFlags::PRESENT as u64
-                | PteFlags::GLOBAL as u64
+                PteFlags::Present as u64
+                | PteFlags::Global as u64
                 | PteFlags::WriteThrough as u64
             },
         }
@@ -401,7 +401,7 @@ impl MemoryMap for PageMap {
     fn find_available_region(
         &self,
         size: NonZeroUsize,
-        alignment: UAddr,
+        alignment: usize,
         start: VirtualAddress,
         end: VirtualAddress,
     ) -> Result<VirtualAddress, Self::Error> {

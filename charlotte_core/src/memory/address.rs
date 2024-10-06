@@ -5,33 +5,28 @@ use core::ops::{Add, AddAssign, Rem, Sub};
 use crate::arch::{Api, ArchApi, ISA_PARAMS};
 use crate::memory::pmm::DIRECT_MAP;
 
-pub const PAGE_SIZE: UAddr = ISA_PARAMS.paging.page_size;
-pub const PAGE_SHIFT: UAddr = ISA_PARAMS.paging.page_shift;
-pub const PAGE_MASK: UAddr = ISA_PARAMS.paging.page_mask;
+pub const PAGE_SIZE: usize = ISA_PARAMS.paging.page_size;
+pub const PAGE_SHIFT: usize = ISA_PARAMS.paging.page_shift;
+pub const PAGE_MASK: usize = ISA_PARAMS.paging.page_mask;
 
-#[cfg(not(target_pointer_width = "64"))]
-compile_error! {"Unsupported ISA pointer width"}
-
-#[cfg(target_pointer_width = "64")]
-pub type UAddr = u64;
 
 pub trait MemoryAddress:
     Sized
-    + Add<UAddr, Output = Self>
-    + Rem<UAddr, Output = UAddr>
+    + Add<usize, Output = Self>
+    + Rem<usize, Output = usize>
     + Copy
-    + TryFrom<UAddr>
-    + Into<UAddr>
+    + TryFrom<usize>
+    + Into<usize>
     + Step
 {
-    fn is_aligned(&self, alignment: UAddr) -> bool;
+    fn is_aligned(&self, alignment: usize) -> bool;
     fn is_page_aligned(&self) -> bool;
     fn is_vaddress() -> bool;
-    fn aligned_after(&self, alignment: UAddr) -> Self {
+    fn aligned_after(&self, alignment: usize) -> Self {
         if self.is_aligned(alignment) {
             *self
         } else {
-            let diff: UAddr = alignment - (*self % alignment as UAddr);
+            let diff: usize = alignment - (*self % alignment as usize);
             *self + diff
         }
     }
@@ -39,11 +34,11 @@ pub trait MemoryAddress:
 
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct PhysicalAddress(UAddr);
+pub struct PhysicalAddress(usize);
 
 impl PhysicalAddress {
     #[inline]
-    pub const fn new(addr: UAddr) -> Self {
+    pub const fn new(addr: usize) -> Self {
         Self(addr)
     }
 
@@ -52,24 +47,24 @@ impl PhysicalAddress {
     }
 
     #[inline]
-    pub const fn bits(&self) -> UAddr {
+    pub const fn bits(&self) -> usize {
         self.0
     }
 
     #[inline]
-    pub const fn pfn(&self) -> UAddr {
+    pub const fn pfn(&self) -> usize {
         self.bits() >> PAGE_SHIFT
     }
 
     #[inline]
-    pub const fn from_pfn(pfn: UAddr) -> Self {
+    pub const fn from_pfn(pfn: usize) -> Self {
         Self::new(pfn << PAGE_SHIFT)
     }
 
     #[inline]
     /// # Safety
     /// This function will panic in case align == 0 or align - 1 == 0
-    pub const fn is_aligned_to(&self, align: UAddr) -> bool {
+    pub const fn is_aligned_to(&self, align: usize) -> bool {
         if align == 0 {
             panic!("Tried to test alignment to 0")
         }
@@ -82,7 +77,7 @@ impl PhysicalAddress {
     }
 
     #[inline]
-    pub fn iter_frames(&self, n_frames: UAddr) -> impl Iterator<Item = PhysicalAddress> {
+    pub fn iter_frames(&self, n_frames: usize) -> impl Iterator<Item = PhysicalAddress> {
         (self.bits()..(self.bits() + n_frames * PAGE_SIZE))
             .step_by(PAGE_SIZE as usize)
             .map(PhysicalAddress::new)
@@ -99,7 +94,7 @@ impl PhysicalAddress {
 }
 
 impl MemoryAddress for PhysicalAddress {
-    fn is_aligned(&self, alignment: UAddr) -> bool {
+    fn is_aligned(&self, alignment: usize) -> bool {
         self.is_aligned_to(alignment)
     }
 
@@ -112,17 +107,10 @@ impl MemoryAddress for PhysicalAddress {
     }
 }
 
-impl From<UAddr> for PhysicalAddress {
+impl From<usize> for PhysicalAddress {
     #[inline]
-    fn from(val: UAddr) -> Self {
+    fn from(val: usize) -> Self {
         Self::new(val)
-    }
-}
-
-impl From<PhysicalAddress> for usize {
-    #[inline]
-    fn from(addr: PhysicalAddress) -> Self {
-        addr.as_usize()
     }
 }
 
@@ -142,19 +130,10 @@ impl<T> From<PhysicalAddress> for *mut T {
     }
 }
 
-impl From<PhysicalAddress> for UAddr {
+impl From<PhysicalAddress> for usize {
     #[inline]
     fn from(addr: PhysicalAddress) -> Self {
         addr.0
-    }
-}
-
-impl Add<UAddr> for PhysicalAddress {
-    type Output = Self;
-
-    #[inline]
-    fn add(self, val: UAddr) -> Self::Output {
-        Self::new(self.0 + val)
     }
 }
 
@@ -163,7 +142,7 @@ impl Add<usize> for PhysicalAddress {
 
     #[inline]
     fn add(self, val: usize) -> Self::Output {
-        Self::new(self.0 + val as UAddr)
+        Self::new(self.0 + val)
     }
 }
 
@@ -172,16 +151,7 @@ impl Add<NonZeroUsize> for PhysicalAddress {
 
     #[inline]
     fn add(self, val: NonZeroUsize) -> Self::Output {
-        Self::new(self.0 + val.get() as UAddr)
-    }
-}
-
-impl Sub<UAddr> for PhysicalAddress {
-    type Output = Self;
-
-    #[inline]
-    fn sub(self, val: UAddr) -> Self::Output {
-        Self::new(self.0 - val)
+        Self::new(self.0 + val.get() as usize)
     }
 }
 
@@ -190,7 +160,7 @@ impl Sub<usize> for PhysicalAddress {
 
     #[inline]
     fn sub(self, val: usize) -> Self::Output {
-        Self::new(self.0 - val as UAddr)
+        Self::new(self.0 - val)
     }
 }
 
@@ -199,34 +169,25 @@ impl Sub<NonZeroUsize> for PhysicalAddress {
 
     #[inline]
     fn sub(self, val: NonZeroUsize) -> Self::Output {
-        Self::new(self.0 - val.get() as UAddr)
-    }
-}
-
-impl Rem<UAddr> for PhysicalAddress {
-    type Output = UAddr;
-
-    #[inline]
-    fn rem(self, val: UAddr) -> Self::Output {
-        self.0 % val
+        Self::new(self.0 - val.get() as usize)
     }
 }
 
 impl Rem<usize> for PhysicalAddress {
-    type Output = UAddr;
+    type Output = usize;
 
     #[inline]
     fn rem(self, val: usize) -> Self::Output {
-        self.0 % val as UAddr
+        self.0 % val
     }
 }
 
 impl Rem<NonZeroUsize> for PhysicalAddress {
-    type Output = UAddr;
+    type Output = usize;
 
     #[inline]
     fn rem(self, val: NonZeroUsize) -> Self::Output {
-        self.0 % val.get() as UAddr
+        self.0 % val.get() as usize
     }
 }
 
@@ -240,17 +201,17 @@ impl Step for PhysicalAddress {
     }
 
     fn forward_checked(start: Self, count: usize) -> Option<Self> {
-        start.0.checked_add(count as UAddr).map(Self)
+        start.0.checked_add(count as usize).map(Self)
     }
 
     fn backward_checked(start: Self, count: usize) -> Option<Self> {
-        start.0.checked_sub(count as UAddr).map(Self)
+        start.0.checked_sub(count as usize).map(Self)
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct VirtualAddress(UAddr);
+pub struct VirtualAddress(usize);
 
 #[derive(Debug, Clone, Copy)]
 pub enum VAddrError {
@@ -267,7 +228,7 @@ impl VirtualAddress {
         Self::default()
     }
     #[inline]
-    pub fn bits(&self) -> UAddr {
+    pub fn bits(&self) -> usize {
         self.0
     }
     /// Check if the virtual address is null
@@ -277,12 +238,12 @@ impl VirtualAddress {
     }
     /// Check if the virtual address is aligned to the specified alignment
     #[inline]
-    pub fn is_aligned_to(&self, align: UAddr) -> bool {
+    pub fn is_aligned_to(&self, align: usize) -> bool {
         self.0 % align == 0
     }
     /// Get the base address of the page that the virtual address is in
     #[inline]
-    pub fn get_page_base(&self) -> UAddr {
+    pub fn get_page_base(&self) -> usize {
         self.0 & PAGE_MASK
     }
     /// Get the offset of the virtual address from the base address of the page
@@ -308,8 +269,20 @@ impl VirtualAddress {
     }
 }
 
+impl TryFrom<usize> for VirtualAddress {
+    type Error = VAddrError;
+
+    fn try_from(addr: usize) -> Result<Self, Self::Error> {
+        if ArchApi::validate_vaddr(addr as u64) {
+            Ok(Self(addr))
+        } else {
+            Err(VAddrError::InvalidForm(addr as u64))
+        }
+    }
+}
+
 impl MemoryAddress for VirtualAddress {
-    fn is_aligned(&self, alignment: UAddr) -> bool {
+    fn is_aligned(&self, alignment: usize) -> bool {
         self.is_aligned_to(alignment)
     }
 
@@ -332,11 +305,11 @@ impl Step for VirtualAddress {
     }
 
     fn forward_checked(start: Self, count: usize) -> Option<Self> {
-        start.0.checked_add(count as UAddr).map(Self)
+        start.0.checked_add(count as usize).map(Self)
     }
 
     fn backward_checked(start: Self, count: usize) -> Option<Self> {
-        start.0.checked_sub(count as UAddr).map(Self)
+        start.0.checked_sub(count as usize).map(Self)
     }
 }
 
@@ -351,14 +324,14 @@ impl TryFrom<u64> for VirtualAddress {
 
     fn try_from(addr: u64) -> Result<Self, Self::Error> {
         if ArchApi::validate_vaddr(addr) {
-            Ok(Self(addr as UAddr))
+            Ok(Self(addr as usize))
         } else {
             Err(VAddrError::InvalidForm(addr))
         }
     }
 }
 
-impl From<VirtualAddress> for UAddr {
+impl From<VirtualAddress> for usize {
     #[inline]
     fn from(addr: VirtualAddress) -> Self {
         addr.0
@@ -383,29 +356,20 @@ impl<T> From<VirtualAddress> for *mut T {
     }
 }
 
-impl Add<usize> for VirtualAddress {
-    type Output = Self;
-
-    #[inline]
-    fn add(self, val: usize) -> Self::Output {
-        Self(self.0 + val as UAddr)
-    }
-}
-
 impl Add<NonZeroUsize> for VirtualAddress {
     type Output = Self;
 
     #[inline]
     fn add(self, val: NonZeroUsize) -> Self::Output {
-        Self(self.0 + val.get() as UAddr)
+        Self(self.0 + val.get() as usize)
     }
 }
 
-impl Add<UAddr> for VirtualAddress {
+impl Add<usize> for VirtualAddress {
     type Output = Self;
 
     #[inline]
-    fn add(self, val: UAddr) -> Self::Output {
+    fn add(self, val: usize) -> Self::Output {
         Self(self.0 + val)
     }
 }
@@ -413,16 +377,7 @@ impl Add<UAddr> for VirtualAddress {
 impl AddAssign<usize> for VirtualAddress {
     #[inline]
     fn add_assign(&mut self, val: usize) {
-        self.0 += val as UAddr;
-    }
-}
-
-impl Sub<usize> for VirtualAddress {
-    type Output = Self;
-
-    #[inline]
-    fn sub(self, val: usize) -> Self::Output {
-        Self(self.0 - val as UAddr)
+        self.0 += val as usize;
     }
 }
 
@@ -431,42 +386,33 @@ impl Sub<NonZeroUsize> for VirtualAddress {
 
     #[inline]
     fn sub(self, val: NonZeroUsize) -> Self::Output {
-        Self(self.0 - val.get() as UAddr)
+        Self(self.0 - val.get() as usize)
     }
 }
 
-impl Sub<UAddr> for VirtualAddress {
+impl Sub<usize> for VirtualAddress {
     type Output = Self;
 
     #[inline]
-    fn sub(self, val: UAddr) -> Self::Output {
+    fn sub(self, val: usize) -> Self::Output {
         Self(self.0 - val)
     }
 }
 
-impl Rem<UAddr> for VirtualAddress {
-    type Output = UAddr;
+impl Rem<usize> for VirtualAddress {
+    type Output = usize;
 
     #[inline]
-    fn rem(self, val: UAddr) -> Self::Output {
+    fn rem(self, val: usize) -> Self::Output {
         self.0 % val
     }
 }
 
-impl Rem<usize> for VirtualAddress {
-    type Output = UAddr;
-
-    #[inline]
-    fn rem(self, val: usize) -> Self::Output {
-        self.0 % val as UAddr
-    }
-}
-
 impl Rem<NonZeroUsize> for VirtualAddress {
-    type Output = UAddr;
+    type Output = usize;
 
     #[inline]
     fn rem(self, val: NonZeroUsize) -> Self::Output {
-        self.0 % val.get() as UAddr
+        self.0 % val.get() as usize
     }
 }

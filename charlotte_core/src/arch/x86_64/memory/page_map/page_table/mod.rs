@@ -23,8 +23,8 @@ pub enum PageTableLevel {
 }
 
 const N_PT_ENTRIES: usize = 512;
-const LARGE_PAGE_NFRAMES: u64 = 512;
-const HUGE_PAGE_NFRAMES: u64 = 512 * 512;
+const LARGE_PAGE_NFRAMES: usize = 512;
+const HUGE_PAGE_NFRAMES: usize = 512 * 512;
 
 #[repr(C, align(4096))]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
