@@ -5,21 +5,21 @@
 
 ## The Kernel of CharlotteOS
 
-Charlotte Core is the kernel of CharlotteOS, a post Unix operating system. It is a monolithic kernel designed to provide a flexible and low level interface to programs running on top of it.
+Charlotte Core is the kernel of CharlotteOS, a post Unix operating system.
 
 ### Status
 
-Charlotte Core is in very early development. Run it at your own risk.
+Charlotte Core is in early development. Run it at your own risk.
 
 ### Implementation Languages
 
 Charlotte Core is written in Rust and Assembly language
 
-### Target Platforms
+### Targets
 
-- x86-64 PCs with UEFI and ACPI
-- Aarch64 devices with UEFI, DeviceTree and SMC
-- RISC-V64 devices with UEFI, DeviceTree and SBI
+- x86_64-unknown-none
+- aarch64-unknown-none
+- riscv64-unknown-none-elf
 
 #### Building
 
